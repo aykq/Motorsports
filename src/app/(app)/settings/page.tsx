@@ -3,6 +3,7 @@ import { signOut } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { NotificationSettings } from "@/components/settings/NotificationSettings";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
@@ -46,14 +47,7 @@ export default async function SettingsPage() {
         </form>
       </section>
 
-      <section className="rounded-xl bg-card border border-border p-4 space-y-3">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-widest">
-          Bildirimler
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Bildirim ayarları Aşama 4&apos;te eklenecek.
-        </p>
-      </section>
+      <NotificationSettings />
     </div>
   );
 }
