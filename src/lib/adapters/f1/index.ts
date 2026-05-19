@@ -1,6 +1,7 @@
 import type { SeriesAdapter, Race, Standing, Driver, Circuit, StandingType } from "@/types/series";
 import {
   jolpicaFetchSchedule,
+  jolpicaFetchResults,
   jolpicaFetchDriverStandings,
   jolpicaFetchTeamStandings,
   jolpicaFetchDrivers,
@@ -30,7 +31,16 @@ export const f1Adapter: SeriesAdapter = {
   slug: "f1",
   name: "Formula 1",
 
-  fetchSchedule: (season: number): Promise<Race[]> => jolpicaFetchSchedule(season),
+  fetchSchedule: async (season: number): Promise<Race[]> => {
+    const [races, resultsMap] = await Promise.all([
+      jolpicaFetchSchedule(season),
+      jolpicaFetchResults(season),
+    ]);
+    return races.map((race) => ({
+      ...race,
+      results: resultsMap.get(race.round),
+    }));
+  },
 
   fetchStandings: (season: number, type: StandingType): Promise<Standing[]> =>
     type === "driver"

@@ -23,6 +23,7 @@ export interface RaceResult {
   gap?: string;
   points: number;
   status: string;
+  fastestLap?: boolean;
 }
 
 export interface Race {

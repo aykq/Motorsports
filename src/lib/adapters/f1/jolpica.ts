@@ -62,6 +62,29 @@ const ConstructorInfoSchema = z.object({
   nationality: z.string().optional(),
 });
 
+const RaceResultItemSchema = z.object({
+  position: z.string(),
+  points: z.string(),
+  Driver: DriverInfoSchema,
+  Constructor: ConstructorInfoSchema,
+  status: z.string(),
+  Time: z.object({ time: z.string() }).optional(),
+  FastestLap: z.object({ rank: z.string() }).optional(),
+});
+
+const RaceWithResultsSchema = z.object({
+  round: z.string(),
+  Results: z.array(RaceResultItemSchema),
+});
+
+const AllResultsResponseSchema = z.object({
+  MRData: z.object({
+    RaceTable: z.object({
+      Races: z.array(RaceWithResultsSchema),
+    }),
+  }),
+});
+
 const DriverStandingSchema = z.object({
   position: z.string(),
   points: z.string(),
@@ -152,6 +175,38 @@ export async function jolpicaFetchSchedule(season: number): Promise<Race[]> {
       status: detectStatus(raceDate),
     };
   });
+}
+
+export async function jolpicaFetchResults(
+  season: number
+): Promise<Map<number, import("@/types/series").RaceResult[]>> {
+  try {
+    const data = await jolpicaFetch(
+      `/${season}/results.json?limit=500`,
+      AllResultsResponseSchema
+    );
+    const map = new Map<number, import("@/types/series").RaceResult[]>();
+    for (const race of data.MRData.RaceTable.Races) {
+      const round = parseInt(race.round);
+      map.set(
+        round,
+        race.Results.map((r, i) => ({
+          position: parseInt(r.position),
+          driverId: r.Driver.driverId,
+          driverName: `${r.Driver.givenName} ${r.Driver.familyName}`,
+          team: r.Constructor.name,
+          time: i === 0 ? r.Time?.time : undefined,
+          gap: i > 0 ? r.Time?.time : undefined,
+          points: parseFloat(r.points),
+          status: r.status,
+          fastestLap: r.FastestLap?.rank === "1",
+        }))
+      );
+    }
+    return map;
+  } catch {
+    return new Map();
+  }
 }
 
 export async function jolpicaFetchDriverStandings(season: number): Promise<Standing[]> {
