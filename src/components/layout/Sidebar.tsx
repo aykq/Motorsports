@@ -1,0 +1,73 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Home, Grid2X2, Heart, Settings } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
+const NAV_ITEMS = [
+  { href: "/", label: "Anasayfa", icon: Home },
+  { href: "/series", label: "Seriler", icon: Grid2X2 },
+  { href: "/favorites", label: "Favoriler", icon: Heart },
+  { href: "/settings", label: "Ayarlar", icon: Settings },
+];
+
+interface SidebarProps {
+  user: {
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+  };
+}
+
+export function Sidebar({ user }: SidebarProps) {
+  const pathname = usePathname();
+
+  return (
+    <aside className="hidden md:flex flex-col w-60 shrink-0 border-r border-border bg-background h-screen sticky top-0">
+      <div className="p-5 pb-4">
+        <Link href="/" className="flex items-baseline gap-0.5">
+          <span className="text-2xl font-black text-rose-500">MS</span>
+          <span className="text-2xl font-black text-foreground">Hub</span>
+        </Link>
+      </div>
+
+      <nav className="flex-1 px-3 space-y-1">
+        {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+          const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                active
+                  ? "bg-rose-500/10 text-rose-500"
+                  : "text-muted-foreground hover:text-foreground hover:bg-accent"
+              )}
+            >
+              <Icon className="w-4.5 h-4.5 shrink-0" />
+              {label}
+            </Link>
+          );
+        })}
+      </nav>
+
+      <div className="p-4 border-t border-border">
+        <div className="flex items-center gap-3 px-1">
+          <Avatar className="w-8 h-8 shrink-0">
+            <AvatarImage src={user.image ?? undefined} />
+            <AvatarFallback className="text-xs bg-muted">
+              {user.name?.[0]?.toUpperCase() ?? user.email?.[0]?.toUpperCase() ?? "?"}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0">
+            <p className="text-sm font-medium truncate">{user.name ?? "Kullanıcı"}</p>
+            <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+  );
+}

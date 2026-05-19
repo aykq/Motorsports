@@ -1,0 +1,109 @@
+import { getCachedDrivers } from "@/lib/cache";
+import { getSeriesConfig } from "@/lib/series-config";
+import { getF1Team, getF1TeamByName } from "@/lib/f1-teams";
+import { TeamLogo } from "@/components/series/TeamLogo";
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import type { Metadata } from "next";
+
+interface Props {
+  params: Promise<{ series: string }>;
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { series: slug } = await params;
+  const config = getSeriesConfig(slug);
+  return { title: `${config?.name ?? slug} — Pilotlar` };
+}
+
+export default async function DriversListPage({ params }: Props) {
+  const { series: slug } = await params;
+  const config = getSeriesConfig(slug);
+  if (!config || !config.available) notFound();
+
+  const { drivers } = await getCachedDrivers(slug);
+
+  const groupedByTeam = drivers.reduce<Record<string, typeof drivers>>((acc, d) => {
+    const key = d.teamId ?? d.team ?? "unknown";
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(d);
+    return acc;
+  }, {});
+
+  return (
+    <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+      <div>
+        <h1 className="text-xl font-bold">{config.name} — Pilotlar</h1>
+        <p className="text-xs text-muted-foreground mt-1">{drivers.length} pilot</p>
+      </div>
+
+      {drivers.length === 0 ? (
+        <p className="text-center py-16 text-sm text-muted-foreground">Henüz pilot verisi yok.</p>
+      ) : (
+        <div className="space-y-4">
+          {Object.entries(groupedByTeam).map(([teamKey, teamDrivers]) => {
+            const firstDriver = teamDrivers[0];
+            const team = getF1Team(firstDriver.teamId) ?? getF1TeamByName(firstDriver.team);
+            return (
+              <div key={teamKey}>
+                <div className="flex items-center gap-2 mb-2 px-1">
+                  <TeamLogo
+                    src={team?.logo}
+                    alt={firstDriver.team ?? ""}
+                    fallbackColor={team?.color ?? "#52525b"}
+                    fallbackText={team?.short ?? "?"}
+                    className="h-5 w-auto shrink-0"
+                    fallbackClassName="w-5 h-5 rounded-sm text-[9px] shrink-0"
+                  />
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    {firstDriver.team ?? "Bilinmeyen Takım"}
+                  </span>
+                </div>
+                <div className="space-y-1.5">
+                  {teamDrivers.map((driver) => (
+                    <Link key={driver.id} href={`/${slug}/drivers/${driver.id}`}>
+                      <div className="flex items-center gap-3 px-3 py-3 rounded-lg bg-card border border-border hover:bg-accent/50 transition-colors">
+                        {driver.image ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={driver.image}
+                            alt={driver.lastName}
+                            className="w-10 h-10 rounded-full object-cover bg-muted shrink-0"
+                          />
+                        ) : (
+                          <div
+                            className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-black text-white shrink-0"
+                            style={{ backgroundColor: team?.color ?? "#52525b" }}
+                          >
+                            {driver.code ?? driver.lastName[0]}
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm">
+                            {driver.firstName} {driver.lastName}
+                            {driver.code && (
+                              <span className="ml-1.5 text-xs text-muted-foreground font-normal">{driver.code}</span>
+                            )}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">{driver.team}</p>
+                        </div>
+                        {driver.number && (
+                          <span
+                            className="text-sm font-black shrink-0"
+                            style={{ color: team?.color ?? undefined }}
+                          >
+                            #{driver.number}
+                          </span>
+                        )}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
