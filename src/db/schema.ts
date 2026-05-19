@@ -131,3 +131,18 @@ export const cachedDrivers = pgTable(
   },
   (t) => [uniqueIndex("cached_driver_series_driver").on(t.seriesSlug, t.driverId)]
 );
+
+export const cachedRaceDetails = pgTable(
+  "cached_race_detail",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    seriesSlug: text("series_slug").notNull(),
+    season: integer("season").notNull(),
+    round: integer("round").notNull(),
+    data: jsonb("data").notNull(),
+    fetchedAt: timestamp("fetched_at").defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex("cached_race_detail_idx").on(t.seriesSlug, t.season, t.round)]
+);

@@ -1,3 +1,6 @@
+"use client";
+
+import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Race } from "@/types/series";
@@ -19,16 +22,6 @@ const STATUS_LABELS: Record<Race["status"], string> = {
   cancelled: "İptal",
 };
 
-const SESSION_LABELS: Record<string, string> = {
-  practice1: "1. Antrenman",
-  practice2: "2. Antrenman",
-  practice3: "3. Antrenman",
-  qualifying: "Sıralama",
-  sprintQuali: "Sprint Sıralama",
-  sprint: "Sprint",
-  race: "Yarış",
-};
-
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString("tr-TR", {
     day: "numeric",
@@ -46,6 +39,7 @@ function formatTime(dateStr: string): string {
 }
 
 export function RaceCard({ race, series, compact = false }: RaceCardProps) {
+  const router = useRouter();
   const raceSession = race.sessions.find((s) => s.type === "race");
   const isLive = race.status === "live";
   const isCompleted = race.status === "completed";
@@ -53,9 +47,10 @@ export function RaceCard({ race, series, compact = false }: RaceCardProps) {
   return (
     <Card
       className={cn(
-        "overflow-hidden transition-colors hover:bg-accent/50",
+        "overflow-hidden transition-colors hover:bg-accent/50 cursor-pointer",
         isLive && "ring-1 ring-rose-500"
       )}
+      onClick={() => router.push(`/${series.slug}/races/${race.round}`)}
     >
       <CardContent className="p-4 space-y-3">
         <div className="flex items-start justify-between gap-2">
@@ -67,7 +62,7 @@ export function RaceCard({ race, series, compact = false }: RaceCardProps) {
             >
               {series.shortName}
             </Badge>
-            <span className="text-xs text-muted-foreground">Tur {race.round}</span>
+            <span className="text-xs text-muted-foreground">Yarış {race.round}</span>
           </div>
           <Badge
             variant={isLive ? "destructive" : isCompleted ? "secondary" : "outline"}
@@ -78,16 +73,12 @@ export function RaceCard({ race, series, compact = false }: RaceCardProps) {
         </div>
 
         <div>
-          <Link
-            href={`/${series.slug}/races/${race.round}`}
-            className="font-semibold text-sm leading-tight hover:underline hover:text-foreground transition-colors"
-          >
-            {race.name}
-          </Link>
+          <p className="font-semibold text-sm leading-tight">{race.name}</p>
           <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
             <MapPin className="w-3 h-3 shrink-0" />
             <Link
               href={`/${series.slug}/circuits/${race.circuitId}`}
+              onClick={(e) => e.stopPropagation()}
               className="hover:text-foreground hover:underline transition-colors"
             >
               {race.circuitName}

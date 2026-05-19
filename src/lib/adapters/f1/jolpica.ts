@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { Race, Standing, Driver, Circuit } from "@/types/series";
+import type { Race, Standing, Driver, Circuit, PitStop } from "@/types/series";
 
 const BASE_URL = "https://api.jolpi.ca/ergast/f1";
 
@@ -63,13 +63,20 @@ const ConstructorInfoSchema = z.object({
 });
 
 const RaceResultItemSchema = z.object({
+  number: z.string().optional(),
   position: z.string(),
   points: z.string(),
   Driver: DriverInfoSchema,
   Constructor: ConstructorInfoSchema,
+  grid: z.string().optional(),
+  laps: z.string().optional(),
   status: z.string(),
-  Time: z.object({ time: z.string() }).optional(),
-  FastestLap: z.object({ rank: z.string() }).optional(),
+  Time: z.object({ millis: z.string().optional(), time: z.string() }).optional(),
+  FastestLap: z.object({
+    rank: z.string(),
+    lap: z.string().optional(),
+    Time: z.object({ time: z.string() }).optional(),
+  }).optional(),
 });
 
 const RaceWithResultsSchema = z.object({
@@ -107,6 +114,26 @@ const StandingsResponseSchema = z.object({
         z.object({
           DriverStandings: z.array(DriverStandingSchema).optional(),
           ConstructorStandings: z.array(ConstructorStandingSchema).optional(),
+        })
+      ),
+    }),
+  }),
+});
+
+const PitStopItemSchema = z.object({
+  driverId: z.string(),
+  lap: z.string(),
+  stop: z.string(),
+  time: z.string().optional(),
+  duration: z.string(),
+});
+
+const PitStopsResponseSchema = z.object({
+  MRData: z.object({
+    RaceTable: z.object({
+      Races: z.array(
+        z.object({
+          PitStops: z.array(PitStopItemSchema).optional(),
         })
       ),
     }),
@@ -173,6 +200,8 @@ export async function jolpicaFetchSchedule(season: number): Promise<Race[]> {
       date: raceDate,
       sessions,
       status: detectStatus(raceDate),
+      circuitLat: parseFloat(r.Circuit.Location.lat),
+      circuitLng: parseFloat(r.Circuit.Location.long),
     };
   });
 }
@@ -194,18 +223,42 @@ export async function jolpicaFetchResults(
           position: parseInt(r.position),
           driverId: r.Driver.driverId,
           driverName: `${r.Driver.givenName} ${r.Driver.familyName}`,
+          driverNumber: r.Driver.permanentNumber ? parseInt(r.Driver.permanentNumber) : undefined,
           team: r.Constructor.name,
           time: i === 0 ? r.Time?.time : undefined,
           gap: i > 0 ? r.Time?.time : undefined,
           points: parseFloat(r.points),
           status: r.status,
           fastestLap: r.FastestLap?.rank === "1",
+          fastestLapTime: r.FastestLap?.rank === "1" ? r.FastestLap?.Time?.time : undefined,
+          gridPosition: r.grid ? parseInt(r.grid) : undefined,
+          laps: r.laps ? parseInt(r.laps) : undefined,
         }))
       );
     }
     return map;
   } catch {
     return new Map();
+  }
+}
+
+export async function jolpicaFetchPitStops(season: number, round: number): Promise<PitStop[]> {
+  try {
+    const data = await jolpicaFetch(
+      `/${season}/${round}/pitstops.json?limit=100`,
+      PitStopsResponseSchema
+    );
+    const race = data.MRData.RaceTable.Races[0];
+    if (!race?.PitStops) return [];
+    return race.PitStops.map((p) => ({
+      driverId: p.driverId,
+      driverName: p.driverId,
+      lap: parseInt(p.lap),
+      stop: parseInt(p.stop),
+      duration: p.duration,
+    }));
+  } catch {
+    return [];
   }
 }
 
@@ -231,6 +284,57 @@ export async function jolpicaFetchDriverStandings(season: number): Promise<Stand
       teamId: s.Constructors[0]?.constructorId,
     },
   }));
+}
+
+export async function jolpicaFetchRoundDriverStandings(season: number, round: number): Promise<Standing[]> {
+  try {
+    const data = await jolpicaFetch(
+      `/${season}/${round}/driverStandings.json`,
+      StandingsResponseSchema
+    );
+    const list = data.MRData.StandingsTable.StandingsLists[0];
+    if (!list?.DriverStandings) return [];
+    return list.DriverStandings.map((s) => ({
+      position: parseInt(s.position),
+      points: parseFloat(s.points),
+      wins: parseInt(s.wins),
+      driver: {
+        id: s.Driver.driverId,
+        firstName: s.Driver.givenName,
+        lastName: s.Driver.familyName,
+        code: s.Driver.code,
+        number: s.Driver.permanentNumber ? parseInt(s.Driver.permanentNumber) : undefined,
+        nationality: s.Driver.nationality,
+        team: s.Constructors[0]?.name,
+        teamId: s.Constructors[0]?.constructorId,
+      },
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export async function jolpicaFetchRoundTeamStandings(season: number, round: number): Promise<Standing[]> {
+  try {
+    const data = await jolpicaFetch(
+      `/${season}/${round}/constructorStandings.json`,
+      StandingsResponseSchema
+    );
+    const list = data.MRData.StandingsTable.StandingsLists[0];
+    if (!list?.ConstructorStandings) return [];
+    return list.ConstructorStandings.map((s) => ({
+      position: parseInt(s.position),
+      points: parseFloat(s.points),
+      wins: parseInt(s.wins),
+      team: {
+        id: s.Constructor.constructorId,
+        name: s.Constructor.name,
+        nationality: s.Constructor.nationality,
+      },
+    }));
+  } catch {
+    return [];
+  }
 }
 
 export async function jolpicaFetchTeamStandings(season: number): Promise<Standing[]> {
@@ -271,5 +375,7 @@ export async function jolpicaFetchCircuits(season: number): Promise<Circuit[]> {
       name: r.circuitName,
       location: r.location,
       country: r.country,
+      lat: r.circuitLat,
+      lng: r.circuitLng,
     }));
 }
