@@ -53,7 +53,7 @@ export default async function CircuitsListPage({ params }: Props) {
                     {race.location}, {race.country}
                   </p>
                 </div>
-                <span className="text-xs text-muted-foreground shrink-0">Tur {race.round}</span>
+                <span className="text-xs text-muted-foreground shrink-0">Yarış {race.round}</span>
               </div>
             </Link>
           ))}

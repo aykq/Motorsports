@@ -18,12 +18,16 @@ export interface RaceResult {
   position: number;
   driverId: string;
   driverName: string;
+  driverNumber?: number;
   team: string;
   time?: string;
   gap?: string;
   points: number;
   status: string;
   fastestLap?: boolean;
+  fastestLapTime?: string;
+  gridPosition?: number;
+  laps?: number;
 }
 
 export interface Race {
@@ -37,6 +41,8 @@ export interface Race {
   sessions: RaceSession[];
   status: RaceStatus;
   results?: RaceResult[];
+  circuitLat?: number;
+  circuitLng?: number;
 }
 
 export interface Driver {
@@ -83,4 +89,51 @@ export interface SeriesAdapter {
   fetchStandings: (season: number, type: StandingType) => Promise<Standing[]>;
   fetchDrivers: (season: number) => Promise<Driver[]>;
   fetchCircuits: (season: number) => Promise<Circuit[]>;
+}
+
+// ─── Race Detail ─────────────────────────────────────────────────────────────
+
+export interface PitStop {
+  driverId: string;
+  driverName: string;
+  lap: number;
+  stop: number;
+  duration: string;
+}
+
+export type TireCompound = "SOFT" | "MEDIUM" | "HARD" | "INTERMEDIATE" | "WET" | "UNKNOWN";
+
+export interface TireStint {
+  driverNumber: number;
+  compound: TireCompound;
+  lapStart: number;
+  lapEnd: number;
+  tyreAgeAtStart: number;
+}
+
+export interface RaceControlEvent {
+  lap?: number;
+  category: string;
+  message: string;
+  flag?: string;
+  driverNumber?: number;
+  driverAcronym?: string;
+}
+
+export interface WeatherDay {
+  date: string;
+  tempMin: number;
+  tempMax: number;
+  precipitationProbability: number;
+  windSpeed: number;
+  weatherCode: number;
+}
+
+export interface RaceDetail {
+  pitStops: PitStop[];
+  tireStints: TireStint[];
+  raceControl: RaceControlEvent[];
+  driverStandingsAfter: Standing[];
+  teamStandingsAfter: Standing[];
+  weather: WeatherDay[];
 }

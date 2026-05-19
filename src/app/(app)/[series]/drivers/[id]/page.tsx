@@ -2,8 +2,7 @@ import { getCachedDrivers, getCachedSchedule, getCachedStandings } from "@/lib/c
 import { getSeriesConfig } from "@/lib/series-config";
 import { Badge } from "@/components/ui/badge";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
+import { BackButton } from "@/components/layout/BackButton";
 import type { Metadata } from "next";
 
 interface Props {
@@ -44,13 +43,7 @@ export default async function DriverDetailPage({ params }: Props) {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-      <Link
-        href={`/${slug}/drivers`}
-        className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Pilotlar
-      </Link>
+      <BackButton fallbackHref={`/${slug}/drivers`} label="Pilotlar" />
 
       <div className="flex items-center gap-4">
         {driver.image ? (

@@ -5,6 +5,7 @@ import { Countdown } from "@/components/race/Countdown";
 import type { Race } from "@/types/series";
 import type { Metadata } from "next";
 
+export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Anasayfa" };
 
 interface RaceWithSeries extends Race {

@@ -1,9 +1,11 @@
 import { db } from "@/db";
-import { cachedRaces, cachedStandings, cachedDrivers } from "@/db/schema";
+import { cachedRaces, cachedStandings, cachedDrivers, cachedRaceDetails } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
-import type { Race, Standing, Driver, StandingType } from "@/types/series";
+import type { Race, Standing, Driver, StandingType, RaceDetail } from "@/types/series";
 
 const TTL_MS = 30 * 60 * 1000;
+const RACE_DETAIL_COMPLETED_TTL_MS = 24 * 60 * 60 * 1000;
+const RACE_DETAIL_UPCOMING_TTL_MS = 2 * 60 * 60 * 1000;
 
 export function isFresh(fetchedAt: Date): boolean {
   return Date.now() - fetchedAt.getTime() < TTL_MS;
@@ -127,4 +129,73 @@ export async function setCachedDrivers(
         fetchedAt: sql`now()`,
       },
     });
+}
+
+// ─── Race (single round) ──────────────────────────────────────────────────────
+
+export async function getCachedRaceByRound(
+  slug: string,
+  season: number,
+  round: number
+): Promise<Race | null> {
+  const row = await db.query.cachedRaces.findFirst({
+    where: and(
+      eq(cachedRaces.seriesSlug, slug),
+      eq(cachedRaces.season, season),
+      eq(cachedRaces.round, round)
+    ),
+  });
+  return row ? (row.data as Race) : null;
+}
+
+// ─── Race Detail ──────────────────────────────────────────────────────────────
+
+export async function getCachedRaceDetail(
+  slug: string,
+  season: number,
+  round: number,
+  isCompleted: boolean
+): Promise<RaceDetail | null> {
+  try {
+    const row = await db.query.cachedRaceDetails.findFirst({
+      where: and(
+        eq(cachedRaceDetails.seriesSlug, slug),
+        eq(cachedRaceDetails.season, season),
+        eq(cachedRaceDetails.round, round)
+      ),
+    });
+    if (!row) return null;
+    const ttl = isCompleted ? RACE_DETAIL_COMPLETED_TTL_MS : RACE_DETAIL_UPCOMING_TTL_MS;
+    if (Date.now() - row.fetchedAt.getTime() > ttl) return null;
+    return row.data as RaceDetail;
+  } catch {
+    return null;
+  }
+}
+
+export async function setCachedRaceDetail(
+  slug: string,
+  season: number,
+  round: number,
+  detail: RaceDetail
+): Promise<void> {
+  try {
+    await db
+      .insert(cachedRaceDetails)
+      .values({
+        seriesSlug: slug,
+        season,
+        round,
+        data: detail as unknown as Record<string, unknown>,
+      })
+      .onConflictDoUpdate({
+        target: [cachedRaceDetails.seriesSlug, cachedRaceDetails.season, cachedRaceDetails.round],
+        set: {
+          data: sql`excluded.data`,
+          fetchedAt: sql`now()`,
+        },
+      });
+  } catch {
+    // non-fatal — page still works without caching
+  }
 }
