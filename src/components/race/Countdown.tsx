@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 interface CountdownProps {
   targetDate: string;
   label?: string;
+  compact?: boolean;
 }
 
 interface TimeLeft {
@@ -31,7 +32,7 @@ function pad(n: number) {
   return String(n).padStart(2, "0");
 }
 
-export function Countdown({ targetDate, label = "Sonraki Yarışa" }: CountdownProps) {
+export function Countdown({ targetDate, label = "Sonraki Yarışa", compact = false }: CountdownProps) {
   const [time, setTime] = useState<TimeLeft | null>(null);
 
   useEffect(() => {
@@ -66,12 +67,35 @@ export function Countdown({ targetDate, label = "Sonraki Yarışa" }: CountdownP
     );
   }
 
-  const units = [
+  const allUnits = [
     { value: time.days, label: "Gün" },
     { value: time.hours, label: "Saat" },
     { value: time.minutes, label: "Dak" },
     { value: time.seconds, label: "San" },
   ];
+  const units = compact ? allUnits.slice(0, 3) : allUnits;
+
+  if (compact) {
+    return (
+      <div className="flex items-center gap-2">
+        {units.map(({ value, label: unitLabel }, i) => (
+          <div key={unitLabel} className="flex items-center gap-2">
+            <div className="flex flex-col items-center">
+              <span className="text-xl font-black tabular-nums text-foreground leading-none">
+                {pad(value)}
+              </span>
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                {unitLabel}
+              </span>
+            </div>
+            {i < units.length - 1 && (
+              <span className="text-base font-bold text-muted-foreground/50 mb-2">:</span>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="text-center">

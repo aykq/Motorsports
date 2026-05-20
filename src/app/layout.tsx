@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist } from "next/font/google";
+import { Geist, Barlow_Condensed, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ServiceWorkerRegistrar } from "@/components/pwa/ServiceWorkerRegistrar";
 import { Providers } from "@/lib/providers";
@@ -7,6 +7,20 @@ import { Providers } from "@/lib/providers";
 const geist = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+});
+
+const barlowCondensed = Barlow_Condensed({
+  weight: ["600", "700", "800"],
+  variable: "--font-barlow-condensed",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  weight: ["400", "500", "700"],
+  variable: "--font-jetbrains-mono",
+  subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -37,8 +51,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="tr" className={`${geist.variable} h-full antialiased dark`}>
-      <body className="min-h-full flex flex-col bg-background text-foreground">
+    <html lang="tr" className={`${geist.variable} ${barlowCondensed.variable} ${jetbrainsMono.variable} h-full antialiased dark`}>
+      <body className="min-h-full flex flex-col bg-background text-foreground" suppressHydrationWarning>
         <ServiceWorkerRegistrar />
         <Providers>{children}</Providers>
       </body>

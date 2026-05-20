@@ -1,12 +1,12 @@
 import { getCachedSchedule } from "@/lib/cache";
 import { getSeriesConfig } from "@/lib/series-config";
-import { getF1CircuitSpecs } from "@/lib/circuit-data";
+import { getF1CircuitSpecs, getF1CircuitLayoutUrl } from "@/lib/circuit-data";
+import { CircuitLayoutImage } from "@/components/race/CircuitLayoutImage";
 import { Badge } from "@/components/ui/badge";
 import { notFound } from "next/navigation";
-import { MapPin, Zap } from "lucide-react";
+import { MapPin, Zap, ExternalLink } from "lucide-react";
 import { BackButton } from "@/components/layout/BackButton";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
 import type { Metadata } from "next";
 
 interface Props {
@@ -24,9 +24,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-lg bg-card border border-border p-3 text-center space-y-0.5">
+    <div className="rounded-lg bg-card border border-border p-3 text-center space-y-1">
       <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</p>
-      <p className="font-bold text-sm">{value}</p>
+      <p className="font-bold text-base">{value}</p>
     </div>
   );
 }
@@ -50,29 +50,53 @@ export default async function CircuitDetailPage({ params }: Props) {
     name: circuitRaces[0].circuitName,
     location: circuitRaces[0].location,
     country: circuitRaces[0].country,
+    lat: circuitRaces[0].circuitLat,
+    lng: circuitRaces[0].circuitLng,
   };
 
   const completedRaces = circuitRaces.filter((r) => r.status === "completed");
   const upcomingRaces = circuitRaces.filter((r) => r.status !== "completed");
 
   const specs = slug === "f1" ? getF1CircuitSpecs(id) : null;
+  const layoutUrl = slug === "f1" ? getF1CircuitLayoutUrl(id) : null;
   const latestCompleted = completedRaces[0];
   const totalLaps = latestCompleted?.results?.[0]?.laps ?? specs?.officialLaps;
   const fastestLapResult = latestCompleted?.results?.find((r) => r.fastestLap);
   const raceWinner = latestCompleted?.results?.[0];
+
+  const mapsUrl =
+    circuit.lat && circuit.lng
+      ? `https://maps.google.com/?q=${circuit.lat},${circuit.lng}`
+      : null;
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
       <BackButton fallbackHref={`/${slug}/circuits`} label="Pistler" />
 
       {/* ── Header ── */}
-      <div className="space-y-1.5">
+      <div className="space-y-2">
         <h1 className="text-2xl font-bold">{circuit.name}</h1>
-        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-          <MapPin className="w-4 h-4 shrink-0" />
-          <span>{circuit.location}, {circuit.country}</span>
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <MapPin className="w-4 h-4 shrink-0" />
+            <span>{circuit.location}, {circuit.country}</span>
+          </div>
+          {mapsUrl && (
+            <a
+              href={mapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors border border-border rounded px-2 py-1"
+            >
+              <ExternalLink className="w-3 h-3" />
+              Haritada Gör
+            </a>
+          )}
         </div>
       </div>
+
+      {/* ── Circuit Layout Image ── */}
+      {layoutUrl && <CircuitLayoutImage src={layoutUrl} alt={circuit.name} />}
 
       {/* ── Pist İstatistikleri ── */}
       {specs && (
@@ -129,7 +153,7 @@ export default async function CircuitDetailPage({ params }: Props) {
       {/* ── Yaklaşan Yarışlar ── */}
       {upcomingRaces.length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-widest">
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
             Yaklaşan
           </h2>
           {upcomingRaces.map((race) => {
@@ -160,7 +184,7 @@ export default async function CircuitDetailPage({ params }: Props) {
       {/* ── Geçmiş Yarışlar ── */}
       {completedRaces.length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-widest">
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
             Geçmiş Yarışlar
           </h2>
           {completedRaces.map((race) => {
