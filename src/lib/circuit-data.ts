@@ -36,7 +36,7 @@ export function getF1CircuitSpecs(circuitId: string): CircuitSpecs | null {
   return F1_CIRCUIT_SPECS[circuitId] ?? null;
 }
 
-// F1 media CDN circuit layout images (Jolpica circuit ID → F1 CDN slug)
+// F1 media CDN circuit layout icons 4x3 (Jolpica circuit ID → CDN slug)
 const F1_CIRCUIT_LAYOUT_SLUGS: Record<string, string> = {
   bahrain:       "bahrain",
   jeddah:        "jeddah",
@@ -68,6 +68,40 @@ export function getF1CircuitLayoutUrl(circuitId: string): string | null {
   const slug = F1_CIRCUIT_LAYOUT_SLUGS[circuitId];
   if (!slug) return null;
   return `https://media.formula1.com/image/upload/f_auto/q_auto/v1677244985/content/dam/fom-website/2018-redesign-assets/Track%20icons%204x3/${slug}.png`;
+}
+
+// F1 media CDN official circuit maps 16x9 (Jolpica circuit ID → filename stem)
+const F1_CIRCUIT_MAP_NAMES: Record<string, string> = {
+  bahrain:       "Bahrain_Circuit",
+  jeddah:        "Saudi_Arabia_Circuit",
+  albert_park:   "Australia_Circuit",
+  suzuka:        "Japan_Circuit",
+  shanghai:      "China_Circuit",
+  miami:         "Miami_Circuit",
+  imola:         "Emilia_Romagna_Circuit",
+  monaco:        "Monaco_Circuit",
+  villeneuve:    "Canada_Circuit",
+  catalunya:     "Spain_Circuit",
+  red_bull_ring: "Austria_Circuit",
+  silverstone:   "Great_Britain_Circuit",
+  hungaroring:   "Hungary_Circuit",
+  spa:           "Belgium_Circuit",
+  zandvoort:     "Netherlands_Circuit",
+  monza:         "Italy_Circuit",
+  baku:          "Azerbaijan_Circuit",
+  marina_bay:    "Singapore_Circuit",
+  americas:      "United_States_Circuit",
+  rodriguez:     "Mexico_Circuit",
+  interlagos:    "Brazil_Circuit",
+  las_vegas:     "Las_Vegas_Circuit",
+  losail:        "Qatar_Circuit",
+  yas_marina:    "Abu_Dhabi_Circuit",
+};
+
+export function getF1CircuitMapUrl(circuitId: string): string | null {
+  const name = F1_CIRCUIT_MAP_NAMES[circuitId];
+  if (!name) return null;
+  return `https://media.formula1.com/image/upload/c_lfill,w_3392/q_auto/v1740000001/content/dam/fom-website/2018-redesign-assets/Circuit%20maps%2016x9/${name}.webp`;
 }
 
 // Jolpica circuit ID → [lat, lng]

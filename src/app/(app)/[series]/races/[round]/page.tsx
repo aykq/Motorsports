@@ -12,10 +12,6 @@ import {
   Trophy,
   Timer,
   AlertTriangle,
-  Cloud,
-  CloudRain,
-  Wind,
-  Thermometer,
   Sparkles,
   ChevronUp,
   ChevronDown,
@@ -25,9 +21,11 @@ import {
 } from "lucide-react";
 import { BackButton } from "@/components/layout/BackButton";
 import { TireStints } from "@/components/race/TireStints";
+import { RaceWeatherSection } from "@/components/race/RaceWeatherSection";
+import { CircuitLayoutImage } from "@/components/race/CircuitLayoutImage";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { WMO_DESCRIPTIONS } from "@/lib/weather";
+import { getF1CircuitMapUrl, getF1CircuitCoords } from "@/lib/circuit-data";
 import type { Metadata } from "next";
 import type { RaceResult, Standing } from "@/types/series";
 
@@ -71,20 +69,6 @@ function formatDateTime(dateStr: string) {
     time: date.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Istanbul" }),
     dayName: date.toLocaleDateString("tr-TR", { weekday: "long" }),
   };
-}
-
-function formatWeatherDate(dateStr: string) {
-  const date = new Date(dateStr + "T12:00:00");
-  return date.toLocaleDateString("tr-TR", { weekday: "short", day: "numeric", month: "short" });
-}
-
-function WeatherIcon({ code, className }: { code: number; className?: string }) {
-  const cls = cn("shrink-0", className);
-  if (code === 0 || code === 1) return <Zap className={cls} />;
-  if (code <= 3) return <Cloud className={cls} />;
-  if (code >= 61 && code <= 82) return <CloudRain className={cls} />;
-  if (code >= 95) return <AlertTriangle className={cls} />;
-  return <Cloud className={cls} />;
 }
 
 function GridChange({ grid, position }: { grid?: number; position: number }) {
@@ -170,12 +154,24 @@ export default async function RaceDetailPage({ params }: Props) {
 
   const isCompleted = race.status === "completed";
   const isLive = race.status === "live";
+
+  const coords =
+    slug === "f1"
+      ? (getF1CircuitCoords(race.circuitId) ??
+          (race.circuitLat && race.circuitLng
+            ? ([race.circuitLat, race.circuitLng] as [number, number])
+            : null))
+      : race.circuitLat && race.circuitLng
+        ? ([race.circuitLat, race.circuitLng] as [number, number])
+        : null;
+  const layoutUrl = slug === "f1" ? getF1CircuitMapUrl(race.circuitId) : null;
+
   const allResults = race.results ?? [];
   const fastestLapHolder = allResults.find((r) => r.fastestLap);
 
   const detail = await getRaceDetail(slug, year, round, race);
 
-  const { pitStops, tireStints, raceControl, driverStandingsAfter, teamStandingsAfter, weather } = detail;
+  const { pitStops, tireStints, raceControl, driverStandingsAfter, teamStandingsAfter } = detail;
 
   const raceSession = race.sessions.find((s) => s.type === "race");
   const { date: raceDateStr, time: raceTimeStr } = raceSession
@@ -226,6 +222,14 @@ export default async function RaceDetailPage({ params }: Props) {
         </div>
       </div>
 
+      {/* ── Circuit Image ── */}
+      {layoutUrl && (
+        <div className="rounded-xl overflow-hidden aspect-[21/9] relative -mx-0">
+          <CircuitLayoutImage src={layoutUrl} alt={race.circuitName} />
+          <div className="absolute inset-0 bg-gradient-to-t from-background/50 via-transparent to-transparent pointer-events-none" />
+        </div>
+      )}
+
       {/* ── Program ── */}
       <section className="space-y-2">
         <SectionHeader title="Program" />
@@ -257,42 +261,16 @@ export default async function RaceDetailPage({ params }: Props) {
         </div>
       </section>
 
-      {/* ── Weather (upcoming) ── */}
-      {!isCompleted && weather.length > 0 && (
-        <section className="space-y-2">
-          <SectionHeader title="Hava Durumu Tahmini" />
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {weather.map((day) => (
-              <div
-                key={day.date}
-                className="rounded-lg border border-border p-3 space-y-1.5 bg-card"
-              >
-                <p className="text-xs text-muted-foreground">{formatWeatherDate(day.date)}</p>
-                <div className="flex items-center gap-1.5">
-                  <WeatherIcon code={day.weatherCode} className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-xs truncate">{WMO_DESCRIPTIONS[day.weatherCode] ?? "—"}</span>
-                </div>
-                <div className="flex items-center gap-3 text-xs">
-                  <span className="flex items-center gap-0.5">
-                    <Thermometer className="w-3 h-3 text-muted-foreground" />
-                    <span className="font-medium">{day.tempMax}°</span>
-                    <span className="text-muted-foreground">/{day.tempMin}°</span>
-                  </span>
-                  {day.precipitationProbability > 0 && (
-                    <span className="flex items-center gap-0.5 text-blue-400">
-                      <CloudRain className="w-3 h-3" />
-                      {day.precipitationProbability}%
-                    </span>
-                  )}
-                  <span className="flex items-center gap-0.5 text-muted-foreground">
-                    <Wind className="w-3 h-3" />
-                    {day.windSpeed}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+      {/* ── Weather ── */}
+      {coords && (
+        <RaceWeatherSection
+          raceDate={race.date}
+          sessions={race.sessions}
+          lat={coords[0]}
+          lng={coords[1]}
+          status={race.status}
+          accentColor={config.color}
+        />
       )}
 
       {/* ── Yarış Sonuçları (completed) ── */}
@@ -520,7 +498,7 @@ export default async function RaceDetailPage({ params }: Props) {
       </section>
 
       {/* ── Henüz tamamlanmadı ── */}
-      {!isCompleted && !isLive && weather.length === 0 && (
+      {!isCompleted && !isLive && !coords && (
         <div className="text-center py-4 text-muted-foreground">
           <p className="text-sm">Yarış verileri yarış tamamlandıktan sonra burada görünecek.</p>
         </div>
