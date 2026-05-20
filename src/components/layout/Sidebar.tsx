@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Grid2X2, Heart, Settings } from "lucide-react";
+import { CalendarDays, Grid2X2, Heart, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const NAV_ITEMS = [
-  { href: "/", label: "Anasayfa", icon: Home },
+  { href: "/", label: "Takvim", icon: CalendarDays },
   { href: "/series", label: "Seriler", icon: Grid2X2 },
   { href: "/favorites", label: "Favoriler", icon: Heart },
   { href: "/settings", label: "Ayarlar", icon: Settings },
