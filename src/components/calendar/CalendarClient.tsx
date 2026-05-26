@@ -261,6 +261,14 @@ function RaceRow({ race, past = false }: { race: CalendarRace; past?: boolean })
     month: "short",
   });
 
+  const timeStr = raceDate.toLocaleTimeString("tr-TR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Europe/Istanbul",
+  });
+
+  const hasTime = timeStr !== "00:00" && timeStr !== "03:00";
+
   return (
     <Link href={href}>
       <div
@@ -277,7 +285,9 @@ function RaceRow({ race, past = false }: { race: CalendarRace; past?: boolean })
           </p>
         </div>
         <div className="text-right shrink-0 space-y-0.5">
-          <p className="text-xs text-muted-foreground">{dateStr}</p>
+          <p className="text-xs text-muted-foreground">
+            {dateStr}{hasTime && <span className="ml-1.5 text-muted-foreground/70">{timeStr}</span>}
+          </p>
           {statusBadge(race.status)}
         </div>
       </div>
