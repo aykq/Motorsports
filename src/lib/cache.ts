@@ -6,9 +6,22 @@ import type { Race, Standing, Driver, StandingType, RaceDetail } from "@/types/s
 const TTL_MS = 30 * 60 * 1000;
 const RACE_DETAIL_COMPLETED_TTL_MS = 24 * 60 * 60 * 1000;
 const RACE_DETAIL_UPCOMING_TTL_MS = 2 * 60 * 60 * 1000;
+const LIVE_WINDOW_MS = 3 * 60 * 60 * 1000;
 
 export function isFresh(fetchedAt: Date): boolean {
   return Date.now() - fetchedAt.getTime() < TTL_MS;
+}
+
+function recomputeRaceStatus(race: Race): Race {
+  if (race.status === "cancelled") return race;
+  const raceSession = race.sessions.find((s) => s.type === "race");
+  const raceDate = new Date(raceSession?.date ?? race.date).getTime();
+  const now = Date.now();
+  let status: Race["status"];
+  if (raceDate > now) status = "upcoming";
+  else if (raceDate > now - LIVE_WINDOW_MS) status = "live";
+  else status = "completed";
+  return { ...race, status };
 }
 
 // ─── Schedule ─────────────────────────────────────────────────────────────────
@@ -23,7 +36,7 @@ export async function getCachedSchedule(
   });
   if (!rows.length) return { races: [], fresh: false };
   const fresh = isFresh(rows[rows.length - 1].fetchedAt);
-  return { races: rows.map((r) => r.data as Race), fresh };
+  return { races: rows.map((r) => recomputeRaceStatus(r.data as Race)), fresh };
 }
 
 export async function setCachedSchedule(
@@ -145,7 +158,7 @@ export async function getCachedRaceByRound(
       eq(cachedRaces.round, round)
     ),
   });
-  return row ? (row.data as Race) : null;
+  return row ? recomputeRaceStatus(row.data as Race) : null;
 }
 
 // ─── Race Detail ──────────────────────────────────────────────────────────────

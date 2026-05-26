@@ -216,7 +216,7 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
           <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
             {monthLabel(key)}
           </h2>
-          <div className="space-y-1.5">
+          <div className="rounded-xl border border-border overflow-hidden divide-y divide-border bg-card">
             {monthRaces.map((race) => (
               <RaceRow key={`${race.seriesSlug}-${race.round}`} race={race} />
             ))}
@@ -231,11 +231,13 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
             Geçmiş
           </h2>
           {pastGroups.map(([key, monthRaces]) => (
-            <div key={key} className="space-y-1.5">
+            <div key={key} className="space-y-2">
               <p className="text-xs text-muted-foreground/60 pl-1">{monthLabel(key)}</p>
-              {monthRaces.map((race) => (
-                <RaceRow key={`${race.seriesSlug}-${race.round}`} race={race} past />
-              ))}
+              <div className="rounded-xl border border-border overflow-hidden divide-y divide-border bg-card">
+                {monthRaces.map((race) => (
+                  <RaceRow key={`${race.seriesSlug}-${race.round}`} race={race} past={true} />
+                ))}
+              </div>
             </div>
           ))}
         </section>
@@ -263,8 +265,8 @@ function RaceRow({ race, past = false }: { race: CalendarRace; past?: boolean })
     <Link href={href}>
       <div
         className={cn(
-          "flex items-center gap-3 px-3 py-2.5 rounded-lg border border-border text-sm hover:bg-accent/50 transition-colors",
-          past ? "bg-transparent opacity-60" : "bg-card"
+          "flex items-center gap-3 px-3 py-3 text-sm hover:bg-accent/50 transition-colors",
+          past && "opacity-60"
         )}
       >
         <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: race.seriesColor }} />

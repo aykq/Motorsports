@@ -135,3 +135,11 @@ const F1_CIRCUIT_COORDS: Record<string, [number, number]> = {
 export function getF1CircuitCoords(circuitId: string): [number, number] | null {
   return F1_CIRCUIT_COORDS[circuitId] ?? null;
 }
+
+// Circuit photos — kullanıcı tarafından public/circuits/{circuitId}.{ext} konumuna yüklenecek
+// Dosyalar yüklendiğinde getF1CircuitPhotoUrl fonksiyonu güncellenir
+const F1_CIRCUIT_PHOTOS: Record<string, string> = {};
+
+export function getF1CircuitPhotoUrl(circuitId: string): string | null {
+  return F1_CIRCUIT_PHOTOS[circuitId] ?? null;
+}
