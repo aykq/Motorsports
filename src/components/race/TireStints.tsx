@@ -20,6 +20,10 @@ export function TireStints({ stints, results }: Props) {
 
   const totalLaps = Math.max(...stints.map((s) => s.lapEnd), 1);
 
+  const driverNumberToCode = new Map(
+    results.filter((r) => r.driverCode).map((r) => [r.driverNumber, r.driverCode!])
+  );
+
   const driverNumberToName = new Map(
     results.map((r) => [r.driverNumber, r.driverName])
   );
@@ -47,10 +51,9 @@ export function TireStints({ stints, results }: Props) {
       {topDrivers.map((driverNumber) => {
         const driverStints = grouped.get(driverNumber) ?? [];
         const position = driverNumberToPosition.get(driverNumber);
+        const code = driverNumberToCode.get(driverNumber);
         const name = driverNumberToName.get(driverNumber);
-        const displayName = name
-          ? name.split(" ").pop()
-          : `#${driverNumber}`;
+        const displayName = code ?? (name ? name.split(" ").pop() : `#${driverNumber}`);
 
         return (
           <div key={driverNumber} className="flex items-center gap-2 min-h-[28px]">

@@ -11,11 +11,13 @@ import {
   fetchOpenF1RaceControl,
 } from "@/lib/adapters/f1/openf1";
 import { fetchRaceWeather } from "@/lib/weather";
+import { translateRaceControlMessages } from "@/lib/gemini";
 
 const EMPTY_DETAIL: RaceDetail = {
   pitStops: [],
   tireStints: [],
   raceControl: [],
+  raceControlTr: [],
   driverStandingsAfter: [],
   teamStandingsAfter: [],
   weather: [],
@@ -39,6 +41,63 @@ export async function getRaceDetail(
   await setCachedRaceDetail(slug, season, round, detail);
 
   return detail;
+}
+
+export async function syncRaceDetails(
+  slug: string,
+  season: number,
+  races: Race[]
+): Promise<{ synced: number; errors: string[] }> {
+  if (slug !== "f1") return { synced: 0, errors: [] };
+
+  const errors: string[] = [];
+  let synced = 0;
+
+  const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+
+  const racesToSync = races.filter((r) => {
+    if (r.status === "live") return true;
+    if (r.status === "completed") {
+      return new Date(r.date).getTime() > sevenDaysAgo;
+    }
+    return false;
+  });
+
+  for (const race of racesToSync) {
+    try {
+      const isCompleted = race.status === "completed";
+      const existing = await getCachedRaceDetail(slug, season, race.round, isCompleted);
+      const fresh = await fetchF1RaceDetail(season, race.round, race, isCompleted);
+
+      const existingCount = existing?.raceControl.length ?? 0;
+      const freshCount = fresh.raceControl.length;
+
+      const existingTr = existing?.raceControlTr ?? [];
+      const trIsEmpty = existingTr.length === 0 && freshCount > 0;
+      const trIsBad =
+        existingTr.length > 0 &&
+        fresh.raceControl.length > 0 &&
+        existingTr[0] === fresh.raceControl[0]?.message;
+      const hasNewEvents = freshCount > existingCount;
+
+      let raceControlTr = existingTr;
+
+      if (hasNewEvents || trIsEmpty || trIsBad) {
+        await new Promise((r) => setTimeout(r, 2000));
+        const translated = await translateRaceControlMessages(
+          fresh.raceControl.map((e) => e.message)
+        );
+        if (translated.length) raceControlTr = translated;
+      }
+
+      await setCachedRaceDetail(slug, season, race.round, { ...fresh, raceControlTr });
+      synced++;
+    } catch (err) {
+      errors.push(`round ${race.round}: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  return { synced, errors };
 }
 
 async function fetchF1RaceDetail(
@@ -78,10 +137,13 @@ async function fetchF1RaceDetail(
     driverName: driverNameMap.get(p.driverId) ?? p.driverId,
   }));
 
+  const raceControl = raceControlResult.status === "fulfilled" ? raceControlResult.value : [];
+
   return {
     pitStops: enrichedPitStops,
     tireStints: stintsResult.status === "fulfilled" ? stintsResult.value : [],
-    raceControl: raceControlResult.status === "fulfilled" ? raceControlResult.value : [],
+    raceControl,
+    raceControlTr: [],
     driverStandingsAfter,
     teamStandingsAfter:
       teamStandingsResult.status === "fulfilled" ? teamStandingsResult.value : [],

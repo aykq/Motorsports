@@ -4,12 +4,14 @@ import {
   setCachedStandings,
   setCachedDrivers,
 } from "@/lib/cache";
+import { syncRaceDetails } from "@/lib/race-detail";
 
 export interface SyncResult {
   slug: string;
   season: number;
   racesCount: number;
   driversCount: number;
+  raceDetailsSynced: number;
   errors: string[];
 }
 
@@ -20,6 +22,7 @@ export async function syncSeries(slug: string, season: number): Promise<SyncResu
   const errors: string[] = [];
   let racesCount = 0;
   let driversCount = 0;
+  let raceDetailsSynced = 0;
 
   const [scheduleResult, driverResult, teamResult, driversResult] =
     await Promise.allSettled([
@@ -32,6 +35,10 @@ export async function syncSeries(slug: string, season: number): Promise<SyncResu
   if (scheduleResult.status === "fulfilled") {
     await setCachedSchedule(slug, season, scheduleResult.value);
     racesCount = scheduleResult.value.length;
+
+    const detailSync = await syncRaceDetails(slug, season, scheduleResult.value);
+    raceDetailsSynced = detailSync.synced;
+    errors.push(...detailSync.errors);
   } else {
     errors.push(`schedule: ${scheduleResult.reason}`);
   }
@@ -55,5 +62,5 @@ export async function syncSeries(slug: string, season: number): Promise<SyncResu
     errors.push(`drivers: ${driversResult.reason}`);
   }
 
-  return { slug, season, racesCount, driversCount, errors };
+  return { slug, season, racesCount, driversCount, raceDetailsSynced, errors };
 }

@@ -18,6 +18,7 @@ export interface RaceResult {
   position: number;
   driverId: string;
   driverName: string;
+  driverCode?: string;
   driverNumber?: number;
   team: string;
   time?: string;
@@ -133,6 +134,7 @@ export interface RaceDetail {
   pitStops: PitStop[];
   tireStints: TireStint[];
   raceControl: RaceControlEvent[];
+  raceControlTr: string[];
   driverStandingsAfter: Standing[];
   teamStandingsAfter: Standing[];
   weather: WeatherDay[];

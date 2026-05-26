@@ -11,16 +11,14 @@ import {
   Zap,
   Trophy,
   Timer,
-  AlertTriangle,
   Sparkles,
   ChevronUp,
   ChevronDown,
   Minus,
-  Flag,
-  CircleDot,
 } from "lucide-react";
 import { BackButton } from "@/components/layout/BackButton";
 import { TireStints } from "@/components/race/TireStints";
+import { RaceControlSection } from "@/components/race/RaceControlSection";
 import { RaceWeatherSection } from "@/components/race/RaceWeatherSection";
 import { CircuitLayoutImage } from "@/components/race/CircuitLayoutImage";
 import { CircuitHeroPhoto } from "@/components/race/CircuitHeroPhoto";
@@ -53,15 +51,6 @@ const STATUS_LABELS: Record<string, string> = {
   cancelled: "İptal",
 };
 
-const FLAG_LABELS: Record<string, { label: string; color: string }> = {
-  RED: { label: "Kırmızı Bayrak", color: "text-red-500" },
-  YELLOW: { label: "Sarı Bayrak", color: "text-yellow-500" },
-  DOUBLE_YELLOW: { label: "Çift Sarı", color: "text-yellow-400" },
-  GREEN: { label: "Yeşil Bayrak", color: "text-green-500" },
-  CHEQUERED: { label: "Damalı Bayrak", color: "text-foreground" },
-  BLACK: { label: "Siyah Bayrak", color: "text-foreground" },
-  BLACK_AND_WHITE: { label: "Siyah-Beyaz", color: "text-foreground" },
-};
 
 function formatDateTime(dateStr: string) {
   const date = new Date(dateStr);
@@ -173,7 +162,7 @@ export default async function RaceDetailPage({ params }: Props) {
 
   const detail = await getRaceDetail(slug, year, round, race);
 
-  const { pitStops, tireStints, raceControl, driverStandingsAfter, teamStandingsAfter } = detail;
+  const { tireStints, raceControl, raceControlTr, driverStandingsAfter, teamStandingsAfter } = detail;
 
   const raceSession = race.sessions.find((s) => s.type === "race");
   const { date: raceDateStr, time: raceTimeStr } = raceSession
@@ -357,34 +346,6 @@ export default async function RaceDetailPage({ params }: Props) {
         </section>
       )}
 
-      {/* ── Pit Stopları ── */}
-      {isCompleted && pitStops.length > 0 && (
-        <section className="space-y-2">
-          <SectionHeader title="Pit Stopları" />
-          <div className="rounded-lg border border-border overflow-hidden">
-            <div className="grid grid-cols-[2rem_1fr_2.5rem_5rem] text-xs font-medium text-muted-foreground px-3 py-2 border-b border-border bg-muted/30">
-              <span className="text-right">Tur</span>
-              <span className="ml-2">Pilot</span>
-              <span className="text-right">Stop</span>
-              <span className="text-right">Süre</span>
-            </div>
-            {[...pitStops]
-              .sort((a, b) => a.lap - b.lap)
-              .map((stop, i) => (
-                <div
-                  key={i}
-                  className="grid grid-cols-[2rem_1fr_2.5rem_5rem] text-xs px-3 py-2 border-b border-border last:border-0 hover:bg-accent/30 transition-colors"
-                >
-                  <span className="text-right text-muted-foreground self-center">{stop.lap}</span>
-                  <span className="ml-2 font-medium self-center truncate">{stop.driverName}</span>
-                  <span className="text-right text-muted-foreground self-center">{stop.stop}</span>
-                  <span className="text-right font-mono self-center">{stop.duration}s</span>
-                </div>
-              ))}
-          </div>
-        </section>
-      )}
-
       {/* ── Lastik Stintleri ── */}
       {isCompleted && tireStints.length > 0 && (
         <section className="space-y-2">
@@ -397,46 +358,7 @@ export default async function RaceDetailPage({ params }: Props) {
 
       {/* ── Yarış Olayları ── */}
       {isCompleted && raceControl.length > 0 && (
-        <section className="space-y-2">
-          <SectionHeader title="Yarış Olayları" />
-          <div className="rounded-lg border border-border overflow-hidden">
-            {raceControl.map((event, i) => {
-              const flagStyle = event.flag ? FLAG_LABELS[event.flag] : null;
-              const isSafetyCar = event.category === "SafetyCar" ||
-                event.message.toUpperCase().includes("SAFETY CAR");
-              const isPenalty = event.message.toUpperCase().includes("PENALTY") ||
-                event.message.toUpperCase().includes("INVESTIGATION");
-              return (
-                <div
-                  key={i}
-                  className="flex items-start gap-3 px-3 py-2.5 border-b border-border last:border-0 text-xs hover:bg-accent/30 transition-colors"
-                >
-                  <div className="w-8 text-right text-muted-foreground shrink-0 pt-0.5">
-                    {event.lap != null ? `L${event.lap}` : "—"}
-                  </div>
-                  <div className="shrink-0 pt-0.5">
-                    {isSafetyCar ? (
-                      <CircleDot className="w-3.5 h-3.5 text-yellow-500" />
-                    ) : isPenalty ? (
-                      <AlertTriangle className="w-3.5 h-3.5 text-orange-500" />
-                    ) : (
-                      <Flag className={cn("w-3.5 h-3.5", flagStyle?.color ?? "text-muted-foreground")} />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium leading-snug">{event.message}</p>
-                    {event.driverNumber && (
-                      <p className="text-muted-foreground">
-                        #{event.driverNumber}
-                        {event.driverAcronym && ` — ${event.driverAcronym}`}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
+        <RaceControlSection events={raceControl} eventsTr={raceControlTr} />
       )}
 
       {/* ── Şampiyona Durumu (completed) ── */}
