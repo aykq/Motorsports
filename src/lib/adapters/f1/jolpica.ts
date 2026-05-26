@@ -223,6 +223,7 @@ export async function jolpicaFetchResults(
           position: parseInt(r.position),
           driverId: r.Driver.driverId,
           driverName: `${r.Driver.givenName} ${r.Driver.familyName}`,
+          driverCode: r.Driver.code,
           driverNumber: r.Driver.permanentNumber ? parseInt(r.Driver.permanentNumber) : undefined,
           team: r.Constructor.name,
           time: i === 0 ? r.Time?.time : undefined,
