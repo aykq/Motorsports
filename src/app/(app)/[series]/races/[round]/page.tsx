@@ -23,9 +23,10 @@ import { BackButton } from "@/components/layout/BackButton";
 import { TireStints } from "@/components/race/TireStints";
 import { RaceWeatherSection } from "@/components/race/RaceWeatherSection";
 import { CircuitLayoutImage } from "@/components/race/CircuitLayoutImage";
+import { CircuitHeroPhoto } from "@/components/race/CircuitHeroPhoto";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { getF1CircuitMapUrl, getF1CircuitCoords } from "@/lib/circuit-data";
+import { getF1CircuitMapUrl, getF1CircuitCoords, getF1CircuitPhotoUrl } from "@/lib/circuit-data";
 import type { Metadata } from "next";
 import type { RaceResult, Standing } from "@/types/series";
 
@@ -165,6 +166,7 @@ export default async function RaceDetailPage({ params }: Props) {
         ? ([race.circuitLat, race.circuitLng] as [number, number])
         : null;
   const layoutUrl = slug === "f1" ? getF1CircuitMapUrl(race.circuitId) : null;
+  const photoUrl = slug === "f1" ? getF1CircuitPhotoUrl(race.circuitId) : null;
 
   const allResults = race.results ?? [];
   const fastestLapHolder = allResults.find((r) => r.fastestLap);
@@ -222,11 +224,13 @@ export default async function RaceDetailPage({ params }: Props) {
         </div>
       </div>
 
-      {/* ── Circuit Image ── */}
-      {layoutUrl && (
-        <div className="rounded-xl overflow-hidden aspect-[21/9] relative -mx-0">
-          <CircuitLayoutImage src={layoutUrl} alt={race.circuitName} />
-          <div className="absolute inset-0 bg-gradient-to-t from-background/50 via-transparent to-transparent pointer-events-none" />
+      {/* ── Circuit Hero ── */}
+      {slug === "f1" && (
+        <div className="rounded-xl overflow-hidden aspect-[21/9] relative bg-card">
+          {photoUrl && <CircuitHeroPhoto src={photoUrl} alt={race.circuitName} />}
+          {photoUrl && (
+            <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent pointer-events-none" />
+          )}
         </div>
       )}
 
