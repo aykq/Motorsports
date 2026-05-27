@@ -86,6 +86,7 @@ const RaceWithResultsSchema = z.object({
 
 const AllResultsResponseSchema = z.object({
   MRData: z.object({
+    total: z.string(),
     RaceTable: z.object({
       Races: z.array(RaceWithResultsSchema),
     }),
@@ -209,38 +210,50 @@ export async function jolpicaFetchSchedule(season: number): Promise<Race[]> {
 export async function jolpicaFetchResults(
   season: number
 ): Promise<Map<number, import("@/types/series").RaceResult[]>> {
+  const map = new Map<number, import("@/types/series").RaceResult[]>();
+  const PAGE = 100;
+  let offset = 0;
+
   try {
-    const data = await jolpicaFetch(
-      `/${season}/results.json?limit=500`,
-      AllResultsResponseSchema
-    );
-    const map = new Map<number, import("@/types/series").RaceResult[]>();
-    for (const race of data.MRData.RaceTable.Races) {
-      const round = parseInt(race.round);
-      map.set(
-        round,
-        race.Results.map((r, i) => ({
-          position: parseInt(r.position),
-          driverId: r.Driver.driverId,
-          driverName: `${r.Driver.givenName} ${r.Driver.familyName}`,
-          driverCode: r.Driver.code,
-          driverNumber: r.Driver.permanentNumber ? parseInt(r.Driver.permanentNumber) : undefined,
-          team: r.Constructor.name,
-          time: i === 0 ? r.Time?.time : undefined,
-          gap: i > 0 ? r.Time?.time : undefined,
-          points: parseFloat(r.points),
-          status: r.status,
-          fastestLap: r.FastestLap?.rank === "1",
-          fastestLapTime: r.FastestLap?.rank === "1" ? r.FastestLap?.Time?.time : undefined,
-          gridPosition: r.grid ? parseInt(r.grid) : undefined,
-          laps: r.laps ? parseInt(r.laps) : undefined,
-        }))
+    while (true) {
+      const data = await jolpicaFetch(
+        `/${season}/results.json?limit=${PAGE}&offset=${offset}`,
+        AllResultsResponseSchema
       );
+
+      for (const race of data.MRData.RaceTable.Races) {
+        const round = parseInt(race.round);
+        const existing = map.get(round) ?? [];
+        map.set(round, [
+          ...existing,
+          ...race.Results.map((r) => ({
+            position: parseInt(r.position),
+            driverId: r.Driver.driverId,
+            driverName: `${r.Driver.givenName} ${r.Driver.familyName}`,
+            driverCode: r.Driver.code,
+            driverNumber: r.Driver.permanentNumber ? parseInt(r.Driver.permanentNumber) : undefined,
+            team: r.Constructor.name,
+            time: r.position === "1" ? r.Time?.time : undefined,
+            gap: r.position !== "1" ? r.Time?.time : undefined,
+            points: parseFloat(r.points),
+            status: r.status,
+            fastestLap: r.FastestLap?.rank === "1",
+            fastestLapTime: r.FastestLap?.rank === "1" ? r.FastestLap?.Time?.time : undefined,
+            gridPosition: r.grid ? parseInt(r.grid) : undefined,
+            laps: r.laps ? parseInt(r.laps) : undefined,
+          })),
+        ]);
+      }
+
+      const total = parseInt(data.MRData.total);
+      offset += PAGE;
+      if (offset >= total) break;
     }
-    return map;
   } catch {
-    return new Map();
+    // map'te ne kadar veri toplanmışsa onu döndür
   }
+
+  return map;
 }
 
 export async function jolpicaFetchPitStops(season: number, round: number): Promise<PitStop[]> {

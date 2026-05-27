@@ -32,6 +32,14 @@ yarn-error.log*
 
 # env files
 .env*
+!.env.example
+
+# debug endpoints (local dev only, unauthenticated)
+src/app/api/debug/
+
+# dev-only UI and endpoints (local only, never push)
+src/components/dev/
+src/app/api/dev/
 
 .claude/
 CLAUDE.md

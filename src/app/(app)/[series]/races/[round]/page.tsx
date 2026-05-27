@@ -84,6 +84,49 @@ function SectionHeader({ title }: { title: string }) {
   );
 }
 
+function CompactResultRow({ result, slug }: { result: RaceResult; slug: string }) {
+  const { status } = result;
+  const isLapped = status.startsWith("+") && status.toLowerCase().includes("lap");
+  const isDNS = status === "Did Not Start" || status === "Withdrew";
+  const isDNF = status !== "Finished" && !isLapped && !isDNS;
+
+  const displayName = result.driverCode ?? result.driverName.split(" ").pop()!;
+  const displayTime = result.gap ?? (isDNS ? "DNS" : status);
+  const showingStatusText = result.gap == null;
+
+  return (
+    <div
+      className="grid grid-cols-[1.5rem_1fr_4rem] items-center gap-1 text-xs px-2 py-1.5 hover:bg-accent/30 transition-colors"
+    >
+      <span className="text-right font-bold shrink-0 text-foreground">
+        {result.position}
+      </span>
+      <div className="px-1 min-w-0">
+        <Link
+          href={`/${slug}/drivers/${result.driverId}`}
+          className={cn(
+            "font-medium truncate block hover:underline cursor-pointer leading-snug",
+            (isDNF || isDNS) && "opacity-60",
+          )}
+        >
+          {displayName}
+        </Link>
+        <span className="text-[10px] text-muted-foreground truncate block leading-snug">
+          {result.team}
+        </span>
+      </div>
+      <span
+        className={cn(
+          "text-right text-[10px] shrink-0",
+          showingStatusText && (isDNF || isDNS) ? "text-red-400" : "text-foreground",
+        )}
+      >
+        {displayTime}
+      </span>
+    </div>
+  );
+}
+
 function StandingRow({ standing, rank }: { standing: Standing; rank: number }) {
   const name = standing.driver
     ? `${standing.driver.firstName} ${standing.driver.lastName}`
@@ -267,84 +310,112 @@ export default async function RaceDetailPage({ params }: Props) {
       )}
 
       {/* ── Yarış Sonuçları (completed) ── */}
-      {isCompleted && allResults.length > 0 && (
-        <section className="space-y-2">
-          <div className="flex items-center justify-between">
-            <SectionHeader title="Yarış Sonuçları" />
-            {fastestLapHolder && (
-              <div className="flex items-center gap-1 text-xs text-purple-400">
-                <Zap className="w-3 h-3" />
-                <span>
-                  {fastestLapHolder.driverName.split(" ").pop()}
-                  {fastestLapHolder.fastestLapTime && (
-                    <span className="text-muted-foreground ml-1">({fastestLapHolder.fastestLapTime})</span>
-                  )}
-                </span>
-              </div>
-            )}
-          </div>
-
-          <div className="rounded-lg border border-border overflow-hidden">
-            <div className="grid grid-cols-[1.5rem_1rem_1fr_2.5rem_5rem] text-xs font-medium text-muted-foreground px-3 py-2 border-b border-border bg-muted/30 gap-1">
-              <span className="text-right">P</span>
-              <span />
-              <span className="ml-1">Pilot / Takım</span>
-              <span className="text-right">Puan</span>
-              <span className="text-right">Süre / Durum</span>
-            </div>
-            {allResults.map((result: RaceResult) => {
-              const isFinished = result.status === "Finished" || result.status.startsWith("+");
-              const displayTime = result.position === 1
-                ? (result.time ?? "—")
-                : (result.gap ?? (isFinished ? "—" : result.status));
-              return (
-                <div
-                  key={result.position}
-                  className="grid grid-cols-[1.5rem_1rem_1fr_2.5rem_5rem] text-xs px-3 py-2.5 border-b border-border last:border-0 hover:bg-accent/30 transition-colors gap-1"
-                >
-                  <span
-                    className={cn(
-                      "text-right font-bold self-center shrink-0",
-                      result.position === 1 && "text-yellow-500",
-                      result.position === 2 && "text-zinc-400",
-                      result.position === 3 && "text-amber-600",
-                      result.position > 3 && "text-muted-foreground"
+      {isCompleted && allResults.length > 0 && (() => {
+        const topResults = allResults.filter((r) => r.position <= 10);
+        const nonPoints = allResults.filter((r) => r.position > 10);
+        const npHalf = Math.ceil(nonPoints.length / 2);
+        return (
+          <section className="space-y-2">
+            <div className="flex items-center justify-between">
+              <SectionHeader title="Yarış Sonuçları" />
+              {fastestLapHolder && (
+                <div className="flex items-center gap-1 text-xs text-purple-400">
+                  <Zap className="w-3 h-3" />
+                  <span>
+                    {fastestLapHolder.driverName.split(" ").pop()}
+                    {fastestLapHolder.fastestLapTime && (
+                      <span className="text-muted-foreground ml-1">({fastestLapHolder.fastestLapTime})</span>
                     )}
-                  >
-                    {result.position}
-                  </span>
-                  <div className="self-center">
-                    <GridChange grid={result.gridPosition} position={result.position} />
-                  </div>
-                  <div className="ml-1 min-w-0">
-                    <div className="flex items-center gap-1">
-                      <Link
-                        href={`/${slug}/drivers/${result.driverId}`}
-                        className="font-medium truncate hover:underline cursor-pointer"
-                      >
-                        {result.driverName}
-                      </Link>
-                      {result.fastestLap && <Zap className="w-3 h-3 text-purple-400 shrink-0" />}
-                    </div>
-                    <span className="text-muted-foreground truncate block">{result.team}</span>
-                  </div>
-                  <span className="text-right self-center font-medium shrink-0">
-                    {result.points > 0 ? result.points : "—"}
-                  </span>
-                  <span
-                    className={cn(
-                      "text-right self-center shrink-0",
-                      !isFinished && result.position !== 1 ? "text-muted-foreground" : ""
-                    )}
-                  >
-                    {displayTime}
                   </span>
                 </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
+              )}
+            </div>
+
+            <div className="rounded-lg border border-border overflow-hidden">
+              {/* Header — puan pozisyonları için */}
+              <div className="grid grid-cols-[1.5rem_1rem_1fr_2.5rem_5rem] text-xs font-medium text-muted-foreground px-3 py-2 border-b border-border bg-muted/30 gap-1">
+                <span className="text-right">P</span>
+                <span />
+                <span className="ml-1">Pilot / Takım</span>
+                <span className="text-right">Puan</span>
+                <span className="text-right">Süre / Durum</span>
+              </div>
+
+              {/* P1–P10: detaylı satırlar */}
+              <div className="divide-y divide-border">
+                {topResults.map((result: RaceResult) => {
+                  const isFinished = result.status === "Finished" || result.status.startsWith("+");
+                  const displayTime = result.position === 1
+                    ? (result.time ?? "—")
+                    : (result.gap ?? (isFinished ? "—" : result.status));
+                  return (
+                    <div
+                      key={result.position}
+                      className="grid grid-cols-[1.5rem_1rem_1fr_2.5rem_5rem] text-xs px-3 py-2.5 hover:bg-accent/30 transition-colors gap-1"
+                    >
+                      <span
+                        className={cn(
+                          "text-right font-bold self-center shrink-0",
+                          result.position === 1 && "text-yellow-500",
+                          result.position === 2 && "text-zinc-400",
+                          result.position === 3 && "text-amber-600",
+                          result.position > 3 && "text-muted-foreground"
+                        )}
+                      >
+                        {result.position}
+                      </span>
+                      <div className="self-center">
+                        <GridChange grid={result.gridPosition} position={result.position} />
+                      </div>
+                      <div className="ml-1 min-w-0">
+                        <div className="flex items-center gap-1">
+                          <Link
+                            href={`/${slug}/drivers/${result.driverId}`}
+                            className="font-medium truncate hover:underline cursor-pointer"
+                          >
+                            {result.driverName}
+                          </Link>
+                          {result.fastestLap && <Zap className="w-3 h-3 text-purple-400 shrink-0" />}
+                        </div>
+                        <span className="text-muted-foreground truncate block">{result.team}</span>
+                      </div>
+                      <span className="text-right self-center font-medium shrink-0">
+                        {result.points > 0 ? result.points : "—"}
+                      </span>
+                      <span
+                        className={cn(
+                          "text-right self-center shrink-0",
+                          result.gap == null && !isFinished && result.position !== 1 ? "text-red-400" : "text-foreground"
+                        )}
+                      >
+                        {displayTime}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* P11+: kompakt 2-sütun */}
+              {nonPoints.length > 0 && (
+                <div className="border-t border-dashed border-border">
+                  <div className="grid grid-cols-2 divide-x divide-border">
+                    <div className="divide-y divide-border">
+                      {nonPoints.slice(0, npHalf).map((r) => (
+                        <CompactResultRow key={r.position} result={r} slug={slug} />
+                      ))}
+                    </div>
+                    <div className="divide-y divide-border">
+                      {nonPoints.slice(npHalf).map((r) => (
+                        <CompactResultRow key={r.position} result={r} slug={slug} />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+        );
+      })()}
 
       {/* ── Lastik Stintleri ── */}
       {isCompleted && tireStints.length > 0 && (
