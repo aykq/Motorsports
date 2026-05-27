@@ -55,30 +55,57 @@ export async function syncRaceDetails(
 
   const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
 
-  const racesToSync = races.filter((r) => {
-    if (r.status === "live") return true;
-    if (r.status === "completed") {
-      return new Date(r.date).getTime() > sevenDaysAgo;
-    }
-    return false;
-  });
+  const completedRaces = races.filter((r) => r.status === "completed" || r.status === "live");
 
-  for (const race of racesToSync) {
+  // Pass 1 — eski yarışlar: sadece cache'den çeviri backfill (fresh API fetch yok)
+  for (const race of completedRaces) {
+    const isRecent = new Date(race.date).getTime() > sevenDaysAgo;
+    if (isRecent || race.status === "live") continue;
+
+    try {
+      const cached = await getCachedRaceDetail(slug, season, race.round, true);
+      if (!cached) continue;
+
+      const needsTr =
+        cached.raceControl.length > 0 &&
+        (!cached.raceControlTr?.length ||
+          cached.raceControlTr[0] === cached.raceControl[0]?.message);
+      if (!needsTr) continue;
+
+      await new Promise((r) => setTimeout(r, 2000));
+      const translated = await translateRaceControlMessages(
+        cached.raceControl.map((e) => e.message)
+      );
+      if (translated.length) {
+        await setCachedRaceDetail(slug, season, race.round, {
+          ...cached,
+          raceControlTr: translated,
+        });
+        synced++;
+      }
+    } catch (err) {
+      errors.push(`round ${race.round} (backfill): ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  // Pass 2 — son 7 gün + live: tam veri yenileme
+  const recentRaces = completedRaces.filter(
+    (r) => r.status === "live" || new Date(r.date).getTime() > sevenDaysAgo
+  );
+
+  for (const race of recentRaces) {
     try {
       const isCompleted = race.status === "completed";
       const existing = await getCachedRaceDetail(slug, season, race.round, isCompleted);
       const fresh = await fetchF1RaceDetail(season, race.round, race, isCompleted);
 
-      const existingCount = existing?.raceControl.length ?? 0;
-      const freshCount = fresh.raceControl.length;
-
       const existingTr = existing?.raceControlTr ?? [];
-      const trIsEmpty = existingTr.length === 0 && freshCount > 0;
+      const trIsEmpty = existingTr.length === 0 && fresh.raceControl.length > 0;
       const trIsBad =
         existingTr.length > 0 &&
         fresh.raceControl.length > 0 &&
         existingTr[0] === fresh.raceControl[0]?.message;
-      const hasNewEvents = freshCount > existingCount;
+      const hasNewEvents = fresh.raceControl.length > (existing?.raceControl.length ?? 0);
 
       let raceControlTr = existingTr;
 

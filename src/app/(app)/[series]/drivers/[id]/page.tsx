@@ -164,23 +164,27 @@ export default async function DriverDetailPage({ params }: Props) {
               {year} Yarış Sonuçları
             </h2>
             <div className="space-y-1.5">
-              {raceResults.map(({ race, result }) => (
-                <div
-                  key={race.round}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-card border border-border text-sm"
-                >
-                  {positionBadge(result.position, result.status)}
-                  <span className="flex-1 truncate">{race.name}</span>
-                  <span className="text-muted-foreground text-xs shrink-0">
-                    {result.time ?? result.gap ?? result.status}
-                  </span>
-                  {result.points > 0 && (
-                    <span className="text-xs font-bold shrink-0" style={{ color: teamColor }}>
-                      +{result.points}p
+              {raceResults.map(({ race, result }) => {
+                const isDNF =
+                  result.status !== "Finished" && !/^\+/.test(result.status) && result.status !== "";
+                return (
+                  <div
+                    key={race.round}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-card border border-border text-sm"
+                  >
+                    {positionBadge(result.position, result.status)}
+                    <span className="flex-1 truncate">{race.name}</span>
+                    <span className={`text-xs shrink-0 ${isDNF ? "text-red-400" : "text-foreground"}`}>
+                      {result.time ?? result.gap ?? result.status}
                     </span>
-                  )}
-                </div>
-              ))}
+                    {result.points > 0 && (
+                      <span className="text-xs font-bold shrink-0" style={{ color: teamColor }}>
+                        +{result.points}p
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </section>
         )}

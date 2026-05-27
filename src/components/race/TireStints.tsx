@@ -44,11 +44,9 @@ export function TireStints({ stints, results }: Props) {
     return posA - posB;
   });
 
-  const topDrivers = sortedDrivers.slice(0, 20);
-
   return (
     <div className="space-y-1">
-      {topDrivers.map((driverNumber) => {
+      {sortedDrivers.map((driverNumber) => {
         const driverStints = grouped.get(driverNumber) ?? [];
         const position = driverNumberToPosition.get(driverNumber);
         const code = driverNumberToCode.get(driverNumber);

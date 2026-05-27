@@ -13,6 +13,7 @@ interface DayForecast {
   tempMin: number;
   code: number;
   precipProbability: number;
+  precipUnit?: "mm" | "%";
   windSpeed: number;
 }
 
@@ -62,13 +63,29 @@ function wmoDesc(code: number): string {
 async function resolveMeetingKey(raceDate: string): Promise<number | null> {
   const year = new Date(raceDate).getFullYear();
   const raceTs = new Date(raceDate).getTime();
-  const res = await fetch(`https://api.openf1.org/v1/sessions?year=${year}`, { headers: OF1_HEADERS });
-  if (!res.ok) return null;
-  const sessions: Array<{ meeting_key: number; date_start: string }> = await res.json();
-  const nearby = sessions.filter(
-    (s) => Math.abs(new Date(s.date_start).getTime() - raceTs) < FOUR_DAYS_MS
-  );
-  return nearby[0]?.meeting_key ?? null;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10_000);
+  try {
+    const res = await fetch(
+      `https://api.openf1.org/v1/sessions?session_type=Race&year=${year}`,
+      { headers: OF1_HEADERS, signal: controller.signal }
+    );
+    if (!res.ok) return null;
+    const sessions: Array<{ meeting_key: number; date_start: string }> = await res.json();
+    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+    const nearby = sessions
+      .filter((s) => Math.abs(new Date(s.date_start).getTime() - raceTs) < SEVEN_DAYS_MS)
+      .sort(
+        (a, b) =>
+          Math.abs(new Date(a.date_start).getTime() - raceTs) -
+          Math.abs(new Date(b.date_start).getTime() - raceTs)
+      );
+    return nearby[0]?.meeting_key ?? null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 async function fetchOpenF1Weather(meetingKey: number): Promise<Omit<LiveWeather, "source"> | null> {
@@ -173,7 +190,7 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
         (async () => {
           if (!isLiveOrCompleted) return;
           const ok = await fetchLiveWeather();
-          if (!ok && !cancelled) await fetchMeteoLive();
+          if (!ok && !cancelled && status === "live") await fetchMeteoLive();
         })(),
       ]);
 
@@ -309,7 +326,7 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
                   <div className="flex items-center justify-center gap-2 text-muted-foreground/60">
                     <span className="flex items-center gap-0.5">
                       <Droplets className="w-3 h-3 text-sky-500/70" />
-                      <span className="font-mono text-[9px]">{day.precipProbability}%</span>
+                      <span className="font-mono text-[9px]">{day.precipProbability}{day.precipUnit ?? "%"}</span>
                     </span>
                     <span className="flex items-center gap-0.5">
                       <Wind className="w-3 h-3" />
