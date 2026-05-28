@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   Sun, Cloudy, CloudDrizzle, CloudRain, CloudSnow, CloudLightning,
   Droplets, Wind,
@@ -37,16 +37,27 @@ const SESSION_LABELS: Record<string, string> = {
 };
 
 const LIVE_POLL_MS = 30_000;
-const FOUR_DAYS_MS = 4 * 24 * 60 * 60 * 1000;
 const OF1_HEADERS = { "User-Agent": "MotorsportsHub/1.0" };
 
-function WmoIcon({ code, className }: { code: number; className: string }) {
-  if (code <= 1) return <Sun className={className} />;
-  if (code <= 48) return <Cloudy className={className} />;
-  if (code <= 55) return <CloudDrizzle className={className} />;
-  if (code <= 82) return <CloudRain className={className} />;
-  if (code <= 86) return <CloudSnow className={className} />;
-  return <CloudLightning className={className} />;
+function wmoColor(code: number): string {
+  if (code <= 1)  return "text-yellow-400";
+  if (code <= 3)  return "text-zinc-300";
+  if (code <= 48) return "text-zinc-400";
+  if (code <= 55) return "text-sky-400";
+  if (code <= 67) return "text-blue-400";
+  if (code <= 77) return "text-slate-200";
+  if (code <= 82) return "text-blue-500";
+  return "text-amber-400";
+}
+
+function WmoIcon({ code, sizeClass }: { code: number; sizeClass: string }) {
+  const cls = `${sizeClass} ${wmoColor(code)}`;
+  if (code <= 1) return <Sun className={cls} />;
+  if (code <= 48) return <Cloudy className={cls} />;
+  if (code <= 55) return <CloudDrizzle className={cls} />;
+  if (code <= 82) return <CloudRain className={cls} />;
+  if (code <= 86) return <CloudSnow className={cls} />;
+  return <CloudLightning className={cls} />;
 }
 
 function wmoDesc(code: number): string {
@@ -128,9 +139,9 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
   const [loading, setLoading] = useState(true);
   const meetingKeyRef = useRef<number | null>(null);
 
-  const sessionDates = [
+  const sessionDates = useMemo(() => [
     ...new Set(sessions.map((s) => new Date(s.date).toISOString().split("T")[0])),
-  ].sort();
+  ].sort(), [sessions]);
 
   const fetchForecast = useCallback(async () => {
     if (!sessionDates.length) return;
@@ -142,8 +153,7 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
       const data = await res.json();
       if (data?.days) setForecast(data.days as DayForecast[]);
     } catch { /* silent */ }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lat, lng, sessionDates.join(",")]);
+  }, [lat, lng, sessionDates]);
 
   const fetchLiveWeather = useCallback(async (): Promise<boolean> => {
     try {
@@ -183,6 +193,7 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
     let cancelled = false;
 
     async function init() {
+      setLoading(true);
       const isLiveOrCompleted = status === "live" || status === "completed";
 
       await Promise.allSettled([
@@ -205,7 +216,6 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
       }
     }
 
-    setLoading(true);
     init();
     return () => {
       cancelled = true;
@@ -215,9 +225,9 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
 
   if (loading && !forecast && !live) {
     return (
-      <section className="space-y-3">
-        <SectionHeader accentColor={accentColor} />
-        <div className="rounded-xl border border-border bg-card p-6 animate-pulse">
+      <section className="space-y-2">
+        <SectionHeader />
+        <div className="rounded-lg border border-border bg-card p-6 animate-pulse">
           <div className="h-16 bg-white/5 rounded-lg" />
         </div>
       </section>
@@ -227,13 +237,13 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
   if (!forecast && !live) return null;
 
   return (
-    <section className="space-y-3">
-      <SectionHeader accentColor={accentColor} />
+    <section className="space-y-2">
+      <SectionHeader />
 
       {live && (
-        <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+        <div className="rounded-lg border border-border bg-card px-3 py-3 space-y-2.5">
           <div className="flex items-center justify-between">
-            <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
               {status === "live"
                 ? live.source === "openf1" ? "Anlık Hava — OpenF1" : "Anlık Hava — Open-Meteo"
                 : live.source === "openf1" ? "Yarış Günü Hava — OpenF1" : "Yarış Günü Hava — Open-Meteo"}
@@ -244,7 +254,7 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
                   <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
                 )}
                 {liveUpdatedAt && (
-                  <span className="font-mono text-[9px] text-muted-foreground/60">
+                  <span className="text-[10px] text-muted-foreground/50">
                     {liveUpdatedAt.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
                   </span>
                 )}
@@ -252,7 +262,7 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
             )}
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <Stat label="Hava" value={`${live.airTemp}°C`} />
             {live.trackTemp != null && <Stat label="Pist" value={`${live.trackTemp}°C`} />}
             {live.humidity != null && <Stat label="Nem" value={`${live.humidity}%`} />}
@@ -260,9 +270,9 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
           </div>
 
           {live.rainfall && (
-            <div className="flex items-center gap-2 text-sky-400 bg-sky-400/10 rounded-lg px-3 py-2">
-              <CloudRain className="w-4 h-4 shrink-0" />
-              <span className="font-mono text-[10px] uppercase tracking-wide">Yağmur Aktif</span>
+            <div className="flex items-center gap-2 text-sky-400 bg-sky-400/10 rounded-md px-2.5 py-1.5">
+              <CloudRain className="w-3.5 h-3.5 shrink-0" />
+              <span className="text-xs">Yağmur Aktif</span>
             </div>
           )}
         </div>
@@ -271,7 +281,7 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
       {forecast && forecast.length > 0 && (
         <div className="space-y-2">
           {forecast.length > 1 && (
-            <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
               Haftalık Tahmin
             </p>
           )}
@@ -288,7 +298,7 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
               return (
                 <div
                   key={day.date}
-                  className="rounded-xl border bg-card p-3 flex flex-col gap-2 relative overflow-hidden"
+                  className="rounded-lg border bg-card px-2 py-2.5 flex flex-col items-center gap-1.5 relative overflow-hidden"
                   style={
                     isRaceDay
                       ? { borderColor: `${accentColor}50`, backgroundColor: `${accentColor}08` }
@@ -302,7 +312,7 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
                     />
                   )}
 
-                  <p className="font-mono text-[9px] text-muted-foreground uppercase text-center">
+                  <p className="text-[10px] text-muted-foreground uppercase">
                     {new Date(`${day.date}T12:00:00`).toLocaleDateString("tr-TR", {
                       weekday: "short",
                       day: "numeric",
@@ -310,27 +320,25 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
                     })}
                   </p>
 
-                  <div className="flex justify-center">
-                    <WmoIcon code={day.code} className="w-7 h-7 text-sky-400" />
+                  <WmoIcon code={day.code} sizeClass="w-6 h-6" />
+
+                  <div className="text-center leading-tight">
+                    <p className="text-sm font-semibold">{day.tempMax}°</p>
+                    <p className="text-[10px] text-muted-foreground">{day.tempMin}°</p>
                   </div>
 
-                  <div className="text-center leading-none">
-                    <p className="font-condensed text-lg font-bold">{day.tempMax}°</p>
-                    <p className="font-mono text-[10px] text-muted-foreground">{day.tempMin}°</p>
-                  </div>
-
-                  <p className="text-center font-mono text-[9px] text-muted-foreground/70">
+                  <p className="text-[10px] text-muted-foreground/70 text-center">
                     {wmoDesc(day.code)}
                   </p>
 
-                  <div className="flex items-center justify-center gap-2 text-muted-foreground/60">
+                  <div className="flex items-center gap-2 text-muted-foreground/60">
                     <span className="flex items-center gap-0.5">
                       <Droplets className="w-3 h-3 text-sky-500/70" />
-                      <span className="font-mono text-[9px]">{day.precipProbability}{day.precipUnit ?? "%"}</span>
+                      <span className="text-[10px]">{day.precipProbability}{day.precipUnit ?? "%"}</span>
                     </span>
                     <span className="flex items-center gap-0.5">
                       <Wind className="w-3 h-3" />
-                      <span className="font-mono text-[9px]">{day.windSpeed}</span>
+                      <span className="text-[10px]">{day.windSpeed}</span>
                     </span>
                   </div>
 
@@ -339,7 +347,7 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
                       {daySessions.map((s) => (
                         <span
                           key={s.type}
-                          className="font-mono text-[8px] px-1 py-0.5 rounded"
+                          className="text-[9px] px-1.5 py-0.5 rounded"
                           style={
                             s.type === "race"
                               ? { backgroundColor: `${accentColor}30`, color: accentColor }
@@ -355,7 +363,7 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
               );
             })}
           </div>
-          <p className="font-mono text-[9px] text-muted-foreground/40 text-right">
+          <p className="text-[9px] text-muted-foreground/40 text-right">
             Kaynak: Open-Meteo
           </p>
         </div>
@@ -364,20 +372,19 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
   );
 }
 
-function SectionHeader({ accentColor }: { accentColor: string }) {
+function SectionHeader() {
   return (
-    <div className="flex items-center gap-2">
-      <div className="w-1 h-5 rounded-sm" style={{ backgroundColor: accentColor }} />
-      <h2 className="font-condensed text-xl font-bold uppercase tracking-tight">Hava Durumu</h2>
-    </div>
+    <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+      Hava Durumu
+    </h2>
   );
 }
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="font-mono text-[9px] text-muted-foreground uppercase">{label}</span>
-      <span className="font-condensed text-2xl font-bold leading-none">{value}</span>
+      <span className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</span>
+      <span className="text-base font-semibold leading-none">{value}</span>
     </div>
   );
 }

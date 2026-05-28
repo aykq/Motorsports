@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Countdown } from "@/components/race/Countdown";
@@ -68,6 +68,8 @@ function statusBadge(status: RaceStatus) {
     return <Badge className="text-[10px] px-1.5 py-0 bg-red-500 text-white border-0 animate-pulse">CANLI</Badge>;
   if (status === "completed")
     return <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Tamamlandı</Badge>;
+  if (status === "cancelled")
+    return <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground">İptal</Badge>;
   return null;
 }
 
@@ -100,9 +102,19 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
     filteredRaces.sort((a, b) => getRaceDate(a).getTime() - getRaceDate(b).getTime())
   );
 
-  const currentMonthKey = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
-  const upcomingGroups = grouped.filter(([key]) => key >= currentMonthKey);
-  const pastGroups = grouped.filter(([key]) => key < currentMonthKey).reverse();
+  // Bir ayı "gelecek" saymak için o ayda en az 1 upcoming/live yarış olmalı.
+  // Sadece aya bakmak, bu ayın tamamlanan yarışlarını da yukarıda gösteriyor.
+  const monthsWithUpcoming = new Set(
+    filteredRaces
+      .filter((r) => r.status === "upcoming" || r.status === "live")
+      .map((r) => {
+        const d = getRaceDate(r);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      })
+  );
+
+  const upcomingGroups = grouped.filter(([key]) => monthsWithUpcoming.has(key));
+  const pastGroups = grouped.filter(([key]) => !monthsWithUpcoming.has(key)).reverse();
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
@@ -218,7 +230,11 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
           </h2>
           <div className="rounded-xl border border-border overflow-hidden divide-y divide-border bg-card">
             {monthRaces.map((race) => (
-              <RaceRow key={`${race.seriesSlug}-${race.round}`} race={race} />
+              <RaceRow
+                key={`${race.seriesSlug}-${race.round}`}
+                race={race}
+                past={race.status === "completed" || race.status === "cancelled"}
+              />
             ))}
           </div>
         </section>
@@ -269,15 +285,26 @@ function RaceRow({ race, past = false }: { race: CalendarRace; past?: boolean })
 
   const hasTime = timeStr !== "00:00" && timeStr !== "03:00";
 
+  const isCancelled = race.status === "cancelled";
+
+  // İptal yarışlar tıklanamaz — detail sayfasında gösterilecek veri yok
+  const Wrapper = isCancelled
+    ? ({ children }: { children: React.ReactNode }) => <div>{children}</div>
+    : ({ children }: { children: React.ReactNode }) => <Link href={href}>{children}</Link>;
+
   return (
-    <Link href={href}>
+    <Wrapper>
       <div
         className={cn(
-          "flex items-center gap-3 px-3 py-3 text-sm hover:bg-accent/50 transition-colors",
-          past && "opacity-60"
+          "flex items-center gap-3 px-3 py-3 text-sm transition-colors",
+          !isCancelled && "hover:bg-accent/50 cursor-pointer",
+          (past || isCancelled) && "opacity-50"
         )}
       >
-        <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: race.seriesColor }} />
+        <div
+          className="w-1.5 h-1.5 rounded-full shrink-0"
+          style={{ backgroundColor: isCancelled ? "var(--muted-foreground)" : race.seriesColor }}
+        />
         <div className="flex-1 min-w-0">
           <p className="font-medium truncate">{race.name}</p>
           <p className="text-xs text-muted-foreground truncate">
@@ -291,6 +318,6 @@ function RaceRow({ race, past = false }: { race: CalendarRace; past?: boolean })
           {statusBadge(race.status)}
         </div>
       </div>
-    </Link>
+    </Wrapper>
   );
 }

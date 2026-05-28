@@ -136,9 +136,34 @@ export function getF1CircuitCoords(circuitId: string): [number, number] | null {
   return F1_CIRCUIT_COORDS[circuitId] ?? null;
 }
 
-// Circuit photos — kullanıcı tarafından public/circuits/{circuitId}.{ext} konumuna yüklenecek
+// Circuit photos — kullanıcı tarafından public/f1/circuits/{circuitId}.{ext} konumuna yüklenecek
 // Dosyalar yüklendiğinde getF1CircuitPhotoUrl fonksiyonu güncellenir
-const F1_CIRCUIT_PHOTOS: Record<string, string> = {};
+const F1_CIRCUIT_PHOTOS: Record<string, string> = {
+  bahrain:       "/f1/circuits/bahrain.webp",
+  jeddah:        "/f1/circuits/jeddah.webp",
+  albert_park:   "/f1/circuits/australia.webp",
+  suzuka:        "/f1/circuits/japanese.webp",
+  shanghai:      "/f1/circuits/chinese.webp",
+  miami:         "/f1/circuits/miami.webp",
+  imola:         "/f1/circuits/imola.webp",
+  monaco:        "/f1/circuits/monaco.webp",
+  villeneuve:    "/f1/circuits/canadian.webp",
+  catalunya:     "/f1/circuits/spanish.webp",
+  red_bull_ring: "/f1/circuits/red-bull-ring.webp",
+  silverstone:   "/f1/circuits/silverstone.webp",
+  hungaroring:   "/f1/circuits/hungaroring.webp",
+  spa:           "/f1/circuits/spa.webp",
+  zandvoort:     "/f1/circuits/zandvoort.webp",
+  monza:         "/f1/circuits/monza.webp",
+  baku:          "/f1/circuits/azerbaijan.webp",
+  marina_bay:    "/f1/circuits/singapore.webp",
+  americas:      "/f1/circuits/us-gp.webp",
+  rodriguez:     "/f1/circuits/mexico.webp",
+  interlagos:    "/f1/circuits/sao-paulo.webp",
+  las_vegas:     "/f1/circuits/las-vegas.webp",
+  losail:        "/f1/circuits/qatar.webp",
+  yas_marina:    "/f1/circuits/abu-dhabi.webp",
+};
 
 export function getF1CircuitPhotoUrl(circuitId: string): string | null {
   return F1_CIRCUIT_PHOTOS[circuitId] ?? null;

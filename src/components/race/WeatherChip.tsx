@@ -9,16 +9,26 @@ interface WeatherState {
   wmoCode?: number;
 }
 
-function WeatherIcon({ rainfall, wmoCode, className }: { rainfall: boolean; wmoCode?: number; className: string }) {
-  if (wmoCode !== undefined) {
-    if (wmoCode <= 1) return <Sun className={className} />;
-    if (wmoCode <= 48) return <Cloudy className={className} />;
-    if (wmoCode <= 55) return <CloudDrizzle className={className} />;
-    if (wmoCode <= 82) return <CloudRain className={className} />;
-    if (wmoCode <= 86) return <CloudSnow className={className} />;
-    return <CloudLightning className={className} />;
-  }
-  return rainfall ? <CloudRain className={className} /> : <Sun className={className} />;
+function wmoColor(code: number): string {
+  if (code <= 1)  return "text-yellow-400";
+  if (code <= 3)  return "text-zinc-300";
+  if (code <= 48) return "text-zinc-400";
+  if (code <= 55) return "text-sky-400";
+  if (code <= 67) return "text-blue-400";
+  if (code <= 77) return "text-slate-200";
+  if (code <= 82) return "text-blue-500";
+  return "text-amber-400";
+}
+
+function WeatherIcon({ rainfall, wmoCode, sizeClass }: { rainfall: boolean; wmoCode?: number; sizeClass: string }) {
+  const code = wmoCode ?? (rainfall ? 61 : 0);
+  const cls = `${sizeClass} ${wmoColor(code)}`;
+  if (code <= 1) return <Sun className={cls} />;
+  if (code <= 48) return <Cloudy className={cls} />;
+  if (code <= 55) return <CloudDrizzle className={cls} />;
+  if (code <= 82) return <CloudRain className={cls} />;
+  if (code <= 86) return <CloudSnow className={cls} />;
+  return <CloudLightning className={cls} />;
 }
 
 const HEADERS = { "User-Agent": "MotorsportsHub/1.0 (personal project)" };
@@ -92,8 +102,8 @@ export function WeatherChip({ raceDate, lat, lng }: WeatherChipProps) {
 
   return (
     <div className="flex items-center gap-1 bg-background/60 backdrop-blur px-2 py-1 rounded-lg border border-border">
-      <WeatherIcon rainfall={weather.rainfall} wmoCode={weather.wmoCode} className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-      <span className="font-mono text-[11px] font-medium tabular-nums">{weather.temp}°C</span>
+      <WeatherIcon rainfall={weather.rainfall} wmoCode={weather.wmoCode} sizeClass="w-3.5 h-3.5 shrink-0" />
+      <span className="font-sans text-[11px] font-medium tabular-nums">{weather.temp}°C</span>
     </div>
   );
 }
