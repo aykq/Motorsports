@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { Race, Standing, Driver, Circuit, PitStop } from "@/types/series";
+import { getCancelledRaceOverrides } from "./cancelled-races";
 
 const BASE_URL = "https://api.jolpi.ca/ergast/f1";
 
@@ -168,18 +169,26 @@ function buildSessionDate(s: { date: string; time?: string }): string {
   return s.time ? `${s.date}T${s.time.replace("Z", "+00:00")}` : `${s.date}T00:00:00+00:00`;
 }
 
-function detectStatus(raceDate: string): Race["status"] {
+function detectStatus(raceDate: string, hasResults: boolean): Race["status"] {
   const now = Date.now();
   const date = new Date(raceDate).getTime();
   const twoHours = 2 * 60 * 60 * 1000;
   if (date > now) return "upcoming";
   if (date > now - twoHours) return "live";
+  // Geçmiş tarih ama sonuç yoksa iptal edilmiş demektir
+  if (!hasResults) return "cancelled";
   return "completed";
 }
 
 export async function jolpicaFetchSchedule(season: number): Promise<Race[]> {
-  const data = await jolpicaFetch(`/${season}.json`, ScheduleResponseSchema);
-  return data.MRData.RaceTable.Races.map((r) => {
+  // Schedule ve results'ı paralel çek; results ile iptal tespiti yap
+  // Jolpica API: iptal yarışlar schedule'da görünür ama results'da olmaz
+  const [scheduleData, resultsMap] = await Promise.all([
+    jolpicaFetch(`/${season}.json`, ScheduleResponseSchema),
+    jolpicaFetchResultRounds(season),
+  ]);
+
+  const apiRaces: Race[] = scheduleData.MRData.RaceTable.Races.map((r) => {
     const raceDate = buildSessionDate({ date: r.date, time: r.time });
     const sessions: Race["sessions"] = [];
     if (r.FirstPractice) sessions.push({ type: "practice1", date: buildSessionDate(r.FirstPractice) });
@@ -191,8 +200,9 @@ export async function jolpicaFetchSchedule(season: number): Promise<Race[]> {
     if (r.Sprint) sessions.push({ type: "sprint", date: buildSessionDate(r.Sprint) });
     sessions.push({ type: "race", date: raceDate });
 
+    const round = parseInt(r.round);
     return {
-      round: parseInt(r.round),
+      round,
       name: r.raceName,
       circuitId: r.Circuit.circuitId,
       circuitName: r.Circuit.circuitName,
@@ -200,11 +210,40 @@ export async function jolpicaFetchSchedule(season: number): Promise<Race[]> {
       country: r.Circuit.Location.country,
       date: raceDate,
       sessions,
-      status: detectStatus(raceDate),
+      status: detectStatus(raceDate, resultsMap.has(round)),
       circuitLat: parseFloat(r.Circuit.Location.lat),
       circuitLng: parseFloat(r.Circuit.Location.long),
     };
   });
+
+  return [...apiRaces, ...getCancelledRaceOverrides(season)];
+}
+
+/** Sadece hangi round'ların sonucu olduğunu çeker; tam result verisi değil. */
+async function jolpicaFetchResultRounds(season: number): Promise<Set<number>> {
+  const rounds = new Set<number>();
+  const PAGE = 100;
+  let offset = 0;
+
+  try {
+    while (true) {
+      const data = await jolpicaFetch(
+        `/${season}/results.json?limit=${PAGE}&offset=${offset}`,
+        AllResultsResponseSchema
+      );
+      for (const race of data.MRData.RaceTable.Races) {
+        rounds.add(parseInt(race.round));
+      }
+      const total = parseInt(data.MRData.total);
+      offset += PAGE;
+      if (offset >= total) break;
+    }
+  } catch {
+    // API hatası durumunda tüm yarışları tamamlandı say (false positive iptal yaratma)
+    return new Set<number>();
+  }
+
+  return rounds;
 }
 
 export async function jolpicaFetchResults(

@@ -6,78 +6,83 @@ export interface F1TeamConfig {
   logo?: string;
 }
 
-const CDN = "https://raw.githubusercontent.com/slowlydev/f1-dash/main/dashboard/public/team-logos";
-
 export const F1_TEAMS: F1TeamConfig[] = [
   {
     constructorId: "red_bull",
     name: "Red Bull Racing",
     short: "RBR",
     color: "#3671C6",
-    logo: `${CDN}/red-bull-racing.svg`,
+    logo: "/f1/f1/teams/red-bull.webp",
   },
   {
     constructorId: "ferrari",
     name: "Ferrari",
     short: "FER",
     color: "#E8002D",
-    logo: `${CDN}/ferrari.svg`,
+    logo: "/f1/f1/teams/ferrari.webp",
   },
   {
     constructorId: "mercedes",
     name: "Mercedes",
     short: "MER",
     color: "#27F4D2",
-    logo: `${CDN}/mercedes.svg`,
+    logo: "/f1/teams/mercedes.webp",
   },
   {
     constructorId: "mclaren",
     name: "McLaren",
     short: "MCL",
     color: "#FF8000",
-    logo: `${CDN}/mclaren.svg`,
+    logo: "/f1/teams/mclaren.webp",
   },
   {
     constructorId: "aston_martin",
     name: "Aston Martin",
     short: "AMR",
     color: "#229971",
-    logo: `${CDN}/aston-martin.svg`,
+    logo: "/f1/teams/aston-martin.webp",
   },
   {
     constructorId: "alpine",
     name: "Alpine",
     short: "ALP",
     color: "#FF87BC",
-    logo: `${CDN}/alpine.svg`,
+    logo: "/f1/teams/alpine.webp",
   },
   {
     constructorId: "haas",
     name: "Haas",
     short: "HAS",
     color: "#B6BABD",
-    logo: `${CDN}/haas-f1-team.svg`,
+    logo: "/f1/teams/haas.webp",
   },
   {
     constructorId: "williams",
     name: "Williams",
     short: "WIL",
     color: "#64C4FF",
-    logo: `${CDN}/williams.svg`,
+    logo: "/f1/teams/williams.webp",
   },
   {
     constructorId: "sauber",
-    name: "Audi (Sauber)",
-    short: "SAU",
+    name: "Audi",
+    short: "AUD",
     color: "#52E252",
-    logo: `${CDN}/kick-sauber.svg`,
+    logo: "/f1/teams/audi.webp",
   },
   {
     constructorId: "rb",
     name: "Racing Bulls",
     short: "RB",
     color: "#6692FF",
-    logo: `${CDN}/racing-bulls.svg`,
+    logo: "/f1/teams/racing-bulls.webp",
+  },
+  {
+    constructorId: "cadillac",
+    name: "Cadillac",
+    short: "CAD",
+    color: "#CC0000",
+    logo: "/f1/teams/cadillac.webp",
   },
 ];
 
