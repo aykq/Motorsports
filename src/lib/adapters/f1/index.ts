@@ -8,22 +8,31 @@ import {
   jolpicaFetchCircuits,
 } from "./jolpica";
 import { fetchLatestOpenF1Drivers } from "./openf1";
+import { getF1DriverImage } from "./driver-images";
 
 async function mergeDriverHeadshots(
   drivers: Driver[],
   season: number
 ): Promise<Driver[]> {
+  const withLocal = drivers.map((d) => ({
+    ...d,
+    image: getF1DriverImage(d.id) ?? d.image,
+  }));
+
+  const stillMissing = withLocal.some((d) => !d.image);
+  if (!stillMissing) return withLocal;
+
   try {
     const openF1Drivers = await fetchLatestOpenF1Drivers(season);
     const headshotMap = new Map(
       openF1Drivers.map((d) => [d.name_acronym?.toUpperCase(), d.headshot_url ?? undefined])
     );
-    return drivers.map((d) => ({
+    return withLocal.map((d) => ({
       ...d,
-      image: d.code ? (headshotMap.get(d.code.toUpperCase()) ?? d.image) : d.image,
+      image: d.image ?? (d.code ? headshotMap.get(d.code.toUpperCase()) : undefined),
     }));
   } catch {
-    return drivers;
+    return withLocal;
   }
 }
 

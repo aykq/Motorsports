@@ -2,6 +2,12 @@ import { db } from "@/db";
 import { cachedRaces, cachedStandings, cachedDrivers, cachedRaceDetails } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import type { Race, Standing, Driver, StandingType, RaceDetail } from "@/types/series";
+import { getF1DriverImage } from "@/lib/adapters/f1/driver-images";
+
+function resolveDriverImage(slug: string, driver: Driver): string | undefined {
+  if (slug === "f1") return getF1DriverImage(driver.id) ?? driver.image;
+  return driver.image;
+}
 
 const TTL_MS = 30 * 60 * 1000;
 const RACE_DETAIL_COMPLETED_TTL_MS = 24 * 60 * 60 * 1000;
@@ -118,7 +124,13 @@ export async function getCachedDrivers(
   });
   if (!rows.length) return { drivers: [], fresh: false };
   const fresh = isFresh(rows[rows.length - 1].fetchedAt);
-  return { drivers: rows.map((r) => r.data as Driver), fresh };
+  const drivers = rows
+    .map((r) => {
+      const d = r.data as Driver;
+      return { ...d, image: resolveDriverImage(r.seriesSlug, d) };
+    })
+    .sort((a, b) => (a.standingsPosition ?? 999) - (b.standingsPosition ?? 999));
+  return { drivers, fresh };
 }
 
 export async function setCachedDrivers(

@@ -103,7 +103,7 @@ export default async function DriverDetailPage({ params }: Props) {
             <img
               src={driver.image}
               alt={driver.lastName}
-              className="w-20 h-20 rounded-full object-cover bg-muted shrink-0 ring-2 ring-border"
+              className="w-20 h-20 rounded-full object-cover object-[center_-5%] bg-muted shrink-0 ring-2 ring-border"
             />
           ) : (
             <div
@@ -165,8 +165,11 @@ export default async function DriverDetailPage({ params }: Props) {
             </h2>
             <div className="space-y-1.5">
               {raceResults.map(({ race, result }) => {
-                const isDNF =
-                  result.status !== "Finished" && !/^\+/.test(result.status) && result.status !== "";
+                const isFinished =
+                  result.status === "Finished" || /^\+/.test(result.status) || result.status === "";
+                const isDNS =
+                  result.status === "Did not start" || result.status === "DNS";
+                const isDNF = !isFinished;
                 return (
                   <div
                     key={race.round}
@@ -174,13 +177,23 @@ export default async function DriverDetailPage({ params }: Props) {
                   >
                     {positionBadge(result.position, result.status)}
                     <span className="flex-1 truncate">{race.name}</span>
-                    <span className={`text-xs shrink-0 ${isDNF ? "text-red-400" : "text-foreground"}`}>
-                      {result.time ?? result.gap ?? result.status}
-                    </span>
-                    {result.points > 0 && (
-                      <span className="text-xs font-bold shrink-0" style={{ color: teamColor }}>
-                        +{result.points}p
+                    {isDNF ? (
+                      <span className="text-xs shrink-0 text-red-400 font-semibold">
+                        {isDNS ? "DNS" : "DNF"}
                       </span>
+                    ) : (
+                      <div className="flex items-center gap-2 shrink-0">
+                        {(result.gap ?? result.time) && (
+                          <span className="text-xs text-white">
+                            {result.gap ?? result.time}
+                          </span>
+                        )}
+                        {result.points > 0 && (
+                          <span className="text-xs font-bold text-white">
+                            +{result.points}p
+                          </span>
+                        )}
+                      </div>
                     )}
                   </div>
                 );

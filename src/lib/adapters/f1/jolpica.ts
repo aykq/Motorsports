@@ -411,7 +411,7 @@ export async function jolpicaFetchTeamStandings(season: number): Promise<Standin
 
 export async function jolpicaFetchDrivers(season: number): Promise<Driver[]> {
   const standings = await jolpicaFetchDriverStandings(season);
-  return standings.map((s) => s.driver!);
+  return standings.map((s) => ({ ...s.driver!, standingsPosition: s.position }));
 }
 
 export async function jolpicaFetchCircuits(season: number): Promise<Circuit[]> {
