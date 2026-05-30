@@ -12,14 +12,14 @@ export const F1_TEAMS: F1TeamConfig[] = [
     name: "Red Bull Racing",
     short: "RBR",
     color: "#3671C6",
-    logo: "/f1/f1/teams/red-bull.webp",
+    logo: "/f1/teams/red-bull.webp",
   },
   {
     constructorId: "ferrari",
     name: "Ferrari",
     short: "FER",
     color: "#E8002D",
-    logo: "/f1/f1/teams/ferrari.webp",
+    logo: "/f1/teams/ferrari.webp",
   },
   {
     constructorId: "mercedes",

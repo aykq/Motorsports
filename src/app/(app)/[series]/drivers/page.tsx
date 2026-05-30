@@ -40,35 +40,35 @@ export default async function DriversListPage({ params }: Props) {
       {drivers.length === 0 ? (
         <p className="text-center py-16 text-sm text-muted-foreground">Henüz pilot verisi yok.</p>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {Object.entries(groupedByTeam).map(([teamKey, teamDrivers]) => {
             const firstDriver = teamDrivers[0];
             const team = getF1Team(firstDriver.teamId) ?? getF1TeamByName(firstDriver.team);
             return (
               <div key={teamKey}>
-                <div className="flex items-center gap-2 mb-2 px-1">
+                <div className="flex items-center gap-2.5 px-1 mb-2">
                   <TeamLogo
                     src={team?.logo}
                     alt={firstDriver.team ?? ""}
                     fallbackColor={team?.color ?? "#52525b"}
                     fallbackText={team?.short ?? "?"}
-                    className="h-5 w-auto shrink-0"
-                    fallbackClassName="w-5 h-5 rounded-sm text-[9px] shrink-0"
+                    className="h-6 w-auto shrink-0"
+                    fallbackClassName="w-6 h-6 rounded-sm text-[10px] shrink-0"
                   />
-                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                    {firstDriver.team ?? "Bilinmeyen Takım"}
+                  <span className="text-xs font-semibold text-muted-foreground tracking-wide">
+                    {(firstDriver.team ?? "Bilinmeyen Takım").toLocaleUpperCase("en-US")}
                   </span>
                 </div>
-                <div className="space-y-1.5">
+                <div className="rounded-xl border border-border overflow-hidden bg-card">
                   {teamDrivers.map((driver) => (
                     <Link key={driver.id} href={`/${slug}/drivers/${driver.id}`}>
-                      <div className="flex items-center gap-3 px-3 py-3 rounded-lg bg-card border border-border hover:bg-accent/50 transition-colors">
+                      <div className="flex items-center gap-3 px-3 py-3 hover:bg-accent/50 transition-colors">
                         {driver.image ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={driver.image}
                             alt={driver.lastName}
-                            className="w-10 h-10 rounded-full object-cover bg-muted shrink-0"
+                            className="w-10 h-10 rounded-full object-cover object-[center_-5%] bg-muted shrink-0"
                           />
                         ) : (
                           <div
@@ -85,7 +85,6 @@ export default async function DriversListPage({ params }: Props) {
                               <span className="ml-1.5 text-xs text-muted-foreground font-normal">{driver.code}</span>
                             )}
                           </p>
-                          <p className="text-xs text-muted-foreground truncate">{driver.team}</p>
                         </div>
                         {driver.number && (
                           <span
