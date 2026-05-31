@@ -1,6 +1,7 @@
 import { getCachedStandings } from "@/lib/cache";
 import { getSeriesConfig } from "@/lib/series-config";
 import { getF1Team, getF1TeamByName } from "@/lib/f1-teams";
+import { getF1DriverImage } from "@/lib/adapters/f1/driver-images";
 import { TeamLogo } from "@/components/series/TeamLogo";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -60,49 +61,65 @@ export default async function StandingsPage({ params }: Props) {
           {driverStandings.length === 0 ? (
             <p className="text-center py-8 text-sm text-muted-foreground">Henüz puan verisi yok.</p>
           ) : (
-            driverStandings.map((s) => (
-              <div
-                key={s.position}
-                className="flex items-center gap-3 px-3 py-3 rounded-lg bg-card border border-border"
-              >
-                <span
-                  className="w-7 text-right font-bold text-sm shrink-0"
-                  style={s.position <= 3 ? { color: ["#fbbf24", "#9ca3af", "#cd7f32"][s.position - 1] } : {}}
+            driverStandings.map((s) => {
+              const f1Team = getF1Team(s.driver?.teamId) ?? getF1TeamByName(s.driver?.team);
+              const teamColor = f1Team?.color ?? config.color;
+              const driverImage = slug === "f1"
+                ? (getF1DriverImage(s.driver?.id ?? "") ?? s.driver?.image)
+                : s.driver?.image;
+              return (
+                <div
+                  key={s.position}
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg bg-card border border-border overflow-hidden relative"
                 >
-                  {s.position}
-                </span>
-                {s.driver?.image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={s.driver.image}
-                    alt={s.driver.lastName}
-                    className="w-8 h-8 rounded-full object-cover bg-muted shrink-0"
+                  {/* Subtle team color accent on left edge */}
+                  <div
+                    className="absolute left-0 top-0 bottom-0 w-0.5"
+                    style={{ backgroundColor: teamColor }}
                   />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">
-                    {s.driver?.code ?? s.driver?.lastName?.[0] ?? "?"}
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm truncate">
-                    {s.driver?.firstName} {s.driver?.lastName}
-                    {s.driver?.code && (
-                      <span className="ml-1.5 text-xs text-muted-foreground font-normal">{s.driver.code}</span>
-                    )}
-                  </p>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <TeamBadge teamId={s.driver?.teamId} teamName={s.driver?.team} />
-                    <p className="text-xs text-muted-foreground truncate">{s.driver?.team}</p>
-                  </div>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="font-bold text-sm">{s.points} pts</p>
-                  {s.wins > 0 && (
-                    <p className="text-xs text-muted-foreground">{s.wins} galibiyet</p>
+                  <span
+                    className="w-7 text-right font-bold text-sm shrink-0"
+                    style={s.position <= 3 ? { color: ["#fbbf24", "#9ca3af", "#cd7f32"][s.position - 1] } : {}}
+                  >
+                    {s.position}
+                  </span>
+                  {driverImage ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={driverImage}
+                      alt={s.driver?.lastName ?? ""}
+                      className="w-10 h-10 rounded-full object-cover object-top shrink-0"
+                      style={{ backgroundColor: `${teamColor}20` }}
+                    />
+                  ) : (
+                    <div
+                      className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+                      style={{ backgroundColor: `${teamColor}20`, color: teamColor }}
+                    >
+                      {s.driver?.code ?? s.driver?.lastName?.[0] ?? "?"}
+                    </div>
                   )}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm">
+                      {s.driver?.firstName} {s.driver?.lastName}
+                      {s.driver?.code && (
+                        <span className="ml-1.5 text-xs text-muted-foreground font-normal">{s.driver.code}</span>
+                      )}
+                    </p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <TeamBadge teamId={s.driver?.teamId} teamName={s.driver?.team} />
+                      <p className="text-xs text-muted-foreground">{f1Team?.fullName ?? s.driver?.team}</p>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="font-bold text-sm">{s.points} pts</p>
+                    {s.wins > 0 && (
+                      <p className="text-xs text-muted-foreground">{s.wins} galibiyet</p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </TabsContent>
 
@@ -132,7 +149,7 @@ export default async function StandingsPage({ params }: Props) {
                     fallbackClassName="w-10 h-8 rounded-lg text-[10px] shrink-0"
                   />
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm truncate">{s.team?.name}</p>
+                    <p className="font-semibold text-sm">{team?.fullName ?? s.team?.name}</p>
                     {s.team?.nationality && (
                       <p className="text-xs text-muted-foreground">{s.team.nationality}</p>
                     )}

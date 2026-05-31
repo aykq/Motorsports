@@ -73,7 +73,7 @@ export function Countdown({ targetDate, label = "Sonraki Yarışa", compact = fa
     { value: time.minutes, label: "Dak" },
     { value: time.seconds, label: "San" },
   ];
-  const units = compact ? allUnits.slice(0, 3) : allUnits;
+  const units = allUnits;
 
   if (compact) {
     return (
