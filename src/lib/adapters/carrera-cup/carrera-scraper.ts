@@ -37,7 +37,6 @@ interface CalendarEntry {
   country: string;
   raceDate: string;
   practiceDate: string;
-  status: RaceStatus;
 }
 
 const CARRERA_CUP_DE_CALENDAR: Record<number, CalendarEntry[]> = {
@@ -48,7 +47,6 @@ const CARRERA_CUP_DE_CALENDAR: Record<number, CalendarEntry[]> = {
       country: "Italy",
       raceDate: "2026-04-19T10:00:00Z",
       practiceDate: "2026-04-17T10:00:00Z",
-      status: "completed",
     },
     {
       round: 2,
@@ -56,7 +54,6 @@ const CARRERA_CUP_DE_CALENDAR: Record<number, CalendarEntry[]> = {
       country: "Austria",
       raceDate: "2026-04-26T10:00:00Z",
       practiceDate: "2026-04-24T10:00:00Z",
-      status: "completed",
     },
     {
       round: 3,
@@ -64,7 +61,6 @@ const CARRERA_CUP_DE_CALENDAR: Record<number, CalendarEntry[]> = {
       country: "Belgium",
       raceDate: "2026-05-17T10:00:00Z",
       practiceDate: "2026-05-15T10:00:00Z",
-      status: "upcoming",
     },
     {
       round: 4,
@@ -72,7 +68,6 @@ const CARRERA_CUP_DE_CALENDAR: Record<number, CalendarEntry[]> = {
       country: "Netherlands",
       raceDate: "2026-05-24T10:00:00Z",
       practiceDate: "2026-05-22T10:00:00Z",
-      status: "upcoming",
     },
     {
       round: 5,
@@ -80,7 +75,6 @@ const CARRERA_CUP_DE_CALENDAR: Record<number, CalendarEntry[]> = {
       country: "Germany",
       raceDate: "2026-06-21T10:00:00Z",
       practiceDate: "2026-06-19T10:00:00Z",
-      status: "upcoming",
     },
     {
       round: 6,
@@ -88,7 +82,6 @@ const CARRERA_CUP_DE_CALENDAR: Record<number, CalendarEntry[]> = {
       country: "Germany",
       raceDate: "2026-07-05T10:00:00Z",
       practiceDate: "2026-07-03T10:00:00Z",
-      status: "upcoming",
     },
     {
       round: 7,
@@ -96,7 +89,6 @@ const CARRERA_CUP_DE_CALENDAR: Record<number, CalendarEntry[]> = {
       country: "Germany",
       raceDate: "2026-08-16T10:00:00Z",
       practiceDate: "2026-08-14T10:00:00Z",
-      status: "upcoming",
     },
     {
       round: 8,
@@ -104,10 +96,21 @@ const CARRERA_CUP_DE_CALENDAR: Record<number, CalendarEntry[]> = {
       country: "Germany",
       raceDate: "2026-10-11T10:00:00Z",
       practiceDate: "2026-10-09T10:00:00Z",
-      status: "upcoming",
     },
   ],
 };
+
+function computeStatus(dateStr: string): RaceStatus {
+  const raceTs = new Date(dateStr).getTime();
+  const now = Date.now();
+  if (raceTs > now) return "upcoming";
+  if (raceTs > now - 3 * 60 * 60 * 1000) return "live";
+  return "completed";
+}
+
+function isCssGarbage(name: string): boolean {
+  return /\{[^}]*:/.test(name) || /^\.css-/.test(name) || name.length > 200;
+}
 
 function calendarToRaces(entries: CalendarEntry[]): Race[] {
   return entries.map((e) => ({
@@ -122,7 +125,7 @@ function calendarToRaces(entries: CalendarEntry[]): Race[] {
       { type: "practice1" as const, date: e.practiceDate },
       { type: "race" as const, date: e.raceDate },
     ],
-    status: e.status,
+    status: computeStatus(e.raceDate),
   }));
 }
 
@@ -208,7 +211,8 @@ export async function fetchCarreraSchedule(season: number): Promise<Race[]> {
   // Try live scraping first; fall back to hardcoded calendar
   try {
     const scraped = await scrapeCarreraSchedule(season);
-    if (scraped.length > 0) return scraped;
+    const valid = scraped.filter((r) => !isCssGarbage(r.name));
+    if (valid.length > 0) return valid;
   } catch (err) {
     console.error("[CarreraCup] scraper error:", err);
   }
