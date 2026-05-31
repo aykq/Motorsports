@@ -88,9 +88,41 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
 
   const isAllSelected = selectedSeries.length === 0;
 
-  const filteredRaces = isAllSelected
+  // subSlug -> parentSlug  (e.g. moto2 -> motogp)
+  const subToParent = new Map<string, string>();
+  for (const s of availableSeries) {
+    s.subSeries?.forEach((sub) => subToParent.set(sub, s.slug));
+  }
+
+  // build a flat set of slugs to include, expanding subSeries for each selected series
+  const expandedSlugs = new Set<string>();
+  for (const slug of selectedSeries) {
+    expandedSlugs.add(slug);
+    const config = availableSeries.find((s) => s.slug === slug);
+    config?.subSeries?.forEach((sub) => expandedSlugs.add(sub));
+  }
+
+  const allFilteredRaces = isAllSelected
     ? races
-    : races.filter((r) => selectedSeries.includes(r.seriesSlug));
+    : races.filter((r) => expandedSlugs.has(r.seriesSlug));
+
+  // always collapse sub-series races into their parent's row
+  const primaryRaces = allFilteredRaces.filter((r) => !subToParent.has(r.seriesSlug));
+
+  // circuitId -> sub-series races for that event
+  const subRacesLookup = new Map<string, CalendarRace[]>();
+  for (const race of allFilteredRaces) {
+    if (subToParent.has(race.seriesSlug)) {
+      if (!subRacesLookup.has(race.circuitId)) subRacesLookup.set(race.circuitId, []);
+      const existing = subRacesLookup.get(race.circuitId)!;
+      // one entry per seriesSlug per circuit to avoid duplicate keys
+      if (!existing.some((r) => r.seriesSlug === race.seriesSlug)) {
+        existing.push(race);
+      }
+    }
+  }
+
+  const filteredRaces = primaryRaces;
 
   const upcomingFiltered = filteredRaces
     .filter((r) => r.status === "upcoming" || r.status === "live")
@@ -234,6 +266,7 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
                 key={`${race.seriesSlug}-${race.round}`}
                 race={race}
                 past={race.status === "completed" || race.status === "cancelled"}
+                subRaces={subRacesLookup.get(race.circuitId)}
               />
             ))}
           </div>
@@ -251,7 +284,12 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
               <p className="text-xs text-muted-foreground/60 pl-1">{monthLabel(key)}</p>
               <div className="rounded-xl border border-border overflow-hidden divide-y divide-border bg-card">
                 {monthRaces.map((race) => (
-                  <RaceRow key={`${race.seriesSlug}-${race.round}`} race={race} past={true} />
+                  <RaceRow
+                    key={`${race.seriesSlug}-${race.round}`}
+                    race={race}
+                    past={true}
+                    subRaces={subRacesLookup.get(race.circuitId)}
+                  />
                 ))}
               </div>
             </div>
@@ -268,7 +306,7 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
   );
 }
 
-function RaceRow({ race, past = false }: { race: CalendarRace; past?: boolean }) {
+function RaceRow({ race, past = false, subRaces }: { race: CalendarRace; past?: boolean; subRaces?: CalendarRace[] }) {
   const raceDate = getRaceDate(race);
   const href = `/${race.seriesSlug}/races/${race.round}`;
 
@@ -306,7 +344,18 @@ function RaceRow({ race, past = false }: { race: CalendarRace; past?: boolean })
           style={{ backgroundColor: isCancelled ? "var(--muted-foreground)" : race.seriesColor }}
         />
         <div className="flex-1 min-w-0">
-          <p className="font-medium truncate">{race.name}</p>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <p className="font-medium truncate">{race.name}</p>
+            {subRaces?.map((sr) => (
+              <span
+                key={`${sr.seriesSlug}-${sr.round}`}
+                className="text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0"
+                style={{ backgroundColor: `${sr.seriesColor}22`, color: sr.seriesColor }}
+              >
+                {sr.seriesShortName}
+              </span>
+            ))}
+          </div>
           <p className="text-xs text-muted-foreground truncate">
             {race.seriesShortName} · {race.circuitName}
           </p>

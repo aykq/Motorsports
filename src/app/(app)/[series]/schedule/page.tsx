@@ -1,7 +1,8 @@
 import { getCachedSchedule } from "@/lib/cache";
-import { getSeriesConfig } from "@/lib/series-config";
+import { getSeriesConfig, SERIES_LIST } from "@/lib/series-config";
 import { RaceCard } from "@/components/race/RaceCard";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import type { Metadata } from "next";
 import type { Race } from "@/types/series";
 
@@ -26,7 +27,27 @@ export default async function SchedulePage({ params }: Props) {
   if (!config || !config.available) notFound();
 
   const year = new Date().getFullYear();
-  const { races } = await getCachedSchedule(slug, year);
+
+  const subConfigs = (config.subSeries ?? [])
+    .map((s) => getSeriesConfig(s))
+    .filter((c) => c !== undefined && c.available);
+
+  const [{ races }, ...subResults] = await Promise.all([
+    getCachedSchedule(slug, year),
+    ...subConfigs.map((c) => getCachedSchedule(c!.slug, year)),
+  ]);
+
+  // circuitId -> { slug -> Race } map for sub-series
+  const subSeriesMap = new Map<string, Map<string, Race>>();
+  subResults.forEach((result, i) => {
+    const subConfig = subConfigs[i]!;
+    result.races.forEach((race) => {
+      if (!subSeriesMap.has(race.circuitId)) {
+        subSeriesMap.set(race.circuitId, new Map());
+      }
+      subSeriesMap.get(race.circuitId)!.set(subConfig.slug, race);
+    });
+  });
 
   const completed = races
     .filter((r) => r.status === "completed")
@@ -35,6 +56,8 @@ export default async function SchedulePage({ params }: Props) {
   const upcoming = races
     .filter((r) => r.status !== "completed")
     .sort((a, b) => getRaceDate(a).getTime() - getRaceDate(b).getTime());
+
+  const hasSubSeries = subConfigs.length > 0;
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-8">
@@ -49,7 +72,16 @@ export default async function SchedulePage({ params }: Props) {
             Yaklaşan ({upcoming.length})
           </h2>
           {upcoming.map((race) => (
-            <RaceCard key={race.round} race={race} series={config} />
+            <div key={race.round} className="space-y-1.5">
+              <RaceCard race={race} series={config} />
+              {hasSubSeries && (
+                <SubSeriesChips
+                  circuitId={race.circuitId}
+                  subSeriesMap={subSeriesMap}
+                  subConfigs={subConfigs.filter((c) => c !== undefined) as NonNullable<typeof subConfigs[number]>[]}
+                />
+              )}
+            </div>
           ))}
         </section>
       )}
@@ -60,7 +92,16 @@ export default async function SchedulePage({ params }: Props) {
             Tamamlanan ({completed.length})
           </h2>
           {completed.map((race) => (
-            <RaceCard key={race.round} race={race} series={config} />
+            <div key={race.round} className="space-y-1.5">
+              <RaceCard race={race} series={config} />
+              {hasSubSeries && (
+                <SubSeriesChips
+                  circuitId={race.circuitId}
+                  subSeriesMap={subSeriesMap}
+                  subConfigs={subConfigs.filter((c) => c !== undefined) as NonNullable<typeof subConfigs[number]>[]}
+                />
+              )}
+            </div>
           ))}
         </section>
       )}
@@ -70,6 +111,44 @@ export default async function SchedulePage({ params }: Props) {
           <p className="text-sm">Henüz takvim verisi yok.</p>
         </div>
       )}
+    </div>
+  );
+}
+
+interface SubSeriesChipsProps {
+  circuitId: string;
+  subSeriesMap: Map<string, Map<string, Race>>;
+  subConfigs: NonNullable<ReturnType<typeof getSeriesConfig>>[];
+}
+
+function SubSeriesChips({ circuitId, subSeriesMap, subConfigs }: SubSeriesChipsProps) {
+  const eventSubSeries = subSeriesMap.get(circuitId);
+  if (!eventSubSeries || eventSubSeries.size === 0) return null;
+
+  return (
+    <div className="flex gap-2 pl-1">
+      {subConfigs.map((subConfig) => {
+        const subRace = eventSubSeries.get(subConfig.slug);
+        if (!subRace) return null;
+        return (
+          <Link
+            key={subConfig.slug}
+            href={`/${subConfig.slug}/races/${subRace.round}`}
+            className="flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded border transition-colors hover:opacity-80"
+            style={{
+              borderColor: `${subConfig.color}40`,
+              color: subConfig.color,
+              backgroundColor: `${subConfig.color}10`,
+            }}
+          >
+            <span
+              className="w-1.5 h-1.5 rounded-full shrink-0"
+              style={{ backgroundColor: subConfig.color }}
+            />
+            {subConfig.shortName}
+          </Link>
+        );
+      })}
     </div>
   );
 }

@@ -14,10 +14,12 @@ function getRaceSessionDate(race: { sessions: { type: string; date: string }[]; 
 
 export default async function CalendarPage() {
   const year = new Date().getFullYear();
-  const availableSeries = SERIES_LIST.filter((s) => s.available);
+  const allAvailableSeries = SERIES_LIST.filter((s) => s.available);
+  // filter bar + countdown chips — hidden sub-series (moto2/moto3) excluded
+  const filterSeries = allAvailableSeries.filter((s) => !s.hidden);
 
   const allRacesNested = await Promise.all(
-    availableSeries.map(async (series) => {
+    allAvailableSeries.map(async (series) => {
       const { races } = await getCachedSchedule(series.slug, year);
       return races.map((r): CalendarRace => ({
         ...r,
@@ -31,8 +33,8 @@ export default async function CalendarPage() {
 
   const allRaces = allRacesNested.flat();
 
-  const seriesCountdowns: SeriesCountdownInfo[] = availableSeries.map((series) => {
-    const seriesRaces = allRacesNested[availableSeries.indexOf(series)] ?? [];
+  const seriesCountdowns: SeriesCountdownInfo[] = filterSeries.map((series) => {
+    const seriesRaces = allRacesNested[allAvailableSeries.indexOf(series)] ?? [];
     const next = seriesRaces
       .filter((r) => r.status === "upcoming" || r.status === "live")
       .sort((a, b) => getRaceSessionDate(a).getTime() - getRaceSessionDate(b).getTime())[0] ?? null;
@@ -53,7 +55,7 @@ export default async function CalendarPage() {
     <CalendarClient
       races={allRaces}
       seriesCountdowns={seriesCountdowns}
-      availableSeries={availableSeries}
+      availableSeries={filterSeries}
     />
   );
 }
