@@ -6,7 +6,7 @@ import { db } from "@/db";
 import { accounts, sessions, users, verificationTokens } from "@/db/schema";
 
 const devProviders =
-  process.env.NODE_ENV === "development"
+  process.env.NODE_ENV === "development" && process.env.ENABLE_DEV_LOGIN === "1"
     ? await (async () => {
         const { default: Credentials } = await import("next-auth/providers/credentials");
         const { eq } = await import("drizzle-orm");

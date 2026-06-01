@@ -1,5 +1,17 @@
 import * as cheerio from "cheerio";
+import { z } from "zod";
 import type { Race, Standing, Driver, Circuit, StandingType, RaceStatus } from "@/types/series";
+
+const NextDataEventSchema = z.object({
+  date: z.string().optional(),
+  circuit: z.string().optional(),
+  location: z.string().optional(),
+  name: z.string().optional(),
+  country: z.string().optional(),
+  finished: z.boolean().optional(),
+  status: z.string().optional(),
+});
+type NextDataEvent = z.infer<typeof NextDataEventSchema>;
 
 const TIMEOUT_MS = 15_000;
 
@@ -102,12 +114,17 @@ async function scrapeCarreraSchedule(season: number): Promise<Race[]> {
         data?.props?.pageProps?.calendar ??
         data?.props?.pageProps?.races;
       if (Array.isArray(events) && events.length > 0) {
-        return events
-          .filter((ev: Record<string, unknown>) => {
+        const parsed: NextDataEvent[] = events
+          .map((ev: unknown) => NextDataEventSchema.safeParse(ev))
+          .filter((r): r is { success: true; data: NextDataEvent } => r.success)
+          .map((r) => r.data);
+
+        return parsed
+          .filter((ev) => {
             const year = new Date(String(ev.date ?? "")).getFullYear();
             return year === season;
           })
-          .map((ev: Record<string, unknown>, i: number) => {
+          .map((ev, i) => {
             const dateStr = String(ev.date ?? `${season}-01-01`);
             const name = String(ev.circuit ?? ev.location ?? ev.name ?? "Race");
             const status: RaceStatus =

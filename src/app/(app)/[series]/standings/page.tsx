@@ -129,11 +129,16 @@ export default async function StandingsPage({ params }: Props) {
           ) : (
             teamStandings.map((s) => {
               const team = getF1Team(s.team?.id) ?? getF1TeamByName(s.team?.name);
+              const teamColor = team?.color ?? config.color;
               return (
                 <div
                   key={s.position}
-                  className="flex items-center gap-3 px-3 py-3 rounded-lg bg-card border border-border"
+                  className="flex items-center gap-3 px-3 py-3 rounded-lg bg-card border border-border relative overflow-hidden"
                 >
+                  <div
+                    className="absolute left-0 top-0 bottom-0 w-0.5"
+                    style={{ backgroundColor: teamColor }}
+                  />
                   <span
                     className="w-7 text-right font-bold text-sm shrink-0"
                     style={s.position <= 3 ? { color: ["#fbbf24", "#9ca3af", "#cd7f32"][s.position - 1] } : {}}

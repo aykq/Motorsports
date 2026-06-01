@@ -1,15 +1,28 @@
 export const revalidate = 3600;
 
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+function parseCoord(raw: string | null, min: number, max: number): number | null {
+  if (!raw) return null;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n < min || n > max) return null;
+  return n;
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const lat = searchParams.get("lat");
-  const lng = searchParams.get("lng");
+
+  const latN = parseCoord(searchParams.get("lat"), -90, 90);
+  const lngN = parseCoord(searchParams.get("lng"), -180, 180);
   const singleDate = searchParams.get("date");
   const startDate = searchParams.get("start_date") ?? singleDate;
   const endDate = searchParams.get("end_date") ?? singleDate;
 
-  if (!lat || !lng || !startDate) {
-    return Response.json({ error: "Missing params" }, { status: 400 });
+  if (latN === null || lngN === null || !startDate) {
+    return Response.json({ error: "Missing or invalid params" }, { status: 400 });
+  }
+  if (!DATE_RE.test(startDate) || (endDate && !DATE_RE.test(endDate))) {
+    return Response.json({ error: "Invalid date format" }, { status: 400 });
   }
 
   const today = new Date().toISOString().split("T")[0];
@@ -24,13 +37,16 @@ export async function GET(request: Request) {
     ? "precipitation_sum"
     : "precipitation_probability_max";
 
-  const res = await fetch(
-    `${baseUrl}` +
-      `?latitude=${lat}&longitude=${lng}` +
-      `&daily=temperature_2m_max,temperature_2m_min,weather_code,${precipParam},wind_speed_10m_max` +
-      `&timezone=auto&start_date=${startDate}&end_date=${effectiveEnd}`,
-    { next: { revalidate: 3600 } }
-  );
+  const qs = new URLSearchParams({
+    latitude: String(latN),
+    longitude: String(lngN),
+    daily: `temperature_2m_max,temperature_2m_min,weather_code,${precipParam},wind_speed_10m_max`,
+    timezone: "auto",
+    start_date: startDate,
+    end_date: effectiveEnd,
+  });
+
+  const res = await fetch(`${baseUrl}?${qs}`, { next: { revalidate: 3600 } });
 
   if (!res.ok) return Response.json(null, { status: 502 });
 

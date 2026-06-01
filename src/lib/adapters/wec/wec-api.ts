@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { Race, Standing, Driver, Circuit, StandingType, RaceStatus } from "@/types/series";
 import { lookupCircuitCoords } from "@/lib/circuit-coords";
+import { getWECDrivers } from "./wec-drivers";
 
 const THESPORTSDB_WEC_ID = "4413";
 const TIMEOUT_MS = 15_000;
@@ -96,6 +97,50 @@ function extractMainRaceName(events: z.infer<typeof SportsDBEventSchema>[]): str
     .trim();
 }
 
+// ─── Static calendar fallback (used when TheSportsDB is incomplete) ───────────
+
+const WEC_STATIC_CALENDARS: Record<number, Array<{
+  round: number; name: string; circuitName: string; location: string; country: string;
+  date: string; practiceDate: string;
+}>> = {
+  2026: [
+    { round: 1, name: "6 Hours of Imola", circuitName: "Imola Circuit", location: "Imola", country: "Italy", date: "2026-04-19T09:00:00Z", practiceDate: "2026-04-18T07:00:00Z" },
+    { round: 2, name: "6 Hours of Spa-Francorchamps", circuitName: "Circuit de Spa-Francorchamps", location: "Spa-Francorchamps", country: "Belgium", date: "2026-05-09T09:00:00Z", practiceDate: "2026-05-08T07:00:00Z" },
+    { round: 3, name: "24 Hours of Le Mans", circuitName: "Circuit de la Sarthe", location: "Le Mans", country: "France", date: "2026-06-13T14:00:00Z", practiceDate: "2026-06-10T08:00:00Z" },
+    { round: 4, name: "6 Hours of São Paulo", circuitName: "Interlagos Circuit", location: "São Paulo", country: "Brazil", date: "2026-07-12T13:00:00Z", practiceDate: "2026-07-11T10:00:00Z" },
+    { round: 5, name: "Lone Star Le Mans", circuitName: "Circuit of the Americas", location: "Austin", country: "United States", date: "2026-09-06T17:00:00Z", practiceDate: "2026-09-05T14:00:00Z" },
+    { round: 6, name: "6 Hours of Fuji", circuitName: "Fuji Speedway", location: "Oyama", country: "Japan", date: "2026-09-27T02:00:00Z", practiceDate: "2026-09-26T02:00:00Z" },
+    { round: 7, name: "Qatar 1812 km", circuitName: "Lusail International Circuit", location: "Lusail", country: "Qatar", date: "2026-10-24T13:00:00Z", practiceDate: "2026-10-23T10:00:00Z" },
+    { round: 8, name: "8 Hours of Bahrain", circuitName: "Bahrain International Circuit", location: "Sakhir", country: "Bahrain", date: "2026-11-07T13:00:00Z", practiceDate: "2026-11-06T10:00:00Z" },
+  ],
+};
+
+function buildStaticSchedule(season: number): Race[] {
+  const calendar = WEC_STATIC_CALENDARS[season];
+  if (!calendar) return [];
+  const now = Date.now();
+  return calendar.map((r) => {
+    const raceMs = new Date(r.date).getTime();
+    const status: RaceStatus = raceMs > now ? "upcoming" : raceMs > now - 28 * 3_600_000 ? "live" : "completed";
+    const coords = lookupCircuitCoords(r.circuitName);
+    return {
+      round: r.round,
+      name: r.name,
+      circuitId: r.circuitName.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+      circuitName: r.circuitName,
+      location: r.location,
+      country: r.country,
+      date: r.date,
+      sessions: [
+        { type: "practice1" as const, date: r.practiceDate },
+        { type: "race" as const, date: r.date },
+      ],
+      status,
+      ...(coords ? { circuitLat: coords[0], circuitLng: coords[1] } : {}),
+    };
+  });
+}
+
 // ─── Fetch Functions ──────────────────────────────────────────────────────────
 
 export async function fetchWECSchedule(season: number): Promise<Race[]> {
@@ -150,10 +195,21 @@ export async function fetchWECSchedule(season: number): Promise<Race[]> {
       });
     }
 
-    return races.sort((a, b) => a.round - b.round);
+    // TheSportsDB intRound değerleri gerçek takvimle uyuşmayabilir —
+    // tarihe göre sırala ve round numaralarını yeniden ata
+    races.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    races.forEach((r, i) => { r.round = i + 1; });
+
+    // Yetersiz veri gelirse statik takvimle tamamla
+    if (races.length < 4) {
+      const staticRaces = buildStaticSchedule(season);
+      if (staticRaces.length > 0) return staticRaces;
+    }
+
+    return races;
   } catch (err) {
     console.error("[WEC] fetchSchedule error:", err);
-    return [];
+    return buildStaticSchedule(season);
   }
 }
 
@@ -165,9 +221,8 @@ export async function fetchWECStandings(
   return [];
 }
 
-// WEC driver/team entries are not available in TheSportsDB free tier — returns empty
-export async function fetchWECDrivers(_season: number): Promise<Driver[]> {
-  return [];
+export async function fetchWECDrivers(season: number): Promise<Driver[]> {
+  return getWECDrivers(season);
 }
 
 export async function fetchWECCircuits(season: number): Promise<Circuit[]> {

@@ -1,17 +1,17 @@
 import { NextResponse } from "next/server";
 import { sendPushToSubscribers } from "@/lib/push";
 import { z } from "zod";
+import { verifyCronSecret } from "@/lib/cron-auth";
 
 const bodySchema = z.object({
   seriesSlug: z.string().min(1),
   title: z.string().min(1),
   body: z.string().min(1),
-  url: z.string().optional(),
+  url: z.string().regex(/^\/[^/]/).optional(),
 });
 
 export async function POST(request: Request) {
-  const secret = request.headers.get("x-cron-secret");
-  if (!secret || secret !== process.env.CRON_SECRET) {
+  if (!verifyCronSecret(request.headers.get("x-cron-secret"))) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
