@@ -4,10 +4,12 @@ import { getF1Team, getF1TeamByName } from "@/lib/f1-teams";
 import { TeamLogo } from "@/components/series/TeamLogo";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 import type { Metadata } from "next";
 
 interface Props {
   params: Promise<{ series: string }>;
+  searchParams: Promise<{ cat?: string }>;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -16,12 +18,28 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return { title: `${config?.name ?? slug} — Pilotlar` };
 }
 
-export default async function DriversListPage({ params }: Props) {
+export default async function DriversListPage({ params, searchParams }: Props) {
   const { series: slug } = await params;
+  const { cat } = await searchParams;
   const config = getSeriesConfig(slug);
   if (!config || !config.available) notFound();
 
-  const { drivers } = await getCachedDrivers(slug);
+  const subSeries = config.subSeries ?? [];
+  const validCats = [slug, ...subSeries];
+  const activeCat = cat && validCats.includes(cat) ? cat : slug;
+
+  const [{ drivers: rawDrivers }, ...subResults] =
+    activeCat === slug && subSeries.length > 0
+      ? await Promise.all([
+          getCachedDrivers(activeCat),
+          ...subSeries.map((s) => getCachedDrivers(s)),
+        ])
+      : [await getCachedDrivers(activeCat)];
+
+  const subSeriesIds = new Set(subResults.flatMap(({ drivers: d }) => d.map((r) => r.id)));
+  const drivers = subSeriesIds.size > 0
+    ? rawDrivers.filter((d) => !subSeriesIds.has(d.id))
+    : rawDrivers;
 
   const groupedByTeam = drivers.reduce<Record<string, typeof drivers>>((acc, d) => {
     const key = d.teamId ?? d.team ?? "unknown";
@@ -30,12 +48,38 @@ export default async function DriversListPage({ params }: Props) {
     return acc;
   }, {});
 
+  const categoryLabels: Record<string, string> = {
+    [slug]: config.name,
+    ...Object.fromEntries(
+      subSeries.map((s) => [s, getSeriesConfig(s)?.name ?? s.toUpperCase()])
+    ),
+  };
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
       <div>
         <h1 className="text-xl font-bold">{config.name} — Pilotlar</h1>
         <p className="text-xs text-muted-foreground mt-1">{drivers.length} pilot</p>
       </div>
+
+      {subSeries.length > 0 && (
+        <div className="flex gap-1 p-1 bg-muted rounded-xl">
+          {validCats.map((catSlug) => (
+            <Link
+              key={catSlug}
+              href={`/${slug}/drivers?cat=${catSlug}`}
+              className={cn(
+                "flex-1 text-center text-xs font-semibold py-1.5 rounded-lg transition-colors",
+                activeCat === catSlug
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {categoryLabels[catSlug]}
+            </Link>
+          ))}
+        </div>
+      )}
 
       {drivers.length === 0 ? (
         <p className="text-center py-16 text-sm text-muted-foreground">Henüz pilot verisi yok.</p>
