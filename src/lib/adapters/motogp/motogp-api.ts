@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { Race, Standing, Driver, Circuit, StandingType, RaceStatus } from "@/types/series";
+import { lookupCircuitCoords } from "@/lib/circuit-coords";
 
 const BASE_URL = "https://api.motogp.pulselive.com/motogp/v1";
 const TIMEOUT_MS = 15_000;
@@ -223,6 +224,7 @@ export function createMotoGPFetchers(
         // API'den gerçek saat gelirse kullan; yoksa makul varsayılanlar (İstanbul saatine göre)
         const raceDate     = times.race     ?? `${ev.date_end}T12:00:00Z`;   // 15:00 İst
         const practiceDate = times.practice1 ?? `${ev.date_start}T09:00:00Z`; // 12:00 İst
+        const coords = lookupCircuitCoords(ev.circuit.name);
         return {
           round: eventId,
           name: ev.sponsored_name ?? ev.name,
@@ -236,6 +238,7 @@ export function createMotoGPFetchers(
             { type: "race" as const, date: raceDate },
           ],
           status: mapEventStatus(ev.status),
+          ...(coords ? { circuitLat: coords[0], circuitLng: coords[1] } : {}),
         };
       });
     } catch (err) {

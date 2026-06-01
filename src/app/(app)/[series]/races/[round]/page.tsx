@@ -25,6 +25,7 @@ import { CircuitHeroPhoto } from "@/components/race/CircuitHeroPhoto";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { getF1CircuitMapUrl, getF1CircuitCoords, getF1CircuitPhotoUrl } from "@/lib/circuit-data";
+import { lookupCircuitCoords } from "@/lib/circuit-coords";
 import type { Metadata } from "next";
 import type { RaceResult, Standing } from "@/types/series";
 
@@ -188,15 +189,16 @@ export default async function RaceDetailPage({ params }: Props) {
   const isCompleted = race.status === "completed";
   const isLive = race.status === "live";
 
-  const coords =
-    slug === "f1"
-      ? (getF1CircuitCoords(race.circuitId) ??
-          (race.circuitLat && race.circuitLng
-            ? ([race.circuitLat, race.circuitLng] as [number, number])
-            : null))
-      : race.circuitLat && race.circuitLng
-        ? ([race.circuitLat, race.circuitLng] as [number, number])
-        : null;
+  const coords: [number, number] | null = (() => {
+    if (slug === "f1") {
+      return (
+        getF1CircuitCoords(race.circuitId) ??
+        (race.circuitLat && race.circuitLng ? [race.circuitLat, race.circuitLng] : null)
+      );
+    }
+    if (race.circuitLat && race.circuitLng) return [race.circuitLat, race.circuitLng];
+    return lookupCircuitCoords(race.circuitName);
+  })();
   const layoutUrl = slug === "f1" ? getF1CircuitMapUrl(race.circuitId) : null;
   const photoUrl = slug === "f1" ? getF1CircuitPhotoUrl(race.circuitId) : null;
 
@@ -306,6 +308,7 @@ export default async function RaceDetailPage({ params }: Props) {
           lng={coords[1]}
           status={race.status}
           accentColor={config.color}
+          enableOpenF1={slug === "f1"}
         />
       )}
 
