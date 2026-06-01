@@ -130,9 +130,12 @@ interface Props {
   lng: number;
   status: RaceStatus;
   accentColor: string;
+  enableOpenF1?: boolean;
 }
 
-export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accentColor }: Props) {
+const FORECAST_HORIZON_DAYS = 16;
+
+export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accentColor, enableOpenF1 = false }: Props) {
   const [forecast, setForecast] = useState<DayForecast[] | null>(null);
   const [live, setLive] = useState<LiveWeather | null>(null);
   const [liveUpdatedAt, setLiveUpdatedAt] = useState<Date | null>(null);
@@ -142,6 +145,14 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
   const sessionDates = useMemo(() => [
     ...new Set(sessions.map((s) => new Date(s.date).toISOString().split("T")[0])),
   ].sort(), [sessions]);
+
+  const daysUntilRace = useMemo(() => {
+    const firstSession = sessionDates[0];
+    if (!firstSession) return Infinity;
+    return Math.ceil((new Date(firstSession).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  }, [sessionDates]);
+
+  const tooFarAhead = daysUntilRace > FORECAST_HORIZON_DAYS && status === "upcoming";
 
   const fetchForecast = useCallback(async () => {
     if (!sessionDates.length) return;
@@ -189,6 +200,10 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
   }, [lat, lng]);
 
   useEffect(() => {
+    if (tooFarAhead) {
+      setLoading(false);
+      return;
+    }
     let interval: ReturnType<typeof setInterval> | null = null;
     let cancelled = false;
 
@@ -200,8 +215,12 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
         fetchForecast(),
         (async () => {
           if (!isLiveOrCompleted) return;
-          const ok = await fetchLiveWeather();
-          if (!ok && !cancelled && status === "live") await fetchMeteoLive();
+          if (enableOpenF1) {
+            const ok = await fetchLiveWeather();
+            if (!ok && !cancelled && status === "live") await fetchMeteoLive();
+          } else if (status === "live") {
+            await fetchMeteoLive();
+          }
         })(),
       ]);
 
@@ -210,8 +229,12 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
       if (status === "live" && !cancelled) {
         interval = setInterval(async () => {
           if (cancelled) return;
-          const ok = await fetchLiveWeather();
-          if (!ok) await fetchMeteoLive();
+          if (enableOpenF1) {
+            const ok = await fetchLiveWeather();
+            if (!ok) await fetchMeteoLive();
+          } else {
+            await fetchMeteoLive();
+          }
         }, LIVE_POLL_MS);
       }
     }
@@ -221,7 +244,26 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
       cancelled = true;
       if (interval) clearInterval(interval);
     };
-  }, [status, fetchForecast, fetchLiveWeather, fetchMeteoLive]);
+  }, [status, fetchForecast, fetchLiveWeather, fetchMeteoLive, tooFarAhead]);
+
+  if (tooFarAhead) {
+    const daysUntilAvailable = daysUntilRace - FORECAST_HORIZON_DAYS;
+    const availableDate = new Date(Date.now() + daysUntilAvailable * 24 * 60 * 60 * 1000);
+    const availableDateStr = availableDate.toLocaleDateString("tr-TR", { day: "numeric", month: "long" });
+    return (
+      <section className="space-y-2">
+        <SectionHeader />
+        <div className="rounded-lg border border-border bg-card px-4 py-3 flex items-center gap-2 text-xs text-muted-foreground">
+          <Sun className="w-4 h-4 shrink-0 opacity-40" />
+          <span>
+            {daysUntilAvailable === 1
+              ? "Hava tahmini yarın görünecek"
+              : `Hava tahmini ${availableDateStr} itibarıyla görünecek`}
+          </span>
+        </div>
+      </section>
+    );
+  }
 
   if (loading && !forecast && !live) {
     return (

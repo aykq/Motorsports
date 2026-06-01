@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { Race, Standing, Driver, Circuit, StandingType, RaceStatus } from "@/types/series";
+import { lookupCircuitCoords } from "@/lib/circuit-coords";
 
 const THESPORTSDB_WEC_ID = "4413";
 const TIMEOUT_MS = 15_000;
@@ -134,6 +135,7 @@ export async function fetchWECSchedule(season: number): Promise<Race[]> {
         date: buildRaceDate(e.dateEvent, e.strTime, e.strTimestamp),
       }));
 
+      const coords = lookupCircuitCoords(venue);
       races.push({
         round,
         name: extractMainRaceName(roundEvents),
@@ -144,6 +146,7 @@ export async function fetchWECSchedule(season: number): Promise<Race[]> {
         date: raceDate,
         sessions: sessions.length > 0 ? sessions : [{ type: "race", date: raceDate }],
         status,
+        ...(coords ? { circuitLat: coords[0], circuitLng: coords[1] } : {}),
       });
     }
 
