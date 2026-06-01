@@ -12,12 +12,16 @@ export async function GET(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
-  const season = parseInt(
-    req.nextUrl.searchParams.get("season") ?? String(new Date().getFullYear())
-  );
+  const rawSeason = req.nextUrl.searchParams.get("season");
+  const season = parseInt(rawSeason ?? String(new Date().getFullYear()));
+  const currentYear = new Date().getFullYear();
 
   if (!getAdapter(slug)) {
     return NextResponse.json({ error: "Unknown series" }, { status: 404 });
+  }
+
+  if (Number.isNaN(season) || season < 2015 || season > currentYear + 1) {
+    return NextResponse.json({ error: "Invalid season" }, { status: 400 });
   }
 
   const [scheduleCache, driverStandingsCache, teamStandingsCache, driversCache] =
@@ -50,8 +54,8 @@ export async function GET(
         fresh: true,
       });
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      return NextResponse.json({ error: message }, { status: 500 });
+      console.error("[series] sync failed:", err);
+      return NextResponse.json({ error: "Data unavailable" }, { status: 500 });
     }
   }
 
