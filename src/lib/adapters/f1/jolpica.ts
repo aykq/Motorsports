@@ -144,25 +144,36 @@ const PitStopsResponseSchema = z.object({
 
 // ─── Fetchers ────────────────────────────────────────────────────────────────
 
-const FETCH_TIMEOUT_MS = 15_000;
+const FETCH_TIMEOUT_MS = 30_000;
+
+// Paralel çağrılarda aynı URL'e tek HTTP isteği gönderilir
+const inflight = new Map<string, Promise<unknown>>();
 
 async function jolpicaFetch<T>(path: string, schema: z.ZodType<T>): Promise<T> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-  try {
-    const res = await fetch(`${BASE_URL}${path}`, {
+  const url = `${BASE_URL}${path}`;
+
+  let req = inflight.get(url);
+  if (!req) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    req = fetch(url, {
       headers: {
         Accept: "application/json",
         "User-Agent": "MotorsportsHub/1.0 (personal project)",
       },
       signal: controller.signal,
       next: { revalidate: 0 },
+    }).then(async (res) => {
+      if (!res.ok) throw new Error(`Jolpica error ${res.status}: ${path}`);
+      return res.json();
+    }).finally(() => {
+      clearTimeout(timer);
+      inflight.delete(url);
     });
-    if (!res.ok) throw new Error(`Jolpica error ${res.status}: ${path}`);
-    return schema.parse(await res.json());
-  } finally {
-    clearTimeout(timer);
+    inflight.set(url, req);
   }
+
+  return schema.parse(await req);
 }
 
 function buildSessionDate(s: { date: string; time?: string }): string {

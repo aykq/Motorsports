@@ -6,10 +6,11 @@ const BASE_URL = "https://api.motogp.pulselive.com/motogp/v1";
 const TIMEOUT_MS = 15_000;
 
 // ─── Known category UUIDs (fetched dynamically, these are fallbacks) ──────────
+// 2026 season UUIDs — updated when getCategoryUuid fails (™ symbol strip fixes dynamic lookup)
 export const CATEGORY_UUIDS = {
-  MotoGP: "737ab122-76e1-4081-bedb-334caaa18c70",
-  Moto2:  "ea854a67-73a4-4a28-ac77-d67b3b2a530a",
-  Moto3:  "1ab203aa-e292-4842-8bed-971911357af1",
+  MotoGP: "e8c110ad-64aa-4e8e-8a86-f2f152f6a942",
+  Moto2:  "549640b8-fd9c-4245-acfd-60e4bc38b25c",
+  Moto3:  "954f7e65-2ef2-4423-b949-4961cc603e45",
 } as const;
 
 export const CATEGORY_LEGACY_IDS = {
@@ -103,38 +104,62 @@ const RiderSchema = z.object({
 const StandingEntrySchema = z.object({
   position: z.number(),
   points: z.number(),
-  wins: z.number().optional().default(0),
+  race_wins: z.number().optional().default(0),
   rider: z.object({
     id: z.string(),
-    name: z.string().optional(),
-    surname: z.string().optional(),
+    full_name: z.string().optional(),
     country: CountrySchema.optional(),
-    current_career_step: CareerStepSchema.nullable().optional(),
+    number: z.number().optional(),
   }).optional(),
   team: z.object({ id: z.string(), name: z.string() }).optional(),
   constructor: z.object({ id: z.string(), name: z.string() }).optional(),
 });
 
-// ─── Session schema ───────────────────────────────────────────────────────────
+// ─── Session schema (per-event endpoint: /results/sessions?eventUuid=...) ─────
 
-const SessionTypeSchema = z.union([
-  z.string(),
-  z.object({ id: z.string().optional(), name: z.string().optional() }),
-]);
-
-const RaceSessionSchema = z.object({
+const EventSessionItemSchema = z.object({
   id: z.string(),
-  type: SessionTypeSchema.nullable().optional(),
-  date_start: z.string().nullable().optional(),
-  event: z.object({ id: z.string() }).nullable().optional(),
+  type: z.string(),
+  date: z.string().nullable().optional(),
+  number: z.number().nullable().optional(),
 });
 
-interface EventSessionTimes { race?: string; practice1?: string; }
+interface EventSessionTimes {
+  race?: string;
+  practice1?: string;
+  practice2?: string;
+  practice3?: string;
+  qualifying?: string;
+  sprint?: string;
+}
 
-function extractTypeId(type: z.infer<typeof SessionTypeSchema> | null | undefined): string {
-  if (!type) return "";
-  if (typeof type === "string") return type.toUpperCase();
-  return (type.id ?? "").toUpperCase();
+async function fetchEventSessionTimes(eventUuid: string, categoryUuid: string): Promise<EventSessionTimes> {
+  const times: EventSessionTimes = {};
+  try {
+    const raw = await fetchMotogp(`/results/sessions?eventUuid=${eventUuid}&categoryUuid=${categoryUuid}`);
+    const sessions = z.array(EventSessionItemSchema).parse(raw);
+    for (const s of sessions) {
+      if (!s.date) continue;
+      const type = s.type.toUpperCase();
+      if (type === "RAC") {
+        times.race = s.date;
+      } else if (type === "SPR") {
+        times.sprint = s.date;
+      } else if (type === "Q") {
+        // Q2 (number 2) belirleyici sıralama — Q1'in önüne geçer
+        if ((s.number ?? 0) >= 2 || !times.qualifying) times.qualifying = s.date;
+      } else if (type === "WUP") {
+        times.practice3 = s.date;
+      } else if (type === "FP") {
+        if (!times.practice1) times.practice1 = s.date;
+        else if (!times.practice2) times.practice2 = s.date;
+      } else if (type === "PR") {
+        if (!times.practice2) times.practice2 = s.date;
+        else if (!times.practice1) times.practice1 = s.date;
+      }
+    }
+  } catch { /* session fetch failed — caller uses defaults */ }
+  return times;
 }
 
 // ─── Shared UUID helpers ──────────────────────────────────────────────────────
@@ -149,38 +174,17 @@ async function getSeasonUuid(season: number): Promise<string | null> {
   }
 }
 
-async function fetchAllSessionsMap(seasonUuid: string, categoryUuid: string): Promise<Map<string, EventSessionTimes>> {
-  const map = new Map<string, EventSessionTimes>();
-  try {
-    const raw = await fetchMotogp(
-      `/results/sessions?seasonUuid=${seasonUuid}&categoryUuid=${categoryUuid}&page=1&pageSize=200`
-    );
-    const asArray = z.array(RaceSessionSchema).safeParse(raw);
-    const asWrapped = z.object({ sessions: z.array(RaceSessionSchema) }).safeParse(raw);
-    const sessions = asArray.success ? asArray.data
-      : asWrapped.success ? asWrapped.data.sessions
-      : [];
-
-    for (const s of sessions) {
-      if (!s.event?.id || !s.date_start) continue;
-      const type = extractTypeId(s.type);
-      if (!map.has(s.event.id)) map.set(s.event.id, {});
-      const entry = map.get(s.event.id)!;
-      if (type === "RAC" || type === "RACE") {
-        entry.race = s.date_start;
-      } else if (!entry.practice1 && (type === "FP" || type.startsWith("FP") || type === "P")) {
-        entry.practice1 = s.date_start;
-      }
-    }
-  } catch { /* session endpoint unavailable — caller uses fallbacks */ }
-  return map;
+function normalizeCategoryName(s: string): string {
+  return s.replace(/[™®©]/g, "").trim();
 }
 
 async function getCategoryUuid(categoryName: string, fallback: string, season: number): Promise<string> {
   try {
-    const raw = await fetchMotogp(`/categories?seasonYear=${season}`);
+    const seasonUuid = await getSeasonUuid(season);
+    if (!seasonUuid) return fallback;
+    const raw = await fetchMotogp(`/results/categories?seasonUuid=${seasonUuid}`);
     const cats = z.array(CategorySchema).parse(raw);
-    const found = cats.find((c) => c.name === categoryName);
+    const found = cats.find((c) => normalizeCategoryName(c.name) === normalizeCategoryName(categoryName));
     if (found) return found.id;
   } catch { /* use fallback */ }
   return fallback;
@@ -211,12 +215,14 @@ export function createMotoGPFetchers(
       ]);
       if (!seasonUuid) return [];
 
-      const [eventsRaw, sessionMap] = await Promise.all([
-        fetchMotogp(`/results/events?seasonUuid=${seasonUuid}`),
-        fetchAllSessionsMap(seasonUuid, categoryUuid),
-      ]);
-
+      const eventsRaw = await fetchMotogp(`/results/events?seasonUuid=${seasonUuid}`);
       const events = z.array(EventSchema).parse(eventsRaw);
+
+      // Per-event session fetch (endpoint requires eventUuid)
+      const sessionTimesArr = await Promise.all(
+        events.map((ev) => fetchEventSessionTimes(ev.id, categoryUuid))
+      );
+      const sessionMap = new Map(events.map((ev, i) => [ev.id, sessionTimesArr[i]]));
 
       return events.map((ev, idx) => {
         const eventId = ev.legacy_id?.find((l) => l.categoryId === legacyCategoryId)?.eventId ?? idx + 1;
@@ -225,6 +231,17 @@ export function createMotoGPFetchers(
         const raceDate     = times.race     ?? `${ev.date_end}T12:00:00Z`;   // 15:00 İst
         const practiceDate = times.practice1 ?? `${ev.date_start}T09:00:00Z`; // 12:00 İst
         const coords = lookupCircuitCoords(ev.circuit.name);
+
+        const sessions: Race["sessions"] = [
+          { type: "practice1", date: practiceDate },
+        ];
+        if (times.practice2) sessions.push({ type: "practice2", date: times.practice2 });
+        if (times.practice3) sessions.push({ type: "practice3", date: times.practice3 });
+        if (times.qualifying) sessions.push({ type: "qualifying", date: times.qualifying });
+        if (times.sprint) sessions.push({ type: "sprint", date: times.sprint });
+        sessions.push({ type: "race", date: raceDate });
+        sessions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
         return {
           round: eventId,
           name: ev.sponsored_name ?? ev.name,
@@ -233,10 +250,7 @@ export function createMotoGPFetchers(
           location: ev.circuit.place ?? ev.country.name,
           country: ev.country.name,
           date: raceDate,
-          sessions: [
-            { type: "practice1" as const, date: practiceDate },
-            { type: "race" as const, date: raceDate },
-          ],
+          sessions,
           status: mapEventStatus(ev.status),
           ...(coords ? { circuitLat: coords[0], circuitLng: coords[1] } : {}),
         };
@@ -260,37 +274,47 @@ export function createMotoGPFetchers(
         `/results/standings?seasonUuid=${seasonUuid}&categoryUuid=${categoryUuid}&type=${apiType}`
       );
 
-      const asWrapped = z.object({ classification: z.array(StandingEntrySchema) }).safeParse(raw);
-      const asArray   = z.array(StandingEntrySchema).safeParse(raw);
-      const entries   = asWrapped.success ? asWrapped.data.classification
-                      : asArray.success   ? asArray.data
-                      : null;
-
-      if (!entries) {
-        console.warn(`[${displayName}] standings parse failed for type:`, type);
+      const parsed = z.object({ classification: z.array(StandingEntrySchema) }).safeParse(raw);
+      if (!parsed.success) {
+        console.warn(`[${displayName}] standings parse failed for type:`, type, parsed.error.message.slice(0, 100));
         return [];
+      }
+      const entries = parsed.data.classification;
+
+      if (type === "team") {
+        // MotoGP API doesn't have a separate team standings endpoint — aggregate from rider data
+        const teamMap = new Map<string, { id: string; name: string; points: number }>();
+        for (const entry of entries) {
+          if (!entry.team) continue;
+          const existing = teamMap.get(entry.team.id);
+          if (!existing) {
+            teamMap.set(entry.team.id, { id: entry.team.id, name: entry.team.name, points: entry.points });
+          } else {
+            existing.points += entry.points;
+          }
+        }
+        const teams = Array.from(teamMap.values()).sort((a, b) => b.points - a.points);
+        return teams.map((t, i) => ({
+          position: i + 1,
+          points: t.points,
+          wins: 0,
+          team: { id: t.id, name: t.name },
+        }));
       }
 
       return entries.map((entry) => ({
         position: entry.position,
         points: entry.points,
-        wins: entry.wins ?? 0,
-        ...(type === "driver" && entry.rider ? {
+        wins: entry.race_wins ?? 0,
+        ...(entry.rider ? {
           driver: {
             id: entry.rider.id,
-            firstName: entry.rider.name ?? "",
-            lastName: entry.rider.surname ?? "",
+            firstName: entry.rider.full_name?.split(" ")[0] ?? "",
+            lastName: entry.rider.full_name?.split(" ").slice(1).join(" ") ?? "",
             nationality: entry.rider.country?.name ?? "",
-            team: entry.rider.current_career_step?.team?.name,
-            teamId: entry.rider.current_career_step?.team?.id,
-            number: entry.rider.current_career_step?.number,
-            code: entry.rider.current_career_step?.short_nickname ?? undefined,
-          },
-        } : {}),
-        ...(type === "team" && (entry.team ?? entry.constructor) ? {
-          team: {
-            id: (entry.team ?? entry.constructor)!.id,
-            name: (entry.team ?? entry.constructor)!.name,
+            team: entry.team?.name,
+            teamId: entry.team?.id,
+            number: entry.rider.number,
           },
         } : {}),
       }));
@@ -320,9 +344,9 @@ export function createMotoGPFetchers(
         const r = parsed.data;
         if (r.retired === true) continue;
 
-        // Filter by category — API returns all categories despite the UUID param
-        const riderCategoryId = r.current_career_step?.category?.id;
-        if (riderCategoryId && riderCategoryId !== categoryUuid) continue;
+        // Filter by category name — UUID systems differ between /riders and /results/categories
+        const riderCategoryName = r.current_career_step?.category?.name;
+        if (riderCategoryName && normalizeCategoryName(riderCategoryName) !== normalizeCategoryName(categoryName)) continue;
 
         drivers.push({
           id: r.id,

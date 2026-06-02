@@ -48,6 +48,7 @@ interface CalendarEntry {
   circuitName: string;
   country: string;
   raceDate: string;
+  qualifyingDate: string;
   practiceDate: string;
   lat: number;
   lng: number;
@@ -55,14 +56,14 @@ interface CalendarEntry {
 
 const CARRERA_CUP_DE_CALENDAR: Record<number, CalendarEntry[]> = {
   2026: [
-    { round: 1, circuitName: "Imola",                        country: "Italy",        raceDate: "2026-04-19T10:00:00Z", practiceDate: "2026-04-17T10:00:00Z", lat: 44.3439, lng:  11.7167 },
-    { round: 2, circuitName: "Red Bull Ring",                country: "Austria",      raceDate: "2026-04-26T10:00:00Z", practiceDate: "2026-04-24T10:00:00Z", lat: 47.2197, lng:  14.7647 },
-    { round: 3, circuitName: "Circuit de Spa-Francorchamps", country: "Belgium",      raceDate: "2026-05-17T10:00:00Z", practiceDate: "2026-05-15T10:00:00Z", lat: 50.4372, lng:   5.9714 },
-    { round: 4, circuitName: "Circuit Zandvoort",            country: "Netherlands",  raceDate: "2026-05-24T10:00:00Z", practiceDate: "2026-05-22T10:00:00Z", lat: 52.3888, lng:   4.5457 },
-    { round: 5, circuitName: "Dekra Lausitzring",            country: "Germany",      raceDate: "2026-06-21T10:00:00Z", practiceDate: "2026-06-19T10:00:00Z", lat: 51.5317, lng:  14.1220 },
-    { round: 6, circuitName: "Norisring",                    country: "Germany",      raceDate: "2026-07-05T10:00:00Z", practiceDate: "2026-07-03T10:00:00Z", lat: 49.4572, lng:  11.0796 },
-    { round: 7, circuitName: "Nürburgring",                  country: "Germany",      raceDate: "2026-08-16T10:00:00Z", practiceDate: "2026-08-14T10:00:00Z", lat: 50.3356, lng:   6.9475 },
-    { round: 8, circuitName: "Hockenheimring",               country: "Germany",      raceDate: "2026-10-11T10:00:00Z", practiceDate: "2026-10-09T10:00:00Z", lat: 49.3278, lng:   8.5656 },
+    { round: 1, circuitName: "Imola",                        country: "Italy",        raceDate: "2026-04-19T10:00:00Z", qualifyingDate: "2026-04-18T09:00:00Z", practiceDate: "2026-04-17T10:00:00Z", lat: 44.3439, lng:  11.7167 },
+    { round: 2, circuitName: "Red Bull Ring",                country: "Austria",      raceDate: "2026-04-26T10:00:00Z", qualifyingDate: "2026-04-25T09:00:00Z", practiceDate: "2026-04-24T10:00:00Z", lat: 47.2197, lng:  14.7647 },
+    { round: 3, circuitName: "Circuit de Spa-Francorchamps", country: "Belgium",      raceDate: "2026-05-17T10:00:00Z", qualifyingDate: "2026-05-16T09:00:00Z", practiceDate: "2026-05-15T10:00:00Z", lat: 50.4372, lng:   5.9714 },
+    { round: 4, circuitName: "Circuit Zandvoort",            country: "Netherlands",  raceDate: "2026-05-24T10:00:00Z", qualifyingDate: "2026-05-23T09:00:00Z", practiceDate: "2026-05-22T10:00:00Z", lat: 52.3888, lng:   4.5457 },
+    { round: 5, circuitName: "Dekra Lausitzring",            country: "Germany",      raceDate: "2026-06-21T10:00:00Z", qualifyingDate: "2026-06-20T09:00:00Z", practiceDate: "2026-06-19T10:00:00Z", lat: 51.5317, lng:  14.1220 },
+    { round: 6, circuitName: "Norisring",                    country: "Germany",      raceDate: "2026-07-05T10:00:00Z", qualifyingDate: "2026-07-04T09:00:00Z", practiceDate: "2026-07-03T10:00:00Z", lat: 49.4572, lng:  11.0796 },
+    { round: 7, circuitName: "Nürburgring",                  country: "Germany",      raceDate: "2026-08-16T10:00:00Z", qualifyingDate: "2026-08-15T09:00:00Z", practiceDate: "2026-08-14T10:00:00Z", lat: 50.3356, lng:   6.9475 },
+    { round: 8, circuitName: "Hockenheimring",               country: "Germany",      raceDate: "2026-10-11T10:00:00Z", qualifyingDate: "2026-10-10T09:00:00Z", practiceDate: "2026-10-09T10:00:00Z", lat: 49.3278, lng:   8.5656 },
   ],
 };
 
@@ -89,6 +90,7 @@ function calendarToRaces(entries: CalendarEntry[]): Race[] {
     date: e.raceDate,
     sessions: [
       { type: "practice1" as const, date: e.practiceDate },
+      { type: "qualifying" as const, date: e.qualifyingDate },
       { type: "race" as const, date: e.raceDate },
     ],
     status: computeStatus(e.raceDate),

@@ -101,17 +101,17 @@ function extractMainRaceName(events: z.infer<typeof SportsDBEventSchema>[]): str
 
 const WEC_STATIC_CALENDARS: Record<number, Array<{
   round: number; name: string; circuitName: string; location: string; country: string;
-  date: string; practiceDate: string;
+  date: string; qualifyingDate: string; practiceDate: string;
 }>> = {
   2026: [
-    { round: 1, name: "6 Hours of Imola", circuitName: "Imola Circuit", location: "Imola", country: "Italy", date: "2026-04-19T09:00:00Z", practiceDate: "2026-04-18T07:00:00Z" },
-    { round: 2, name: "6 Hours of Spa-Francorchamps", circuitName: "Circuit de Spa-Francorchamps", location: "Spa-Francorchamps", country: "Belgium", date: "2026-05-09T09:00:00Z", practiceDate: "2026-05-08T07:00:00Z" },
-    { round: 3, name: "24 Hours of Le Mans", circuitName: "Circuit de la Sarthe", location: "Le Mans", country: "France", date: "2026-06-13T14:00:00Z", practiceDate: "2026-06-10T08:00:00Z" },
-    { round: 4, name: "6 Hours of São Paulo", circuitName: "Interlagos Circuit", location: "São Paulo", country: "Brazil", date: "2026-07-12T13:00:00Z", practiceDate: "2026-07-11T10:00:00Z" },
-    { round: 5, name: "Lone Star Le Mans", circuitName: "Circuit of the Americas", location: "Austin", country: "United States", date: "2026-09-06T17:00:00Z", practiceDate: "2026-09-05T14:00:00Z" },
-    { round: 6, name: "6 Hours of Fuji", circuitName: "Fuji Speedway", location: "Oyama", country: "Japan", date: "2026-09-27T02:00:00Z", practiceDate: "2026-09-26T02:00:00Z" },
-    { round: 7, name: "Qatar 1812 km", circuitName: "Lusail International Circuit", location: "Lusail", country: "Qatar", date: "2026-10-24T13:00:00Z", practiceDate: "2026-10-23T10:00:00Z" },
-    { round: 8, name: "8 Hours of Bahrain", circuitName: "Bahrain International Circuit", location: "Sakhir", country: "Bahrain", date: "2026-11-07T13:00:00Z", practiceDate: "2026-11-06T10:00:00Z" },
+    { round: 1, name: "6 Hours of Imola",             circuitName: "Imola Circuit",                  location: "Imola",           country: "Italy",          date: "2026-04-19T09:00:00Z", qualifyingDate: "2026-04-18T11:00:00Z", practiceDate: "2026-04-18T07:00:00Z" },
+    { round: 2, name: "6 Hours of Spa-Francorchamps", circuitName: "Circuit de Spa-Francorchamps",   location: "Spa-Francorchamps", country: "Belgium",        date: "2026-05-09T09:00:00Z", qualifyingDate: "2026-05-08T11:00:00Z", practiceDate: "2026-05-08T07:00:00Z" },
+    { round: 3, name: "24 Hours of Le Mans",           circuitName: "Circuit de la Sarthe",           location: "Le Mans",         country: "France",         date: "2026-06-13T14:00:00Z", qualifyingDate: "2026-06-11T17:00:00Z", practiceDate: "2026-06-10T08:00:00Z" },
+    { round: 4, name: "6 Hours of São Paulo",          circuitName: "Interlagos Circuit",             location: "São Paulo",       country: "Brazil",         date: "2026-07-12T13:00:00Z", qualifyingDate: "2026-07-11T14:00:00Z", practiceDate: "2026-07-11T10:00:00Z" },
+    { round: 5, name: "Lone Star Le Mans",             circuitName: "Circuit of the Americas",        location: "Austin",          country: "United States",  date: "2026-09-06T17:00:00Z", qualifyingDate: "2026-09-05T17:30:00Z", practiceDate: "2026-09-05T14:00:00Z" },
+    { round: 6, name: "6 Hours of Fuji",               circuitName: "Fuji Speedway",                  location: "Oyama",           country: "Japan",          date: "2026-09-27T02:00:00Z", qualifyingDate: "2026-09-26T06:00:00Z", practiceDate: "2026-09-26T02:00:00Z" },
+    { round: 7, name: "Qatar 1812 km",                 circuitName: "Lusail International Circuit",   location: "Lusail",          country: "Qatar",          date: "2026-10-24T13:00:00Z", qualifyingDate: "2026-10-23T13:30:00Z", practiceDate: "2026-10-23T10:00:00Z" },
+    { round: 8, name: "8 Hours of Bahrain",            circuitName: "Bahrain International Circuit",  location: "Sakhir",          country: "Bahrain",        date: "2026-11-07T13:00:00Z", qualifyingDate: "2026-11-06T13:30:00Z", practiceDate: "2026-11-06T10:00:00Z" },
   ],
 };
 
@@ -133,6 +133,7 @@ function buildStaticSchedule(season: number): Race[] {
       date: r.date,
       sessions: [
         { type: "practice1" as const, date: r.practiceDate },
+        { type: "qualifying" as const, date: r.qualifyingDate },
         { type: "race" as const, date: r.date },
       ],
       status,
