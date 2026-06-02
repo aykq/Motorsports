@@ -6,10 +6,12 @@ import { TeamLogo } from "@/components/series/TeamLogo";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import type { Metadata } from "next";
 
 interface Props {
   params: Promise<{ series: string }>;
+  searchParams: Promise<{ cat?: string }>;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -33,15 +35,20 @@ function TeamBadge({ teamId, teamName }: { teamId?: string; teamName?: string })
   );
 }
 
-export default async function StandingsPage({ params }: Props) {
+export default async function StandingsPage({ params, searchParams }: Props) {
   const { series: slug } = await params;
+  const { cat } = await searchParams;
   const config = getSeriesConfig(slug);
   if (!config || !config.available) notFound();
 
   const year = new Date().getFullYear();
+  const subSeries = config.subSeries ?? [];
+  const validCats = [slug, ...subSeries];
+  const activeCat = validCats.includes(cat ?? "") ? (cat ?? slug) : slug;
+
   const [{ standings: driverStandings }, { standings: teamStandings }] = await Promise.all([
-    getCachedStandings(slug, year, "driver"),
-    getCachedStandings(slug, year, "team"),
+    getCachedStandings(activeCat, year, "driver"),
+    getCachedStandings(activeCat, year, "team"),
   ]);
 
   return (
@@ -50,6 +57,30 @@ export default async function StandingsPage({ params }: Props) {
         <h1 className="text-xl font-bold">{config.name} — Puan Tablosu</h1>
         <p className="text-xs text-muted-foreground mt-1">{year} Sezonu</p>
       </div>
+
+      {/* Kategori filtreleme — sadece subSeries olan seriler için (ör. MotoGP) */}
+      {subSeries.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
+          {validCats.map((c) => {
+            const catConfig = getSeriesConfig(c);
+            const isActive = c === activeCat;
+            return (
+              <Link
+                key={c}
+                href={c === slug ? `/${slug}/standings` : `/${slug}/standings?cat=${c}`}
+                className="shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors"
+                style={
+                  isActive
+                    ? { backgroundColor: config.color, color: "#fff", borderColor: config.color }
+                    : { borderColor: "hsl(var(--border))", color: "hsl(var(--muted-foreground))" }
+                }
+              >
+                {catConfig?.shortName ?? c.toUpperCase()}
+              </Link>
+            );
+          })}
+        </div>
+      )}
 
       <Tabs defaultValue="driver">
         <TabsList className="w-full">
@@ -68,11 +99,11 @@ export default async function StandingsPage({ params }: Props) {
                 ? (getF1DriverImage(s.driver?.id ?? "") ?? s.driver?.image)
                 : s.driver?.image;
               return (
-                <div
+                <Link
                   key={s.position}
-                  className="flex items-center gap-3 px-3 py-2 rounded-lg bg-card border border-border overflow-hidden relative"
+                  href={s.driver ? `/${slug}/drivers/${s.driver.id}` : "#"}
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg bg-card border border-border overflow-hidden relative hover:bg-accent/50 transition-colors"
                 >
-                  {/* Subtle team color accent on left edge */}
                   <div
                     className="absolute left-0 top-0 bottom-0 w-0.5"
                     style={{ backgroundColor: teamColor }}
@@ -117,7 +148,7 @@ export default async function StandingsPage({ params }: Props) {
                       <p className="text-xs text-muted-foreground">{s.wins} galibiyet</p>
                     )}
                   </div>
-                </div>
+                </Link>
               );
             })
           )}
@@ -131,9 +162,10 @@ export default async function StandingsPage({ params }: Props) {
               const team = getF1Team(s.team?.id) ?? getF1TeamByName(s.team?.name);
               const teamColor = team?.color ?? config.color;
               return (
-                <div
+                <Link
                   key={s.position}
-                  className="flex items-center gap-3 px-3 py-3 rounded-lg bg-card border border-border relative overflow-hidden"
+                  href={s.team?.id ? `/${activeCat}/teams/${s.team.id}` : "#"}
+                  className="flex items-center gap-3 px-3 py-3 rounded-lg bg-card border border-border relative overflow-hidden hover:bg-accent/50 transition-colors"
                 >
                   <div
                     className="absolute left-0 top-0 bottom-0 w-0.5"
@@ -165,7 +197,7 @@ export default async function StandingsPage({ params }: Props) {
                       <p className="text-xs text-muted-foreground mt-0.5">{s.wins} galibiyet</p>
                     )}
                   </div>
-                </div>
+                </Link>
               );
             })
           )}
