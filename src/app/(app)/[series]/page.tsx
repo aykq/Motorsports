@@ -269,7 +269,7 @@ export default async function SeriesPage({ params }: Props) {
                       position: s.position,
                       name: f1Team?.fullName ?? s.team?.name ?? "—",
                       sub: "",
-                      href: "#",
+                      href: s.team?.id ? `/${slug}/teams/${s.team.id}` : "#",
                       points: s.points,
                     };
                   })}

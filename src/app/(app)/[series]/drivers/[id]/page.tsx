@@ -61,7 +61,9 @@ export default async function DriverDetailPage({ params }: Props) {
     getCachedSchedule(slug, year),
   ]);
 
-  const driver = drivers.find((d) => d.id === id);
+  const driver =
+    drivers.find((d) => d.id === id) ??
+    driverStandings.find((s) => s.driver?.id === id)?.driver;
   if (!driver) notFound();
 
   const standing = driverStandings.find((s) => s.driver?.id === id);
