@@ -269,7 +269,7 @@ export function createMotoGPFetchers(
       ]);
       if (!seasonUuid) return [];
 
-      const apiType = type === "driver" ? "riders" : "constructors";
+      const apiType = type === "driver" || type === "team" ? "riders" : "constructors";
       const raw = await fetchMotogp(
         `/results/standings?seasonUuid=${seasonUuid}&categoryUuid=${categoryUuid}&type=${apiType}`
       );
@@ -283,12 +283,14 @@ export function createMotoGPFetchers(
 
       if (type === "team") {
         // MotoGP API doesn't have a separate team standings endpoint — aggregate from rider data
+        // Key by name (not id) — same team can appear under different IDs in the API
         const teamMap = new Map<string, { id: string; name: string; points: number }>();
         for (const entry of entries) {
           if (!entry.team) continue;
-          const existing = teamMap.get(entry.team.id);
+          const key = entry.team.name.trim();
+          const existing = teamMap.get(key);
           if (!existing) {
-            teamMap.set(entry.team.id, { id: entry.team.id, name: entry.team.name, points: entry.points });
+            teamMap.set(key, { id: entry.team.id, name: entry.team.name, points: entry.points });
           } else {
             existing.points += entry.points;
           }
