@@ -145,12 +145,15 @@ function buildStaticSchedule(season: number): Race[] {
 // ─── Fetch Functions ──────────────────────────────────────────────────────────
 
 export async function fetchWECSchedule(season: number): Promise<Race[]> {
+  // Statik takvim varsa önce onu kur; TheSportsDB sadece status güncellemesi için kullanılır
+  const staticRaces = buildStaticSchedule(season);
+
   try {
     const raw = await fetchSportsDB(
       `/eventsseason.php?id=${THESPORTSDB_WEC_ID}&s=${season}`
     );
     const parsed = EventsResponseSchema.safeParse(raw);
-    if (!parsed.success || !parsed.data.events) return [];
+    if (!parsed.success || !parsed.data.events) return staticRaces.length > 0 ? staticRaces : [];
 
     const events = parsed.data.events;
 
@@ -163,6 +166,28 @@ export async function fetchWECSchedule(season: number): Promise<Race[]> {
       roundMap.get(round)!.push(ev);
     }
 
+    // TheSportsDB'den gelen status bilgisini çıkar (tarih → status)
+    const statusByDate = new Map<string, RaceStatus>();
+    for (const [, roundEvents] of roundMap) {
+      const primary = roundEvents.find(
+        (e) =>
+          !e.strEvent.toLowerCase().includes("practice") &&
+          !e.strEvent.toLowerCase().includes("quali")
+      ) ?? roundEvents[roundEvents.length - 1];
+      const raceDate = buildRaceDate(primary.dateEvent, primary.strTime, primary.strTimestamp);
+      statusByDate.set(raceDate.slice(0, 10), mapStatus(primary.strStatus));
+    }
+
+    // Statik takvim varsa TheSportsDB status'uyla güncelle
+    if (staticRaces.length > 0) {
+      return staticRaces.map((r) => {
+        const dateKey = r.date.slice(0, 10);
+        const liveStatus = statusByDate.get(dateKey);
+        return liveStatus ? { ...r, status: liveStatus } : r;
+      });
+    }
+
+    // Statik takvim yok — TheSportsDB verisini doğrudan kullan
     const races: Race[] = [];
     for (const [round, roundEvents] of roundMap) {
       const primary = roundEvents.find(
@@ -196,21 +221,12 @@ export async function fetchWECSchedule(season: number): Promise<Race[]> {
       });
     }
 
-    // TheSportsDB intRound değerleri gerçek takvimle uyuşmayabilir —
-    // tarihe göre sırala ve round numaralarını yeniden ata
     races.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     races.forEach((r, i) => { r.round = i + 1; });
-
-    // Yetersiz veri gelirse statik takvimle tamamla
-    if (races.length < 4) {
-      const staticRaces = buildStaticSchedule(season);
-      if (staticRaces.length > 0) return staticRaces;
-    }
-
     return races;
   } catch (err) {
     console.error("[WEC] fetchSchedule error:", err);
-    return buildStaticSchedule(season);
+    return staticRaces.length > 0 ? staticRaces : [];
   }
 }
 
