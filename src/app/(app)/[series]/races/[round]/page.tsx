@@ -221,13 +221,15 @@ export default async function RaceDetailPage({ params }: Props) {
       {/* ── Header ── */}
       <div className="space-y-2">
         <div className="flex items-center gap-2 flex-wrap">
-          <Badge
-            variant="secondary"
-            className="text-xs font-bold"
-            style={{ backgroundColor: config.color + "22", color: config.color }}
-          >
-            {config.shortName}
-          </Badge>
+          <Link href={`/${slug}`}>
+            <Badge
+              variant="secondary"
+              className="text-xs font-bold cursor-pointer hover:opacity-80 transition-opacity"
+              style={{ backgroundColor: config.color + "22", color: config.color }}
+            >
+              {config.shortName}
+            </Badge>
+          </Link>
           <span className="text-xs text-muted-foreground">Yarış {race.round}</span>
           <Badge
             variant={isLive ? "destructive" : isCompleted ? "secondary" : "outline"}
