@@ -199,38 +199,39 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
         )}>
           {seriesCountdowns.map((sc) => {
             if (!sc.nextRaceDate) return null;
-            return (
-              <div
-                key={sc.slug}
-                className="rounded-xl bg-card border border-border p-4 space-y-3"
-                style={{ borderTopWidth: 2, borderTopColor: sc.color }}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="text-xs font-black px-2 py-0.5 rounded"
-                      style={{ backgroundColor: `${sc.color}25`, color: sc.color }}
-                    >
-                      {sc.shortName}
-                    </span>
-                    {sc.nextRaceHref && (
-                      <Link
-                        href={sc.nextRaceHref}
-                        className="text-xs text-muted-foreground hover:text-foreground truncate max-w-[160px]"
-                      >
-                        {sc.nextRaceName}
-                      </Link>
-                    )}
+            const CardWrapper = sc.nextRaceHref
+              ? ({ children }: { children: React.ReactNode }) => (
+                  <Link href={sc.nextRaceHref!} className="block rounded-xl bg-card border border-border p-4 space-y-3 hover:bg-accent/50 transition-colors cursor-pointer" style={{ borderTopWidth: 2, borderTopColor: sc.color }}>
+                    {children}
+                  </Link>
+                )
+              : ({ children }: { children: React.ReactNode }) => (
+                  <div className="rounded-xl bg-card border border-border p-4 space-y-3" style={{ borderTopWidth: 2, borderTopColor: sc.color }}>
+                    {children}
                   </div>
+                );
+            return (
+              <CardWrapper key={sc.slug}>
+                <div className="flex items-center gap-2">
+                  <span
+                    className="text-xs font-black px-2 py-0.5 rounded shrink-0"
+                    style={{ backgroundColor: `${sc.color}25`, color: sc.color }}
+                  >
+                    {sc.shortName}
+                  </span>
+                  <span className="text-xs text-muted-foreground truncate">{sc.nextRaceName}</span>
                 </div>
                 <Countdown targetDate={sc.nextRaceDate} compact label="" />
-              </div>
+              </CardWrapper>
             );
           })}
         </div>
       ) : nextRace ? (
         /* Single countdown for filtered series */
-        <div className="rounded-xl bg-card border border-border p-6 space-y-4">
+        <Link
+          href={`/${nextRace.seriesSlug}/races/${nextRace.round}`}
+          className="block rounded-xl bg-card border border-border p-6 space-y-4 hover:bg-accent/50 transition-colors cursor-pointer"
+        >
           <div className="flex items-center gap-2 flex-wrap">
             <span
               className="text-xs font-black px-2 py-0.5 rounded"
@@ -247,7 +248,7 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
           <div className="text-xs text-muted-foreground">
             {nextRace.circuitName} · {nextRace.location}, {nextRace.country}
           </div>
-        </div>
+        </Link>
       ) : (
         <div className="rounded-xl bg-card border border-border p-6 text-center text-muted-foreground">
           <p className="text-sm">Yaklaşan yarış bulunamadı.</p>
