@@ -7,6 +7,7 @@ export type NotificationPermission = "default" | "granted" | "denied";
 interface UseNotificationsReturn {
   permission: NotificationPermission;
   isSupported: boolean;
+  isSecureContext: boolean;
   isSubscribed: boolean;
   subscription: PushSubscription | null;
   enabledSeries: string[];
@@ -44,6 +45,7 @@ function writeStorage(series: string[]) {
 export function useNotifications(): UseNotificationsReturn {
   const [permission, setPermission] = useState<NotificationPermission>("default");
   const [isSupported, setIsSupported] = useState(false);
+  const [isSecureContext, setIsSecureContext] = useState(true);
   const [subscription, setSubscription] = useState<PushSubscription | null>(null);
   // localStorage'dan anında oku — sekme değişince sıfırlanmaz
   const [enabledSeries, setEnabledSeriesRaw] = useState<string[]>(() => {
@@ -57,8 +59,10 @@ export function useNotifications(): UseNotificationsReturn {
   }, []);
 
   useEffect(() => {
+    const secure = window.isSecureContext;
+    setIsSecureContext(secure);
     const supported =
-      typeof window !== "undefined" &&
+      secure &&
       "serviceWorker" in navigator &&
       "PushManager" in window &&
       "Notification" in window;
@@ -170,6 +174,7 @@ export function useNotifications(): UseNotificationsReturn {
   return {
     permission,
     isSupported,
+    isSecureContext,
     isSubscribed: subscription !== null,
     subscription,
     enabledSeries,

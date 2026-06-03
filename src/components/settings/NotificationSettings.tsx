@@ -11,6 +11,7 @@ export function NotificationSettings() {
   const {
     permission,
     isSupported,
+    isSecureContext,
     isSubscribed,
     enabledSeries,
     requestPermission,
@@ -26,7 +27,9 @@ export function NotificationSettings() {
           Bildirimler
         </h2>
         <p className="text-sm text-muted-foreground">
-          Tarayıcınız push bildirimlerini desteklemiyor.
+          {!isSecureContext
+            ? "Push bildirimler yalnızca HTTPS bağlantısında çalışır. HTTP üzerinden eriştiğiniz için bu özellik kullanılamıyor."
+            : "Tarayıcınız push bildirimleri desteklemiyor."}
         </p>
       </section>
     );
