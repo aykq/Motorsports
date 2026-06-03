@@ -308,7 +308,7 @@ function StandingsTable({ color, rows }: { color: string; rows: StandingsRow[] }
         </div>
         {rows.map((s, i) => (
           <Link
-            key={s.position}
+            key={`${s.position}-${s.name}-${i}`}
             href={s.href}
             className={cn(
               "flex items-center px-4 py-3 hover:bg-white/5 transition-colors",
