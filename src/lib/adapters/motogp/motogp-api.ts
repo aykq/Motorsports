@@ -3,6 +3,15 @@ import type { Race, Standing, Driver, Circuit, StandingType, RaceStatus } from "
 import { lookupCircuitCoords } from "@/lib/circuit-coords";
 
 const BASE_URL = "https://api.motogp.pulselive.com/motogp/v1";
+
+const TITLE_CASE_SKIP = new Set(["of", "de", "la", "le", "du", "des", "the", "and", "at", "in", "on"]);
+function toTitleCase(str: string): string {
+  return str
+    .toLowerCase()
+    .split(" ")
+    .map((w, i) => (i === 0 || !TITLE_CASE_SKIP.has(w)) ? w.charAt(0).toUpperCase() + w.slice(1) : w)
+    .join(" ");
+}
 const TIMEOUT_MS = 15_000;
 
 // ─── Known category UUIDs (fetched dynamically, these are fallbacks) ──────────
@@ -244,7 +253,7 @@ export function createMotoGPFetchers(
 
         return {
           round: eventId,
-          name: ev.sponsored_name ?? ev.name,
+          name: toTitleCase(ev.sponsored_name ?? ev.name),
           circuitId: ev.circuit.id,
           circuitName: ev.circuit.name,
           location: ev.circuit.place ?? ev.country.name,
