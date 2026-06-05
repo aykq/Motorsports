@@ -1,5 +1,6 @@
 import { getCachedStandings, getCachedDrivers } from "@/lib/cache";
 import { getSeriesConfig } from "@/lib/series-config";
+import { BackButton } from "@/components/layout/BackButton";
 import { getF1Team } from "@/lib/f1-teams";
 import { TeamLogo } from "@/components/series/TeamLogo";
 import { notFound } from "next/navigation";
@@ -40,6 +41,7 @@ export default async function TeamsPage({ params }: Props) {
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
       <div className="space-y-1">
+        <BackButton fallbackHref={`/${slug}`} label={config.shortName} />
         <h1 className="text-2xl font-bold">Takımlar</h1>
         <p className="text-sm text-muted-foreground">{year} Konstruktör Şampiyonası</p>
       </div>

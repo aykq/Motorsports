@@ -1,5 +1,6 @@
 import { getCachedSchedule } from "@/lib/cache";
 import { getSeriesConfig } from "@/lib/series-config";
+import { BackButton } from "@/components/layout/BackButton";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { MapPin } from "lucide-react";
@@ -29,9 +30,10 @@ export default async function CircuitsListPage({ params }: Props) {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-      <div>
+      <div className="space-y-1">
+        <BackButton fallbackHref={`/${slug}`} label={config.shortName} />
         <h1 className="text-xl font-bold">{config.name} — Pistler</h1>
-        <p className="text-xs text-muted-foreground mt-1">{circuits.length} pist</p>
+        <p className="text-xs text-muted-foreground">{circuits.length} pist</p>
       </div>
 
       {circuits.length === 0 ? (

@@ -215,7 +215,7 @@ export default async function RaceDetailPage({ params }: Props) {
     : { date: "—", time: "—" };
 
   return (
-    <div className="max-w-2xl md:max-w-3xl mx-auto px-4 py-6 space-y-6">
+    <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
       <BackButton fallbackHref={`/${slug}/schedule`} label="Takvim" />
 
       {/* ── Header ── */}
