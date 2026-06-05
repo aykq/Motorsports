@@ -5,13 +5,9 @@ import { usePathname } from "next/navigation";
 import { CalendarDays, Grid2X2, Heart, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-
-const NAV_ITEMS = [
-  { href: "/", label: "Takvim", icon: CalendarDays },
-  { href: "/series", label: "Seriler", icon: Grid2X2 },
-  { href: "/favorites", label: "Favoriler", icon: Heart },
-  { href: "/settings", label: "Ayarlar", icon: Settings },
-];
+import { useTranslations } from "next-intl";
+import { LanguageToggle } from "@/components/layout/LanguageToggle";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 
 interface SidebarProps {
   user: {
@@ -23,6 +19,14 @@ interface SidebarProps {
 
 export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
+  const t = useTranslations("nav");
+
+  const NAV_ITEMS = [
+    { href: "/", label: t("calendar"), icon: CalendarDays },
+    { href: "/series", label: t("series"), icon: Grid2X2 },
+    { href: "/favorites", label: t("favorites"), icon: Heart },
+    { href: "/settings", label: t("settings"), icon: Settings },
+  ];
 
   return (
     <aside className="hidden md:flex flex-col w-60 shrink-0 border-r border-border bg-background h-screen sticky top-0">
@@ -54,7 +58,11 @@ export function Sidebar({ user }: SidebarProps) {
         })}
       </nav>
 
-      <div className="p-4 border-t border-border">
+      <div className="p-4 border-t border-border space-y-3">
+        <div className="flex items-center gap-2 justify-between">
+          <LanguageToggle />
+          <ThemeToggle />
+        </div>
         <div className="flex items-center gap-3 px-1">
           <Avatar className="w-8 h-8 shrink-0">
             <AvatarImage src={user.image ?? undefined} />

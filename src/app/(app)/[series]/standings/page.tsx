@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
 
 interface Props {
@@ -18,7 +19,8 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { series: slug } = await params;
   const config = getSeriesConfig(slug);
-  return { title: `${config?.name ?? slug} — Puan Tablosu` };
+  const t = await getTranslations("standingsPage");
+  return { title: `${config?.name ?? slug} — ${t("title")}` };
 }
 
 function TeamBadge({ teamId, teamName }: { teamId?: string; teamName?: string }) {
@@ -42,6 +44,7 @@ export default async function StandingsPage({ params, searchParams }: Props) {
   const config = getSeriesConfig(slug);
   if (!config || !config.available) notFound();
 
+  const t = await getTranslations("standingsPage");
   const year = new Date().getFullYear();
   const subSeries = config.subSeries ?? [];
   const validCats = [slug, ...subSeries];
@@ -56,11 +59,10 @@ export default async function StandingsPage({ params, searchParams }: Props) {
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
       <div className="space-y-1">
         <BackButton fallbackHref={`/${slug}`} label={config.shortName} />
-        <h1 className="text-xl font-bold">{config.name} — Puan Tablosu</h1>
-        <p className="text-xs text-muted-foreground">{year} Sezonu</p>
+        <h1 className="text-xl font-bold">{config.name} — {t("title")}</h1>
+        <p className="text-xs text-muted-foreground">{t("season", { year })}</p>
       </div>
 
-      {/* Kategori filtreleme — sadece subSeries olan seriler için (ör. MotoGP) */}
       {subSeries.length > 0 && (
         <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
           {validCats.map((c) => {
@@ -86,13 +88,13 @@ export default async function StandingsPage({ params, searchParams }: Props) {
 
       <Tabs defaultValue="driver">
         <TabsList className="w-full">
-          <TabsTrigger value="driver" className="flex-1">Sürücüler</TabsTrigger>
-          <TabsTrigger value="team" className="flex-1">Takımlar</TabsTrigger>
+          <TabsTrigger value="driver" className="flex-1">{t("drivers")}</TabsTrigger>
+          <TabsTrigger value="team" className="flex-1">{t("teams")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="driver" className="mt-4 space-y-1.5">
           {driverStandings.length === 0 ? (
-            <p className="text-center py-8 text-sm text-muted-foreground">Henüz puan verisi yok.</p>
+            <p className="text-center py-8 text-sm text-muted-foreground">{t("noData")}</p>
           ) : (
             driverStandings.map((s) => {
               const f1Team = getF1Team(s.driver?.teamId) ?? getF1TeamByName(s.driver?.team);
@@ -147,7 +149,7 @@ export default async function StandingsPage({ params, searchParams }: Props) {
                   <div className="text-right shrink-0">
                     <p className="font-bold text-sm">{s.points} pts</p>
                     {s.wins > 0 && (
-                      <p className="text-xs text-muted-foreground">{s.wins} galibiyet</p>
+                      <p className="text-xs text-muted-foreground">{t("wins", { count: s.wins })}</p>
                     )}
                   </div>
                 </Link>
@@ -158,7 +160,7 @@ export default async function StandingsPage({ params, searchParams }: Props) {
 
         <TabsContent value="team" className="mt-4 space-y-1.5">
           {teamStandings.length === 0 ? (
-            <p className="text-center py-8 text-sm text-muted-foreground">Henüz puan verisi yok.</p>
+            <p className="text-center py-8 text-sm text-muted-foreground">{t("noData")}</p>
           ) : (
             teamStandings.map((s) => {
               const team = getF1Team(s.team?.id) ?? getF1TeamByName(s.team?.name);
@@ -196,7 +198,7 @@ export default async function StandingsPage({ params, searchParams }: Props) {
                   <div className="text-right shrink-0">
                     <Badge variant="secondary" className="font-bold">{s.points} pts</Badge>
                     {s.wins > 0 && (
-                      <p className="text-xs text-muted-foreground mt-0.5">{s.wins} galibiyet</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{t("wins", { count: s.wins })}</p>
                     )}
                   </div>
                 </Link>

@@ -1,0 +1,160 @@
+{
+  "nav": {
+    "calendar": "Takvim",
+    "series": "Seriler",
+    "favorites": "Favoriler",
+    "settings": "Ayarlar"
+  },
+  "calendar": {
+    "title": "Takvim",
+    "season": "{year} Sezonu",
+    "all": "Tümü",
+    "past": "Geçmiş",
+    "live": "CANLI",
+    "completed": "Tamamlandı",
+    "cancelled": "İptal",
+    "nextRace": "Sıradaki Yarışa",
+    "noUpcoming": "Yaklaşan yarış bulunamadı.",
+    "noData": "Bu seri için henüz veri yok."
+  },
+  "series": {
+    "title": "Seriler",
+    "subtitle": "Takip etmek istediğin seriyi seç",
+    "active": "Aktif",
+    "comingSoon": "Yakında"
+  },
+  "favorites": {
+    "title": "Favoriler",
+    "subtitle": "Takip etmek istediğin serileri seç",
+    "myFavorites": "Favori Serilerim",
+    "availableSeries": "Mevcut Seriler",
+    "comingSoon": "Yakında",
+    "addToFavorites": "Favorilere ekle",
+    "removeFromFavorites": "Favorilerden çıkar"
+  },
+  "settings": {
+    "title": "Ayarlar",
+    "account": {
+      "title": "Hesap",
+      "defaultUser": "Kullanıcı",
+      "signOut": "Çıkış Yap"
+    },
+    "notifications": {
+      "title": "Bildirimler",
+      "notSupported": "Tarayıcınız push bildirimleri desteklemiyor.",
+      "httpsRequired": "Push bildirimler yalnızca HTTPS bağlantısında çalışır. HTTP üzerinden eriştiğiniz için bu özellik kullanılamıyor.",
+      "denied": "Bildirim izni reddedildi. Tarayıcı ayarlarından etkinleştirin.",
+      "description": "Yarışlardan 1 saat önce bildirim almak için etkinleştirin.",
+      "enable": "Bildirimleri Etkinleştir",
+      "disable": "Bildirimleri Kapat",
+      "seriesQuestion": "Hangi seriler için bildirim almak istiyorsun?"
+    },
+    "appearance": {
+      "title": "Görünüm",
+      "language": "Dil",
+      "theme": "Tema",
+      "dark": "Koyu",
+      "light": "Açık",
+      "system": "Sistem",
+      "turkish": "Türkçe",
+      "english": "English"
+    }
+  },
+  "login": {
+    "tagline": "F1, WEC, MotoGP ve daha fazlası — tek bir yerde",
+    "googleSignIn": "Google ile Giriş Yap",
+    "magicLink": "Sihirli Bağlantı Gönder",
+    "emailPlaceholder": "email@ornek.com",
+    "or": "veya",
+    "devLogin": "Dev Login (şifresiz)"
+  },
+  "seriesPage": {
+    "nextRound": "Sonraki Tur",
+    "viewDetails": "Detaylar",
+    "schedule": "Takvim",
+    "drivers": "Pilotlar",
+    "teams": "Takımlar",
+    "standings": "Puan Tablosu",
+    "viewAll": "Tümünü Gör",
+    "noData": "Henüz veri yok."
+  },
+  "schedulePage": {
+    "title": "Takvim",
+    "season": "{year} Sezonu · {count} yarış",
+    "upcoming": "Yaklaşan ({count})",
+    "completed": "Tamamlanan ({count})",
+    "noData": "Henüz takvim verisi yok."
+  },
+  "standingsPage": {
+    "title": "Puan Tablosu",
+    "season": "{year} Sezonu",
+    "drivers": "Sürücüler",
+    "teams": "Takımlar",
+    "noData": "Henüz puan verisi yok.",
+    "wins": "{count} galibiyet"
+  },
+  "driversPage": {
+    "title": "Pilotlar",
+    "count": "{count} pilot",
+    "noData": "Henüz pilot verisi yok.",
+    "unknownTeam": "Bilinmeyen Takım"
+  },
+  "teamsPage": {
+    "title": "Takımlar",
+    "noData": "Henüz takım verisi yok."
+  },
+  "circuitsPage": {
+    "title": "Pistler",
+    "noData": "Henüz pist verisi yok."
+  },
+  "racePage": {
+    "round": "Yarış {round}",
+    "schedule": "Program",
+    "results": "Yarış Sonuçları",
+    "tireStints": "Lastik Stintleri",
+    "raceEvents": "Yarış Olayları",
+    "championship": "Şampiyona Durumu (Bu Yarış Sonrası)",
+    "driverChampionship": "Pilot Şampiyonası",
+    "teamChampionship": "Takım Şampiyonası",
+    "quotes": "Pilot & Takım Demeçleri",
+    "quotesCompleted": "Yarışa ait demeçler AI analizi ile yakında burada görünecek.",
+    "quotesPending": "Sürücü ve takım demeçleri yarış haftası AI ile burada toplanacak.",
+    "analysis": "Teknik & Strateji Analizi",
+    "updates": "Beklenen Güncellemeler",
+    "analysisCompleted": "Strateji analizi, takım güncellemelerinin etkileri AI analizi ile yakında burada görünecek.",
+    "analysisPending": "Takımların getirdiği teknik güncellemeler ve etki analizleri AI ile burada görünecek.",
+    "noDataPending": "Yarış verileri yarış tamamlandıktan sonra burada görünecek.",
+    "dataFooter": "Veri: Jolpica (Ergast) · OpenF1 · Open-Meteo",
+    "ist": "İST",
+    "colDriverTeam": "Pilot / Takım",
+    "colPoints": "Puan",
+    "colTimeStatus": "Süre / Durum",
+    "colPos": "P"
+  },
+  "sessions": {
+    "practice1": "1. Antrenman",
+    "practice2": "2. Antrenman",
+    "practice3": "3. Antrenman",
+    "qualifying": "Sıralama",
+    "sprintQuali": "Sprint Sıralama",
+    "sprint": "Sprint",
+    "race": "Yarış"
+  },
+  "raceStatus": {
+    "upcoming": "Yaklaşan",
+    "live": "Canlı",
+    "completed": "Tamamlandı",
+    "cancelled": "İptal"
+  },
+  "countdown": {
+    "days": "Gün",
+    "hours": "Saat",
+    "minutes": "Dak",
+    "seconds": "San",
+    "started": "Başladı!"
+  },
+  "common": {
+    "back": "Geri",
+    "schedule": "Takvim"
+  }
+}

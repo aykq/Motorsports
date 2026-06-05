@@ -6,8 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Bell, BellOff, BellRing } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 export function NotificationSettings() {
+  const t = useTranslations("settings.notifications");
   const {
     permission,
     isSupported,
@@ -24,12 +26,10 @@ export function NotificationSettings() {
     return (
       <section className="rounded-xl bg-card border border-border p-4 space-y-3">
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-widest">
-          Bildirimler
+          {t("title")}
         </h2>
         <p className="text-sm text-muted-foreground">
-          {!isSecureContext
-            ? "Push bildirimler yalnızca HTTPS bağlantısında çalışır. HTTP üzerinden eriştiğiniz için bu özellik kullanılamıyor."
-            : "Tarayıcınız push bildirimleri desteklemiyor."}
+          {!isSecureContext ? t("httpsRequired") : t("notSupported")}
         </p>
       </section>
     );
@@ -49,7 +49,7 @@ export function NotificationSettings() {
     <section className="rounded-xl bg-card border border-border p-4 space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-widest">
-          Bildirimler
+          {t("title")}
         </h2>
         {isSubscribed ? (
           <BellRing className="w-4 h-4 text-primary" />
@@ -59,24 +59,18 @@ export function NotificationSettings() {
       </div>
 
       {permission === "denied" ? (
-        <p className="text-sm text-destructive">
-          Bildirim izni reddedildi. Tarayıcı ayarlarından etkinleştirin.
-        </p>
+        <p className="text-sm text-destructive">{t("denied")}</p>
       ) : !isSubscribed ? (
         <div className="space-y-3">
-          <p className="text-sm text-muted-foreground">
-            Yarışlardan 1 saat önce bildirim almak için etkinleştirin.
-          </p>
+          <p className="text-sm text-muted-foreground">{t("description")}</p>
           <Button onClick={handleEnable} className="w-full cursor-pointer gap-2">
             <Bell className="w-4 h-4" />
-            Bildirimleri Etkinleştir
+            {t("enable")}
           </Button>
         </div>
       ) : (
         <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Hangi seriler için bildirim almak istiyorsun?
-          </p>
+          <p className="text-sm text-muted-foreground">{t("seriesQuestion")}</p>
 
           <div className="space-y-3">
             {availableSeries.map((series) => (
@@ -102,7 +96,7 @@ export function NotificationSettings() {
             onClick={unsubscribe}
             className="w-full cursor-pointer text-muted-foreground"
           >
-            Bildirimleri Kapat
+            {t("disable")}
           </Button>
         </div>
       )}

@@ -1,0 +1,160 @@
+{
+  "nav": {
+    "calendar": "Calendar",
+    "series": "Series",
+    "favorites": "Favorites",
+    "settings": "Settings"
+  },
+  "calendar": {
+    "title": "Calendar",
+    "season": "{year} Season",
+    "all": "All",
+    "past": "Past",
+    "live": "LIVE",
+    "completed": "Finished",
+    "cancelled": "Cancelled",
+    "nextRace": "Next Race",
+    "noUpcoming": "No upcoming races found.",
+    "noData": "No data available for this series."
+  },
+  "series": {
+    "title": "Series",
+    "subtitle": "Choose a series to follow",
+    "active": "Active",
+    "comingSoon": "Soon"
+  },
+  "favorites": {
+    "title": "Favorites",
+    "subtitle": "Choose series to follow",
+    "myFavorites": "My Favorites",
+    "availableSeries": "Available Series",
+    "comingSoon": "Soon",
+    "addToFavorites": "Add to favorites",
+    "removeFromFavorites": "Remove from favorites"
+  },
+  "settings": {
+    "title": "Settings",
+    "account": {
+      "title": "Account",
+      "defaultUser": "User",
+      "signOut": "Sign Out"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "notSupported": "Your browser does not support push notifications.",
+      "httpsRequired": "Push notifications only work over HTTPS. This feature is unavailable because you're connected over HTTP.",
+      "denied": "Notification permission was denied. Enable it in your browser settings.",
+      "description": "Enable to receive notifications 1 hour before races.",
+      "enable": "Enable Notifications",
+      "disable": "Disable Notifications",
+      "seriesQuestion": "Which series do you want notifications for?"
+    },
+    "appearance": {
+      "title": "Appearance",
+      "language": "Language",
+      "theme": "Theme",
+      "dark": "Dark",
+      "light": "Light",
+      "system": "System",
+      "turkish": "Türkçe",
+      "english": "English"
+    }
+  },
+  "login": {
+    "tagline": "F1, WEC, MotoGP and more — all in one place",
+    "googleSignIn": "Sign in with Google",
+    "magicLink": "Send Magic Link",
+    "emailPlaceholder": "email@example.com",
+    "or": "or",
+    "devLogin": "Dev Login (no password)"
+  },
+  "seriesPage": {
+    "nextRound": "Next Round",
+    "viewDetails": "View Details",
+    "schedule": "Schedule",
+    "drivers": "Drivers",
+    "teams": "Teams",
+    "standings": "Standings",
+    "viewAll": "View All",
+    "noData": "No data yet."
+  },
+  "schedulePage": {
+    "title": "Schedule",
+    "season": "{year} Season · {count} races",
+    "upcoming": "Upcoming ({count})",
+    "completed": "Completed ({count})",
+    "noData": "No schedule data yet."
+  },
+  "standingsPage": {
+    "title": "Standings",
+    "season": "{year} Season",
+    "drivers": "Drivers",
+    "teams": "Teams",
+    "noData": "No standings data yet.",
+    "wins": "{count} win(s)"
+  },
+  "driversPage": {
+    "title": "Drivers",
+    "count": "{count} drivers",
+    "noData": "No driver data yet.",
+    "unknownTeam": "Unknown Team"
+  },
+  "teamsPage": {
+    "title": "Teams",
+    "noData": "No team data yet."
+  },
+  "circuitsPage": {
+    "title": "Circuits",
+    "noData": "No circuit data yet."
+  },
+  "racePage": {
+    "round": "Race {round}",
+    "schedule": "Schedule",
+    "results": "Race Results",
+    "tireStints": "Tire Stints",
+    "raceEvents": "Race Events",
+    "championship": "Championship Standings (After This Race)",
+    "driverChampionship": "Driver Championship",
+    "teamChampionship": "Constructor Championship",
+    "quotes": "Driver & Team Quotes",
+    "quotesCompleted": "Quotes from this race will appear here soon, powered by AI analysis.",
+    "quotesPending": "Driver and team quotes will be collected here during race week with AI.",
+    "analysis": "Technical & Strategy Analysis",
+    "updates": "Expected Updates",
+    "analysisCompleted": "Strategy analysis and the impact of team updates will appear here soon, powered by AI.",
+    "analysisPending": "Technical updates from teams and their impact analysis will appear here with AI.",
+    "noDataPending": "Race data will appear here after the race is completed.",
+    "dataFooter": "Data: Jolpica (Ergast) · OpenF1 · Open-Meteo",
+    "ist": "IST",
+    "colDriverTeam": "Driver / Team",
+    "colPoints": "Points",
+    "colTimeStatus": "Time / Status",
+    "colPos": "P"
+  },
+  "sessions": {
+    "practice1": "Practice 1",
+    "practice2": "Practice 2",
+    "practice3": "Practice 3",
+    "qualifying": "Qualifying",
+    "sprintQuali": "Sprint Qualifying",
+    "sprint": "Sprint",
+    "race": "Race"
+  },
+  "raceStatus": {
+    "upcoming": "Upcoming",
+    "live": "Live",
+    "completed": "Finished",
+    "cancelled": "Cancelled"
+  },
+  "countdown": {
+    "days": "Days",
+    "hours": "Hours",
+    "minutes": "Min",
+    "seconds": "Sec",
+    "started": "Started!"
+  },
+  "common": {
+    "back": "Back",
+    "schedule": "Schedule"
+  }
+}

@@ -2,20 +2,23 @@ import { SERIES_LIST, getSeriesConfig } from "@/lib/series-config";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Seriler" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("series");
+  return { title: t("title") };
+}
 
-export default function SeriesListPage() {
+export default async function SeriesListPage() {
+  const t = await getTranslations("series");
   const visibleSeries = SERIES_LIST.filter((s) => !s.hidden);
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
       <div>
-        <h1 className="text-xl font-bold">Seriler</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Takip etmek istediğin seriyi seç
-        </p>
+        <h1 className="text-xl font-bold">{t("title")}</h1>
+        <p className="text-sm text-muted-foreground mt-1">{t("subtitle")}</p>
       </div>
 
       <div className="grid gap-3">
@@ -49,7 +52,7 @@ export default function SeriesListPage() {
                     )}
                   </div>
                   <Badge variant="secondary" className="text-xs shrink-0">
-                    Aktif
+                    {t("active")}
                   </Badge>
                 </CardContent>
               </Card>
@@ -65,7 +68,7 @@ export default function SeriesListPage() {
                   <p className="font-semibold text-sm">{series.name}</p>
                 </div>
                 <Badge variant="outline" className="text-xs shrink-0">
-                  Yakında
+                  {t("comingSoon")}
                 </Badge>
               </CardContent>
             </Card>

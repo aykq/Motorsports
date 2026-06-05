@@ -8,12 +8,14 @@ import { Button } from "@/components/ui/button";
 import { Star, StarOff, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 interface Props {
   initialFavorites: string[];
 }
 
 export function FavoritesClient({ initialFavorites }: Props) {
+  const t = useTranslations("favorites");
   const { isFavorite, toggle } = useFavorites(initialFavorites);
   const available = SERIES_LIST.filter((s) => s.available);
   const coming = SERIES_LIST.filter((s) => !s.available);
@@ -22,14 +24,14 @@ export function FavoritesClient({ initialFavorites }: Props) {
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
       <div>
-        <h1 className="text-xl font-bold">Favoriler</h1>
-        <p className="text-sm text-muted-foreground mt-1">Takip etmek istediğin serileri seç</p>
+        <h1 className="text-xl font-bold">{t("title")}</h1>
+        <p className="text-sm text-muted-foreground mt-1">{t("subtitle")}</p>
       </div>
 
       {favoritedAvailable.length > 0 && (
         <section className="space-y-2">
           <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-            Favori Serilerim
+            {t("myFavorites")}
           </h2>
           {favoritedAvailable.map((series) => (
             <SeriesRow
@@ -37,6 +39,8 @@ export function FavoritesClient({ initialFavorites }: Props) {
               series={series}
               isFav={true}
               onToggle={() => toggle(series.slug)}
+              addLabel={t("addToFavorites")}
+              removeLabel={t("removeFromFavorites")}
             />
           ))}
         </section>
@@ -44,7 +48,7 @@ export function FavoritesClient({ initialFavorites }: Props) {
 
       <section className="space-y-2">
         <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-          Mevcut Seriler
+          {t("availableSeries")}
         </h2>
         {available.map((series) => (
           <SeriesRow
@@ -52,6 +56,8 @@ export function FavoritesClient({ initialFavorites }: Props) {
             series={series}
             isFav={isFavorite(series.slug)}
             onToggle={() => toggle(series.slug)}
+            addLabel={t("addToFavorites")}
+            removeLabel={t("removeFromFavorites")}
           />
         ))}
       </section>
@@ -59,7 +65,7 @@ export function FavoritesClient({ initialFavorites }: Props) {
       {coming.length > 0 && (
         <section className="space-y-2">
           <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-            Yakında
+            {t("comingSoon")}
           </h2>
           {coming.map((series) => (
             <Card key={series.slug} className="opacity-50">
@@ -72,7 +78,7 @@ export function FavoritesClient({ initialFavorites }: Props) {
                   <span className="font-medium">{series.name}</span>
                 </div>
                 <Badge variant="outline" className="text-xs">
-                  Yakında
+                  {t("comingSoon")}
                 </Badge>
               </CardContent>
             </Card>
@@ -87,10 +93,14 @@ function SeriesRow({
   series,
   isFav,
   onToggle,
+  addLabel,
+  removeLabel,
 }: {
   series: (typeof SERIES_LIST)[number];
   isFav: boolean;
   onToggle: () => void;
+  addLabel: string;
+  removeLabel: string;
 }) {
   return (
     <Card className={cn("transition-colors", isFav && "border-primary/40 bg-primary/5")}>
@@ -114,7 +124,7 @@ function SeriesRow({
             "ml-2 flex-shrink-0 cursor-pointer",
             isFav ? "text-yellow-500 hover:text-yellow-600" : "text-muted-foreground"
           )}
-          aria-label={isFav ? "Favorilerden çıkar" : "Favorilere ekle"}
+          aria-label={isFav ? removeLabel : addLabel}
         >
           {isFav ? <Star className="w-5 h-5 fill-current" /> : <StarOff className="w-5 h-5" />}
         </Button>

@@ -2,6 +2,10 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { BottomNav } from "@/components/layout/BottomNav";
+import { PreferenceSyncer } from "@/components/layout/PreferenceSyncer";
+import { db } from "@/db";
+import { users } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import dynamic from "next/dynamic";
 
 // DevSyncPanel: local-only dev tool, gitignored — dosya yoksa sessizce atlanır
@@ -22,8 +26,19 @@ export default async function AppLayout({
   const session = await auth();
   if (!session) redirect("/login");
 
+  const userPrefs = session.user?.id
+    ? await db.query.users.findFirst({
+        where: eq(users.id, session.user.id),
+        columns: { language: true, theme: true },
+      })
+    : null;
+
   return (
     <div className="flex min-h-screen">
+      <PreferenceSyncer
+        dbLanguage={userPrefs?.language ?? null}
+        dbTheme={userPrefs?.theme ?? null}
+      />
       <Sidebar user={{}} />
       <main className="flex-1 min-w-0 pb-16 md:pb-0">{children}</main>
       <BottomNav />
