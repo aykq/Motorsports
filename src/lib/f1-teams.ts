@@ -77,7 +77,7 @@ export const F1_TEAMS: F1TeamConfig[] = [
     name: "Audi",
     fullName: "Audi Formula 1 Team",
     short: "AUD",
-    color: "#52E252",
+    color: "#BB0000",
     logo: "/f1/teams/audi.webp",
   },
   {
@@ -93,7 +93,7 @@ export const F1_TEAMS: F1TeamConfig[] = [
     name: "Cadillac",
     fullName: "Cadillac Formula 1 Team",
     short: "CAD",
-    color: "#CC0000",
+    color: "#1C3F94",
     logo: "/f1/teams/cadillac.webp",
   },
 ];

@@ -1,6 +1,6 @@
 import { getCachedDrivers, getCachedSchedule, getCachedStandings } from "@/lib/cache";
 import { getSeriesConfig } from "@/lib/series-config";
-import { getF1Team } from "@/lib/f1-teams";
+import { getF1Team, getF1TeamByName } from "@/lib/f1-teams";
 import { notFound } from "next/navigation";
 import { BackButton } from "@/components/layout/BackButton";
 import type { Metadata } from "next";
@@ -67,7 +67,7 @@ export default async function DriverDetailPage({ params }: Props) {
   if (!driver) notFound();
 
   const standing = driverStandings.find((s) => s.driver?.id === id);
-  const f1Team = slug === "f1" ? getF1Team(driver.teamId) : undefined;
+  const f1Team = slug === "f1" ? (getF1Team(driver.teamId) ?? getF1TeamByName(driver.team)) : undefined;
   const teamColor = f1Team?.color ?? config.color;
 
   const raceResults = races
