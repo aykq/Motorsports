@@ -1,5 +1,6 @@
 import { getCachedDrivers } from "@/lib/cache";
 import { getSeriesConfig } from "@/lib/series-config";
+import { BackButton } from "@/components/layout/BackButton";
 import { getF1Team, getF1TeamByName } from "@/lib/f1-teams";
 import { TeamLogo } from "@/components/series/TeamLogo";
 import { notFound } from "next/navigation";
@@ -57,9 +58,10 @@ export default async function DriversListPage({ params, searchParams }: Props) {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-      <div>
+      <div className="space-y-1">
+        <BackButton fallbackHref={`/${slug}`} label={config.shortName} />
         <h1 className="text-xl font-bold">{config.name} — Pilotlar</h1>
-        <p className="text-xs text-muted-foreground mt-1">{drivers.length} pilot</p>
+        <p className="text-xs text-muted-foreground">{drivers.length} pilot</p>
       </div>
 
       {subSeries.length > 0 && (

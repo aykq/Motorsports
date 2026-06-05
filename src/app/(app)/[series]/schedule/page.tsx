@@ -1,6 +1,7 @@
 import { getCachedSchedule } from "@/lib/cache";
 import { getSeriesConfig, SERIES_LIST } from "@/lib/series-config";
 import { RaceCard } from "@/components/race/RaceCard";
+import { BackButton } from "@/components/layout/BackButton";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -61,9 +62,10 @@ export default async function SchedulePage({ params }: Props) {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-8">
-      <div>
+      <div className="space-y-1">
+        <BackButton fallbackHref={`/${slug}`} label={config.shortName} />
         <h1 className="text-xl font-bold">{config.name} — Takvim</h1>
-        <p className="text-xs text-muted-foreground mt-1">{year} Sezonu · {races.length} yarış</p>
+        <p className="text-xs text-muted-foreground">{year} Sezonu · {races.length} yarış</p>
       </div>
 
       {upcoming.length > 0 && (

@@ -11,6 +11,7 @@ function resolveDriverImage(slug: string, driver: Driver): string | undefined {
 
 const TTL_MS = 30 * 60 * 1000;
 const RACE_DETAIL_COMPLETED_TTL_MS = 24 * 60 * 60 * 1000;
+const RACE_DETAIL_OLD_COMPLETED_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const RACE_DETAIL_UPCOMING_TTL_MS = 2 * 60 * 60 * 1000;
 const LIVE_WINDOW_MS = 3 * 60 * 60 * 1000;
 
@@ -175,11 +176,14 @@ export async function getCachedRaceByRound(
 
 // ─── Race Detail ──────────────────────────────────────────────────────────────
 
+const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+
 export async function getCachedRaceDetail(
   slug: string,
   season: number,
   round: number,
-  isCompleted: boolean
+  isCompleted: boolean,
+  raceDate?: string,
 ): Promise<RaceDetail | null> {
   try {
     const row = await db.query.cachedRaceDetails.findFirst({
@@ -190,9 +194,35 @@ export async function getCachedRaceDetail(
       ),
     });
     if (!row) return null;
-    const ttl = isCompleted ? RACE_DETAIL_COMPLETED_TTL_MS : RACE_DETAIL_UPCOMING_TTL_MS;
+    const isOldRace = isCompleted && raceDate
+      ? Date.now() - new Date(raceDate).getTime() > SEVEN_DAYS_MS
+      : false;
+    const ttl = isOldRace
+      ? RACE_DETAIL_OLD_COMPLETED_TTL_MS
+      : isCompleted
+        ? RACE_DETAIL_COMPLETED_TTL_MS
+        : RACE_DETAIL_UPCOMING_TTL_MS;
     if (Date.now() - row.fetchedAt.getTime() > ttl) return null;
     return row.data as RaceDetail;
+  } catch {
+    return null;
+  }
+}
+
+export async function getRaceDetailRaw(
+  slug: string,
+  season: number,
+  round: number,
+): Promise<RaceDetail | null> {
+  try {
+    const row = await db.query.cachedRaceDetails.findFirst({
+      where: and(
+        eq(cachedRaceDetails.seriesSlug, slug),
+        eq(cachedRaceDetails.season, season),
+        eq(cachedRaceDetails.round, round)
+      ),
+    });
+    return row ? (row.data as RaceDetail) : null;
   } catch {
     return null;
   }

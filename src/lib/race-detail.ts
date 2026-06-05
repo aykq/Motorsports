@@ -1,5 +1,5 @@
 import type { Race, RaceDetail } from "@/types/series";
-import { getCachedRaceDetail, setCachedRaceDetail } from "@/lib/cache";
+import { getCachedRaceDetail, getRaceDetailRaw, setCachedRaceDetail } from "@/lib/cache";
 import {
   jolpicaFetchPitStops,
   jolpicaFetchRoundDriverStandings,
@@ -31,12 +31,19 @@ export async function getRaceDetail(
 ): Promise<RaceDetail> {
   const isCompleted = race.status === "completed";
 
-  const cached = await getCachedRaceDetail(slug, season, round, isCompleted);
+  const cached = await getCachedRaceDetail(slug, season, round, isCompleted, race.date);
   if (cached) return cached;
 
   if (slug !== "f1") return EMPTY_DETAIL;
 
   const detail = await fetchF1RaceDetail(season, round, race, isCompleted);
+
+  if (isCompleted && detail.raceControl.length > 0) {
+    const stale = await getRaceDetailRaw(slug, season, round);
+    if (stale?.raceControlTr?.length === detail.raceControl.length) {
+      detail.raceControlTr = stale.raceControlTr;
+    }
+  }
 
   await setCachedRaceDetail(slug, season, round, detail);
 
@@ -57,28 +64,29 @@ export async function syncRaceDetails(
 
   const completedRaces = races.filter((r) => r.status === "completed" || r.status === "live");
 
-  // Pass 1 — eski yarışlar: sadece cache'den çeviri backfill (fresh API fetch yok)
+  // Pass 1 — eski yarışlar: sadece DB'den çeviri backfill (fresh API fetch yok)
+  // getRaceDetailRaw TTL'i atlar — cache süresi dolmuş olsa bile çeviri yapılabilir
   for (const race of completedRaces) {
     const isRecent = new Date(race.date).getTime() > sevenDaysAgo;
     if (isRecent || race.status === "live") continue;
 
     try {
-      const cached = await getCachedRaceDetail(slug, season, race.round, true);
-      if (!cached) continue;
+      const raw = await getRaceDetailRaw(slug, season, race.round);
+      if (!raw) continue;
 
       const needsTr =
-        cached.raceControl.length > 0 &&
-        (!cached.raceControlTr?.length ||
-          cached.raceControlTr[0] === cached.raceControl[0]?.message);
+        raw.raceControl.length > 0 &&
+        (!raw.raceControlTr?.length ||
+          raw.raceControlTr[0] === raw.raceControl[0]?.message);
       if (!needsTr) continue;
 
       await new Promise((r) => setTimeout(r, 2000));
       const translated = await translateRaceControlMessages(
-        cached.raceControl.map((e) => e.message)
+        raw.raceControl.map((e) => e.message)
       );
       if (translated.length) {
         await setCachedRaceDetail(slug, season, race.round, {
-          ...cached,
+          ...raw,
           raceControlTr: translated,
         });
         synced++;

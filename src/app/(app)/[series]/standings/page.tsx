@@ -1,5 +1,6 @@
 import { getCachedStandings } from "@/lib/cache";
 import { getSeriesConfig } from "@/lib/series-config";
+import { BackButton } from "@/components/layout/BackButton";
 import { getF1Team, getF1TeamByName } from "@/lib/f1-teams";
 import { getF1DriverImage } from "@/lib/adapters/f1/driver-images";
 import { TeamLogo } from "@/components/series/TeamLogo";
@@ -53,9 +54,10 @@ export default async function StandingsPage({ params, searchParams }: Props) {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-      <div>
+      <div className="space-y-1">
+        <BackButton fallbackHref={`/${slug}`} label={config.shortName} />
         <h1 className="text-xl font-bold">{config.name} — Puan Tablosu</h1>
-        <p className="text-xs text-muted-foreground mt-1">{year} Sezonu</p>
+        <p className="text-xs text-muted-foreground">{year} Sezonu</p>
       </div>
 
       {/* Kategori filtreleme — sadece subSeries olan seriler için (ör. MotoGP) */}

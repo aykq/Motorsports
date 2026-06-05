@@ -120,7 +120,7 @@ export default async function TeamDetailPage({ params }: Props) {
                         <img
                           src={driver.image}
                           alt={driver.lastName}
-                          className="w-14 h-14 rounded-full object-cover bg-muted"
+                          className="w-14 h-14 rounded-full object-cover object-[center_-5%] bg-muted"
                         />
                       ) : (
                         <div
