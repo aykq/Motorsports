@@ -21,6 +21,8 @@ export const users = pgTable("user", {
   emailVerified: timestamp("email_verified", { mode: "date" }),
   image: text("image"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  language: text("language"), // 'tr' | 'en' — null means use browser default
+  theme: text("theme"), // 'light' | 'dark' | 'system' — null means use browser default
 });
 
 export const accounts = pgTable(

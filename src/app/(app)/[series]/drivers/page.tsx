@@ -6,6 +6,7 @@ import { TeamLogo } from "@/components/series/TeamLogo";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
 
 interface Props {
@@ -16,7 +17,8 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { series: slug } = await params;
   const config = getSeriesConfig(slug);
-  return { title: `${config?.name ?? slug} — Pilotlar` };
+  const t = await getTranslations("driversPage");
+  return { title: `${config?.name ?? slug} — ${t("title")}` };
 }
 
 export default async function DriversListPage({ params, searchParams }: Props) {
@@ -24,6 +26,8 @@ export default async function DriversListPage({ params, searchParams }: Props) {
   const { cat } = await searchParams;
   const config = getSeriesConfig(slug);
   if (!config || !config.available) notFound();
+
+  const t = await getTranslations("driversPage");
 
   const subSeries = config.subSeries ?? [];
   const validCats = [slug, ...subSeries];
@@ -60,8 +64,8 @@ export default async function DriversListPage({ params, searchParams }: Props) {
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
       <div className="space-y-1">
         <BackButton fallbackHref={`/${slug}`} label={config.shortName} />
-        <h1 className="text-xl font-bold">{config.name} — Pilotlar</h1>
-        <p className="text-xs text-muted-foreground">{drivers.length} pilot</p>
+        <h1 className="text-xl font-bold">{config.name} — {t("title")}</h1>
+        <p className="text-xs text-muted-foreground">{t("count", { count: drivers.length })}</p>
       </div>
 
       {subSeries.length > 0 && (
@@ -84,7 +88,7 @@ export default async function DriversListPage({ params, searchParams }: Props) {
       )}
 
       {drivers.length === 0 ? (
-        <p className="text-center py-16 text-sm text-muted-foreground">Henüz pilot verisi yok.</p>
+        <p className="text-center py-16 text-sm text-muted-foreground">{t("noData")}</p>
       ) : (
         <div className="space-y-3">
           {Object.entries(groupedByTeam).map(([teamKey, teamDrivers]) => {
@@ -102,7 +106,7 @@ export default async function DriversListPage({ params, searchParams }: Props) {
                     fallbackClassName="w-6 h-6 rounded-sm text-[10px] shrink-0"
                   />
                   <span className="text-xs font-semibold text-muted-foreground tracking-wide">
-                    {(firstDriver.team ?? "Bilinmeyen Takım").toLocaleUpperCase("en-US")}
+                    {(firstDriver.team ?? t("unknownTeam")).toLocaleUpperCase("en-US")}
                   </span>
                 </div>
                 <div className="rounded-xl border border-border overflow-hidden bg-card">

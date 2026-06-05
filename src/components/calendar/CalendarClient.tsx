@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { Countdown } from "@/components/race/Countdown";
 import { RaceCard } from "@/components/race/RaceCard";
 import { Badge } from "@/components/ui/badge";
+import { useTranslations, useLocale } from "next-intl";
 import type { RaceStatus } from "@/types/series";
 import type { SeriesConfig } from "@/lib/series-config";
 import type { Race } from "@/types/series";
@@ -50,30 +51,16 @@ function groupByMonth(races: CalendarRace[]): Array<[string, CalendarRace[]]> {
   return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
 }
 
-function monthLabel(key: string): string {
+function monthLabel(key: string, locale: string): string {
   const [year, month] = key.split("-").map(Number);
   const d = new Date(year, month - 1, 1);
-  const label = d.toLocaleDateString("tr-TR", { month: "long", year: "numeric" });
+  const label = d.toLocaleDateString(locale === "tr" ? "tr-TR" : "en-US", { month: "long", year: "numeric" });
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
-function isCurrentOrFutureMonth(key: string): boolean {
-  const now = new Date();
-  const currentKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  return key >= currentKey;
-}
-
-function statusBadge(status: RaceStatus) {
-  if (status === "live")
-    return <Badge className="text-[10px] px-1.5 py-0 bg-red-500 text-white border-0 animate-pulse">CANLI</Badge>;
-  if (status === "completed")
-    return <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Tamamlandı</Badge>;
-  if (status === "cancelled")
-    return <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground">İptal</Badge>;
-  return null;
-}
-
 export function CalendarClient({ races, seriesCountdowns, availableSeries }: Props) {
+  const t = useTranslations("calendar");
+  const locale = useLocale();
   const [selectedSeries, setSelectedSeries] = useState<string[]>([]);
 
   function toggleSeries(slug: string) {
@@ -88,13 +75,11 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
 
   const isAllSelected = selectedSeries.length === 0;
 
-  // subSlug -> parentSlug  (e.g. moto2 -> motogp)
   const subToParent = new Map<string, string>();
   for (const s of availableSeries) {
     s.subSeries?.forEach((sub) => subToParent.set(sub, s.slug));
   }
 
-  // build a flat set of slugs to include, expanding subSeries for each selected series
   const expandedSlugs = new Set<string>();
   for (const slug of selectedSeries) {
     expandedSlugs.add(slug);
@@ -106,16 +91,13 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
     ? races
     : races.filter((r) => expandedSlugs.has(r.seriesSlug));
 
-  // always collapse sub-series races into their parent's row
   const primaryRaces = allFilteredRaces.filter((r) => !subToParent.has(r.seriesSlug));
 
-  // circuitId -> sub-series races for that event
   const subRacesLookup = new Map<string, CalendarRace[]>();
   for (const race of allFilteredRaces) {
     if (subToParent.has(race.seriesSlug)) {
       if (!subRacesLookup.has(race.circuitId)) subRacesLookup.set(race.circuitId, []);
       const existing = subRacesLookup.get(race.circuitId)!;
-      // one entry per seriesSlug per circuit to avoid duplicate keys
       if (!existing.some((r) => r.seriesSlug === race.seriesSlug)) {
         existing.push(race);
       }
@@ -134,8 +116,6 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
     filteredRaces.sort((a, b) => getRaceDate(a).getTime() - getRaceDate(b).getTime())
   );
 
-  // Bir ayı "gelecek" saymak için o ayda en az 1 upcoming/live yarış olmalı.
-  // Sadece aya bakmak, bu ayın tamamlanan yarışlarını da yukarıda gösteriyor.
   const monthsWithUpcoming = new Set(
     filteredRaces
       .filter((r) => r.status === "upcoming" || r.status === "live")
@@ -148,11 +128,21 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
   const upcomingGroups = grouped.filter(([key]) => monthsWithUpcoming.has(key));
   const pastGroups = grouped.filter(([key]) => !monthsWithUpcoming.has(key)).reverse();
 
+  function statusBadge(status: RaceStatus) {
+    if (status === "live")
+      return <Badge className="text-[10px] px-1.5 py-0 bg-red-500 text-white border-0 animate-pulse">{t("live")}</Badge>;
+    if (status === "completed")
+      return <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{t("completed")}</Badge>;
+    if (status === "cancelled")
+      return <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground">{t("cancelled")}</Badge>;
+    return null;
+  }
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
       <div className="space-y-1">
-        <h1 className="text-2xl font-bold">Takvim</h1>
-        <p className="text-sm text-muted-foreground">{new Date().getFullYear()} Sezonu</p>
+        <h1 className="text-2xl font-bold">{t("title")}</h1>
+        <p className="text-sm text-muted-foreground">{t("season", { year: new Date().getFullYear() })}</p>
       </div>
 
       {/* ── Series Filter Chips ── */}
@@ -167,7 +157,7 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
                 : "border-border text-muted-foreground hover:text-foreground"
             )}
           >
-            Tümü
+            {t("all")}
           </button>
           {availableSeries.map((s) => {
             const active = selectedSeries.includes(s.slug);
@@ -192,7 +182,6 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
 
       {/* ── Countdown Section ── */}
       {isAllSelected ? (
-        /* Per-series countdowns */
         <div className={cn(
           "grid gap-3",
           seriesCountdowns.length === 1 ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2"
@@ -227,7 +216,6 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
           })}
         </div>
       ) : nextRace ? (
-        /* Single countdown for filtered series */
         <Link
           href={`/${nextRace.seriesSlug}/races/${nextRace.round}`}
           className="block rounded-xl bg-card border border-border p-6 space-y-4 hover:bg-accent/50 transition-colors cursor-pointer"
@@ -243,7 +231,7 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
           </div>
           <Countdown
             targetDate={getRaceDate(nextRace).toISOString()}
-            label="Sıradaki Yarışa"
+            label={t("nextRace")}
           />
           <div className="text-xs text-muted-foreground">
             {nextRace.circuitName} · {nextRace.location}, {nextRace.country}
@@ -251,7 +239,7 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
         </Link>
       ) : (
         <div className="rounded-xl bg-card border border-border p-6 text-center text-muted-foreground">
-          <p className="text-sm">Yaklaşan yarış bulunamadı.</p>
+          <p className="text-sm">{t("noUpcoming")}</p>
         </div>
       )}
 
@@ -259,7 +247,7 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
       {upcomingGroups.map(([key, monthRaces]) => (
         <section key={key} className="space-y-2">
           <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-            {monthLabel(key)}
+            {monthLabel(key, locale)}
           </h2>
           <div className="rounded-xl border border-border overflow-hidden divide-y divide-border bg-card">
             {monthRaces.map((race) => (
@@ -268,6 +256,8 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
                 race={race}
                 past={race.status === "completed" || race.status === "cancelled"}
                 subRaces={subRacesLookup.get(race.circuitId)}
+                locale={locale}
+                statusBadge={statusBadge}
               />
             ))}
           </div>
@@ -278,11 +268,11 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
       {pastGroups.length > 0 && (
         <section className="space-y-4">
           <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-            Geçmiş
+            {t("past")}
           </h2>
           {pastGroups.map(([key, monthRaces]) => (
             <div key={key} className="space-y-2">
-              <p className="text-xs text-muted-foreground/60 pl-1">{monthLabel(key)}</p>
+              <p className="text-xs text-muted-foreground/60 pl-1">{monthLabel(key, locale)}</p>
               <div className="rounded-xl border border-border overflow-hidden divide-y divide-border bg-card">
                 {monthRaces.map((race) => (
                   <RaceRow
@@ -290,6 +280,8 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
                     race={race}
                     past={true}
                     subRaces={subRacesLookup.get(race.circuitId)}
+                    locale={locale}
+                    statusBadge={statusBadge}
                   />
                 ))}
               </div>
@@ -300,33 +292,40 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
 
       {filteredRaces.length === 0 && (
         <div className="text-center py-16 text-muted-foreground">
-          <p className="text-sm">Bu seri için henüz veri yok.</p>
+          <p className="text-sm">{t("noData")}</p>
         </div>
       )}
     </div>
   );
 }
 
-function RaceRow({ race, past = false, subRaces }: { race: CalendarRace; past?: boolean; subRaces?: CalendarRace[] }) {
+function RaceRow({
+  race,
+  past = false,
+  subRaces,
+  locale,
+  statusBadge,
+}: {
+  race: CalendarRace;
+  past?: boolean;
+  subRaces?: CalendarRace[];
+  locale: string;
+  statusBadge: (status: RaceStatus) => React.ReactNode;
+}) {
   const raceDate = getRaceDate(race);
   const href = `/${race.seriesSlug}/races/${race.round}`;
 
-  const dateStr = raceDate.toLocaleDateString("tr-TR", {
-    day: "numeric",
-    month: "short",
-  });
-
-  const timeStr = raceDate.toLocaleTimeString("tr-TR", {
+  const dateLocale = locale === "tr" ? "tr-TR" : "en-US";
+  const dateStr = raceDate.toLocaleDateString(dateLocale, { day: "numeric", month: "short" });
+  const timeStr = raceDate.toLocaleTimeString(dateLocale, {
     hour: "2-digit",
     minute: "2-digit",
     timeZone: "Europe/Istanbul",
   });
 
   const hasTime = timeStr !== "00:00" && timeStr !== "03:00";
-
   const isCancelled = race.status === "cancelled";
 
-  // İptal yarışlar tıklanamaz — detail sayfasında gösterilecek veri yok
   const Wrapper = isCancelled
     ? ({ children }: { children: React.ReactNode }) => <div>{children}</div>
     : ({ children }: { children: React.ReactNode }) => <Link href={href}>{children}</Link>;

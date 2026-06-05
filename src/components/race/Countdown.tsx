@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 
 interface CountdownProps {
   targetDate: string;
@@ -32,7 +33,8 @@ function pad(n: number) {
   return String(n).padStart(2, "0");
 }
 
-export function Countdown({ targetDate, label = "Sonraki Yarışa", compact = false }: CountdownProps) {
+export function Countdown({ targetDate, label, compact = false }: CountdownProps) {
+  const t = useTranslations("countdown");
   const [time, setTime] = useState<TimeLeft | null>(null);
 
   useEffect(() => {
@@ -41,11 +43,13 @@ export function Countdown({ targetDate, label = "Sonraki Yarışa", compact = fa
     return () => clearInterval(interval);
   }, [targetDate]);
 
+  const unitLabels = [t("days"), t("hours"), t("minutes"), t("seconds")];
+
   if (!time) return (
     <div className="text-center">
       <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">{label}</p>
       <div className="flex items-end justify-center gap-3">
-        {["Gün", "Saat", "Dak", "San"].map((u, i) => (
+        {unitLabels.map((u, i) => (
           <div key={u} className="flex items-end gap-3">
             <div className="flex flex-col items-center">
               <span className="text-3xl font-black tabular-nums text-foreground leading-none">--</span>
@@ -62,18 +66,17 @@ export function Countdown({ targetDate, label = "Sonraki Yarışa", compact = fa
     return (
       <div className="text-center">
         <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">{label}</p>
-        <p className="text-rose-500 font-bold">Başladı!</p>
+        <p className="text-rose-500 font-bold">{t("started")}</p>
       </div>
     );
   }
 
-  const allUnits = [
-    { value: time.days, label: "Gün" },
-    { value: time.hours, label: "Saat" },
-    { value: time.minutes, label: "Dak" },
-    { value: time.seconds, label: "San" },
+  const units = [
+    { value: time.days, label: t("days") },
+    { value: time.hours, label: t("hours") },
+    { value: time.minutes, label: t("minutes") },
+    { value: time.seconds, label: t("seconds") },
   ];
-  const units = allUnits;
 
   if (compact) {
     return (

@@ -26,6 +26,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { getF1CircuitMapUrl, getF1CircuitCoords, getF1CircuitPhotoUrl } from "@/lib/circuit-data";
 import { lookupCircuitCoords } from "@/lib/circuit-coords";
+import { getTranslations, getLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import type { RaceResult, Standing } from "@/types/series";
 
@@ -33,33 +34,6 @@ export const dynamic = "force-dynamic";
 
 interface Props {
   params: Promise<{ series: string; round: string }>;
-}
-
-const SESSION_LABELS: Record<string, string> = {
-  practice1: "1. Antrenman",
-  practice2: "2. Antrenman",
-  practice3: "3. Antrenman",
-  qualifying: "Sıralama",
-  sprintQuali: "Sprint Sıralama",
-  sprint: "Sprint",
-  race: "Yarış",
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  upcoming: "Yaklaşan",
-  live: "Canlı",
-  completed: "Tamamlandı",
-  cancelled: "İptal",
-};
-
-
-function formatDateTime(dateStr: string) {
-  const date = new Date(dateStr);
-  return {
-    date: date.toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" }),
-    time: date.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Istanbul" }),
-    dayName: date.toLocaleDateString("tr-TR", { weekday: "long" }),
-  };
 }
 
 function GridChange({ grid, position }: { grid?: number; position: number }) {
@@ -96,9 +70,7 @@ function CompactResultRow({ result, slug }: { result: RaceResult; slug: string }
   const showingStatusText = result.gap == null;
 
   return (
-    <div
-      className="grid grid-cols-[1.5rem_1fr_4rem] items-center gap-1 text-xs px-2 py-1.5 hover:bg-accent/30 transition-colors"
-    >
+    <div className="grid grid-cols-[1.5rem_1fr_4rem] items-center gap-1 text-xs px-2 py-1.5 hover:bg-accent/30 transition-colors">
       <span className="text-right font-bold shrink-0 text-foreground">
         {result.position}
       </span>
@@ -166,7 +138,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!race) {
     const { races } = await getCachedSchedule(slug, year);
     const fallback = races.find((r) => r.round === parseInt(round));
-    return { title: fallback ? `${fallback.name} — ${config?.name ?? slug}` : "Yarış Detayı" };
+    return { title: fallback ? `${fallback.name} — ${config?.name ?? slug}` : "Race Detail" };
   }
   return { title: `${race.name} — ${config?.name ?? slug}` };
 }
@@ -175,6 +147,12 @@ export default async function RaceDetailPage({ params }: Props) {
   const { series: slug, round: roundStr } = await params;
   const config = getSeriesConfig(slug);
   if (!config || !config.available) notFound();
+
+  const t = await getTranslations("racePage");
+  const tSessions = await getTranslations("sessions");
+  const tStatus = await getTranslations("raceStatus");
+  const locale = await getLocale();
+  const dateLocale = locale === "tr" ? "tr-TR" : "en-US";
 
   const round = parseInt(roundStr);
   const year = new Date().getFullYear();
@@ -206,8 +184,16 @@ export default async function RaceDetailPage({ params }: Props) {
   const fastestLapHolder = allResults.find((r) => r.fastestLap);
 
   const detail = await getRaceDetail(slug, year, round, race);
-
   const { tireStints, raceControl, raceControlTr, driverStandingsAfter, teamStandingsAfter } = detail;
+
+  function formatDateTime(dateStr: string) {
+    const date = new Date(dateStr);
+    return {
+      date: date.toLocaleDateString(dateLocale, { day: "numeric", month: "long", year: "numeric" }),
+      time: date.toLocaleTimeString(dateLocale, { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Istanbul" }),
+      dayName: date.toLocaleDateString(dateLocale, { weekday: "long" }),
+    };
+  }
 
   const raceSession = race.sessions.find((s) => s.type === "race");
   const { date: raceDateStr, time: raceTimeStr } = raceSession
@@ -216,7 +202,7 @@ export default async function RaceDetailPage({ params }: Props) {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-      <BackButton fallbackHref={`/${slug}/schedule`} label="Takvim" />
+      <BackButton fallbackHref={`/${slug}/schedule`} label={t("schedule")} />
 
       {/* ── Header ── */}
       <div className="space-y-2">
@@ -230,12 +216,12 @@ export default async function RaceDetailPage({ params }: Props) {
               {config.shortName}
             </Badge>
           </Link>
-          <span className="text-xs text-muted-foreground">Yarış {race.round}</span>
+          <span className="text-xs text-muted-foreground">{t("round", { round: race.round })}</span>
           <Badge
             variant={isLive ? "destructive" : isCompleted ? "secondary" : "outline"}
             className={cn("text-xs", isLive && "animate-pulse")}
           >
-            {STATUS_LABELS[race.status] ?? race.status}
+            {tStatus(race.status as "upcoming" | "live" | "completed" | "cancelled") ?? race.status}
           </Badge>
         </div>
         <h1 className="text-2xl font-bold leading-tight">{race.name}</h1>
@@ -255,7 +241,7 @@ export default async function RaceDetailPage({ params }: Props) {
             <Calendar className="w-3 h-3" />{raceDateStr}
           </span>
           <span className="flex items-center gap-1">
-            <Clock className="w-3 h-3" />{raceTimeStr} (İST)
+            <Clock className="w-3 h-3" />{raceTimeStr} ({t("ist")})
           </span>
         </div>
       </div>
@@ -272,11 +258,12 @@ export default async function RaceDetailPage({ params }: Props) {
 
       {/* ── Program ── */}
       <section className="space-y-2">
-        <SectionHeader title="Program" />
+        <SectionHeader title={t("schedule")} />
         <div className="rounded-lg border border-border overflow-hidden">
           {race.sessions.map((session) => {
             const { date, time, dayName } = formatDateTime(session.date);
             const isRaceSession = session.type === "race";
+            const sessionKey = session.type as keyof typeof tSessions;
             return (
               <div
                 key={session.type}
@@ -286,7 +273,7 @@ export default async function RaceDetailPage({ params }: Props) {
                 )}
               >
                 <span className={cn("w-32 shrink-0 text-sm", isRaceSession ? "text-foreground" : "text-muted-foreground")}>
-                  {SESSION_LABELS[session.type] ?? session.type}
+                  {tSessions.has(sessionKey) ? tSessions(sessionKey) : session.type}
                 </span>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground ml-auto">
                   <span className="hidden sm:block capitalize">{dayName}</span>
@@ -314,7 +301,7 @@ export default async function RaceDetailPage({ params }: Props) {
         />
       )}
 
-      {/* ── Yarış Sonuçları (completed) ── */}
+      {/* ── Race Results ── */}
       {isCompleted && allResults.length > 0 && (() => {
         const topResults = allResults.filter((r) => r.position <= 10);
         const nonPoints = allResults.filter((r) => r.position > 10);
@@ -322,7 +309,7 @@ export default async function RaceDetailPage({ params }: Props) {
         return (
           <section className="space-y-2">
             <div className="flex items-center justify-between">
-              <SectionHeader title="Yarış Sonuçları" />
+              <SectionHeader title={t("results")} />
               {fastestLapHolder && (
                 <div className="flex items-center gap-1 text-xs text-purple-400">
                   <Zap className="w-3 h-3" />
@@ -337,16 +324,14 @@ export default async function RaceDetailPage({ params }: Props) {
             </div>
 
             <div className="rounded-lg border border-border overflow-hidden">
-              {/* Header — puan pozisyonları için */}
               <div className="grid grid-cols-[1.5rem_1rem_1fr_2.5rem_5rem] text-xs font-medium text-muted-foreground px-3 py-2 border-b border-border bg-muted/30 gap-1">
-                <span className="text-right">P</span>
+                <span className="text-right">{t("colPos")}</span>
                 <span />
-                <span className="ml-1">Pilot / Takım</span>
-                <span className="text-right">Puan</span>
-                <span className="text-right">Süre / Durum</span>
+                <span className="ml-1">{t("colDriverTeam")}</span>
+                <span className="text-right">{t("colPoints")}</span>
+                <span className="text-right">{t("colTimeStatus")}</span>
               </div>
 
-              {/* P1–P10: detaylı satırlar */}
               <div className="divide-y divide-border">
                 {topResults.map((result: RaceResult) => {
                   const isFinished = result.status === "Finished" || result.status.startsWith("+");
@@ -400,7 +385,6 @@ export default async function RaceDetailPage({ params }: Props) {
                 })}
               </div>
 
-              {/* P11+: kompakt 2-sütun */}
               {nonPoints.length > 0 && (
                 <div className="border-t border-dashed border-border">
                   <div className="grid grid-cols-2 divide-x divide-border">
@@ -422,31 +406,30 @@ export default async function RaceDetailPage({ params }: Props) {
         );
       })()}
 
-      {/* ── Lastik Stintleri ── */}
+      {/* ── Tire Stints ── */}
       {isCompleted && tireStints.length > 0 && (
         <section className="space-y-2">
-          <SectionHeader title="Lastik Stintleri" />
+          <SectionHeader title={t("tireStints")} />
           <div className="rounded-lg border border-border p-3">
             <TireStints stints={tireStints} results={allResults} />
           </div>
         </section>
       )}
 
-      {/* ── Yarış Olayları ── */}
+      {/* ── Race Events ── */}
       {isCompleted && raceControl.length > 0 && (
         <RaceControlSection events={raceControl} eventsTr={raceControlTr} />
       )}
 
-      {/* ── Şampiyona Durumu (completed) ── */}
+      {/* ── Championship Standings ── */}
       {isCompleted && driverStandingsAfter.length > 0 && (
         <section className="space-y-2">
-          <SectionHeader title="Şampiyona Durumu (Bu Yarış Sonrası)" />
+          <SectionHeader title={t("championship")} />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {/* Pilot Sıralaması */}
             <div className="space-y-1.5">
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
                 <Trophy className="w-3 h-3" />
-                <span>Pilot Şampiyonası</span>
+                <span>{t("driverChampionship")}</span>
               </div>
               <div className="rounded-lg border border-border overflow-hidden">
                 {driverStandingsAfter.slice(0, 10).map((s) => (
@@ -455,12 +438,11 @@ export default async function RaceDetailPage({ params }: Props) {
               </div>
             </div>
 
-            {/* Takım Sıralaması */}
             {teamStandingsAfter.length > 0 && (
               <div className="space-y-1.5">
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
                   <Trophy className="w-3 h-3" />
-                  <span>Takım Şampiyonası</span>
+                  <span>{t("teamChampionship")}</span>
                 </div>
                 <div className="rounded-lg border border-border overflow-hidden">
                   {teamStandingsAfter.slice(0, 10).map((s) => (
@@ -473,43 +455,36 @@ export default async function RaceDetailPage({ params }: Props) {
         </section>
       )}
 
-      {/* ── Demeçler Placeholder ── */}
+      {/* ── Quotes Placeholder ── */}
       <section className="space-y-2">
-        <SectionHeader title="Pilot & Takım Demeçleri" />
+        <SectionHeader title={t("quotes")} />
         <div className="rounded-lg border border-border border-dashed p-6 flex flex-col items-center gap-2 text-center">
           <Sparkles className="w-5 h-5 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">
-            {isCompleted
-              ? "Yarışa ait demeçler AI analizi ile yakında burada görünecek."
-              : "Sürücü ve takım demeçleri yarış haftası AI ile burada toplanacak."}
+            {isCompleted ? t("quotesCompleted") : t("quotesPending")}
           </p>
         </div>
       </section>
 
-      {/* ── Teknik Analiz Placeholder ── */}
+      {/* ── Analysis Placeholder ── */}
       <section className="space-y-2">
-        <SectionHeader title={isCompleted ? "Teknik & Strateji Analizi" : "Beklenen Güncellemeler"} />
+        <SectionHeader title={isCompleted ? t("analysis") : t("updates")} />
         <div className="rounded-lg border border-border border-dashed p-6 flex flex-col items-center gap-2 text-center">
           <Timer className="w-5 h-5 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">
-            {isCompleted
-              ? "Strateji analizi, takım güncellemelerinin etkileri AI analizi ile yakında burada görünecek."
-              : "Takımların getirdiği teknik güncellemeler ve etki analizleri AI ile burada görünecek."}
+            {isCompleted ? t("analysisCompleted") : t("analysisPending")}
           </p>
         </div>
       </section>
 
-      {/* ── Henüz tamamlanmadı ── */}
       {!isCompleted && !isLive && !coords && (
         <div className="text-center py-4 text-muted-foreground">
-          <p className="text-sm">Yarış verileri yarış tamamlandıktan sonra burada görünecek.</p>
+          <p className="text-sm">{t("noDataPending")}</p>
         </div>
       )}
 
       <Separator />
-      <p className="text-[10px] text-muted-foreground text-center">
-        Veri: Jolpica (Ergast) · OpenF1 · Open-Meteo
-      </p>
+      <p className="text-[10px] text-muted-foreground text-center">{t("dataFooter")}</p>
     </div>
   );
 }

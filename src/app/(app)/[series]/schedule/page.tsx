@@ -4,6 +4,7 @@ import { RaceCard } from "@/components/race/RaceCard";
 import { BackButton } from "@/components/layout/BackButton";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
 import type { Race } from "@/types/series";
 
@@ -19,7 +20,8 @@ function getRaceDate(race: Race): Date {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { series: slug } = await params;
   const config = getSeriesConfig(slug);
-  return { title: `${config?.name ?? slug} — Takvim` };
+  const t = await getTranslations("schedulePage");
+  return { title: `${config?.name ?? slug} — ${t("title")}` };
 }
 
 export default async function SchedulePage({ params }: Props) {
@@ -27,6 +29,7 @@ export default async function SchedulePage({ params }: Props) {
   const config = getSeriesConfig(slug);
   if (!config || !config.available) notFound();
 
+  const t = await getTranslations("schedulePage");
   const year = new Date().getFullYear();
 
   const subConfigs = (config.subSeries ?? [])
@@ -38,7 +41,6 @@ export default async function SchedulePage({ params }: Props) {
     ...subConfigs.map((c) => getCachedSchedule(c!.slug, year)),
   ]);
 
-  // circuitId -> { slug -> Race } map for sub-series
   const subSeriesMap = new Map<string, Map<string, Race>>();
   subResults.forEach((result, i) => {
     const subConfig = subConfigs[i]!;
@@ -64,14 +66,14 @@ export default async function SchedulePage({ params }: Props) {
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-8">
       <div className="space-y-1">
         <BackButton fallbackHref={`/${slug}`} label={config.shortName} />
-        <h1 className="text-xl font-bold">{config.name} — Takvim</h1>
-        <p className="text-xs text-muted-foreground">{year} Sezonu · {races.length} yarış</p>
+        <h1 className="text-xl font-bold">{config.name} — {t("title")}</h1>
+        <p className="text-xs text-muted-foreground">{t("season", { year, count: races.length })}</p>
       </div>
 
       {upcoming.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-widest">
-            Yaklaşan ({upcoming.length})
+            {t("upcoming", { count: upcoming.length })}
           </h2>
           {upcoming.map((race) => (
             <div key={race.round} className="space-y-1.5">
@@ -91,7 +93,7 @@ export default async function SchedulePage({ params }: Props) {
       {completed.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-widest">
-            Tamamlanan ({completed.length})
+            {t("completed", { count: completed.length })}
           </h2>
           {completed.map((race) => (
             <div key={race.round} className="space-y-1.5">
@@ -110,7 +112,7 @@ export default async function SchedulePage({ params }: Props) {
 
       {races.length === 0 && (
         <div className="text-center py-16 text-muted-foreground">
-          <p className="text-sm">Henüz takvim verisi yok.</p>
+          <p className="text-sm">{t("noData")}</p>
         </div>
       )}
     </div>

@@ -4,16 +4,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CalendarDays, Grid2X2, Heart, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const NAV_ITEMS = [
-  { href: "/", label: "Takvim", icon: CalendarDays },
-  { href: "/series", label: "Seriler", icon: Grid2X2 },
-  { href: "/favorites", label: "Favoriler", icon: Heart },
-  { href: "/settings", label: "Ayarlar", icon: Settings },
-];
+import { useTranslations } from "next-intl";
 
 export function BottomNav() {
   const pathname = usePathname();
+  const t = useTranslations("nav");
+
+  const NAV_ITEMS = [
+    { href: "/", label: t("calendar"), icon: CalendarDays },
+    { href: "/series", label: t("series"), icon: Grid2X2 },
+    { href: "/favorites", label: t("favorites"), icon: Heart },
+    { href: "/settings", label: t("settings"), icon: Settings },
+  ];
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:hidden">
