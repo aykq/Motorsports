@@ -178,12 +178,15 @@ export async function getCachedRaceByRound(
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
+const RACE_DETAIL_ACTIVE_WEEKEND_TTL_MS = 15 * 60 * 1000;
+
 export async function getCachedRaceDetail(
   slug: string,
   season: number,
   round: number,
   isCompleted: boolean,
   raceDate?: string,
+  activeWeekend?: boolean,
 ): Promise<RaceDetail | null> {
   try {
     const row = await db.query.cachedRaceDetails.findFirst({
@@ -201,7 +204,9 @@ export async function getCachedRaceDetail(
       ? RACE_DETAIL_OLD_COMPLETED_TTL_MS
       : isCompleted
         ? RACE_DETAIL_COMPLETED_TTL_MS
-        : RACE_DETAIL_UPCOMING_TTL_MS;
+        : activeWeekend
+          ? RACE_DETAIL_ACTIVE_WEEKEND_TTL_MS
+          : RACE_DETAIL_UPCOMING_TTL_MS;
     if (Date.now() - row.fetchedAt.getTime() > ttl) return null;
     return row.data as RaceDetail;
   } catch {

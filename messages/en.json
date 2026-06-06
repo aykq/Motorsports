@@ -132,7 +132,21 @@
     "colDriverTeam": "Driver / Team",
     "colPoints": "Points",
     "colTimeStatus": "Time / Status",
-    "colPos": "P"
+    "colPos": "P",
+    "colGap": "Gap",
+    "colLap": "Lap",
+    "qualifyingResults": "Qualifying Results",
+    "q2Eliminated": "Q2 — Eliminated",
+    "q1Eliminated": "Q1 — Eliminated"
+  },
+  "tabLabels": {
+    "practice1": "FP1",
+    "practice2": "FP2",
+    "practice3": "FP3",
+    "sprintQuali": "SQ",
+    "sprint": "SPR",
+    "qualifying": "QUALI",
+    "race": "RACE"
   },
   "sessions": {
     "practice1": "Practice 1",

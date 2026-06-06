@@ -131,6 +131,27 @@ export interface WeatherDay {
   weatherCode: number;
 }
 
+export interface QualifyingDriverResult {
+  position: number;
+  driverId: string;
+  driverName: string;
+  driverCode?: string;
+  team: string;
+  q1?: string;
+  q2?: string;
+  q3?: string;
+}
+
+export interface PracticeDriverResult {
+  position: number;
+  driverNumber?: number;
+  driverName: string;
+  driverCode?: string;
+  team?: string;
+  lapTime: string;
+  gap?: string;
+}
+
 export interface RaceDetail {
   pitStops: PitStop[];
   tireStints: TireStint[];
@@ -139,4 +160,9 @@ export interface RaceDetail {
   driverStandingsAfter: Standing[];
   teamStandingsAfter: Standing[];
   weather: WeatherDay[];
+  qualifyingResults?: QualifyingDriverResult[];
+  practice1Results?: PracticeDriverResult[];
+  practice2Results?: PracticeDriverResult[];
+  practice3Results?: PracticeDriverResult[];
+  raceControlFetched?: boolean;
 }

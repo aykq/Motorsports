@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { TireStint, TireCompound, RaceControlEvent } from "@/types/series";
+import type { TireStint, TireCompound, RaceControlEvent, PracticeDriverResult } from "@/types/series";
 
 const BASE_URL = "https://api.openf1.org/v1";
 
@@ -146,6 +146,115 @@ export async function fetchOpenF1Stints(sessionKey: number): Promise<TireStint[]
         lapEnd: s.lap_end!,
         tyreAgeAtStart: s.tyre_age_at_start ?? 0,
       }));
+  } catch {
+    return [];
+  }
+}
+
+const SESSION_TYPE_TO_OF1_NAME: Record<string, string> = {
+  practice1: "Practice 1",
+  practice2: "Practice 2",
+  practice3: "Practice 3",
+  qualifying: "Qualifying",
+  sprintQuali: "Sprint Qualifying",
+  sprint: "Sprint",
+  race: "Race",
+};
+
+export async function findOpenF1AllSessionKeys(
+  year: number,
+  sessions: Array<{ type: string; date: string }>
+): Promise<Map<string, number>> {
+  const keyMap = new Map<string, number>();
+  try {
+    const of1Sessions = await fetchOpenF1Sessions(year);
+    for (const session of sessions) {
+      const of1Name = SESSION_TYPE_TO_OF1_NAME[session.type];
+      const dayStr = new Date(session.date).toISOString().split("T")[0];
+      let match = of1Sessions.find(
+        (s) => s.session_name === of1Name && s.date_start.startsWith(dayStr)
+      );
+      if (!match) {
+        const sameDay = of1Sessions.filter((s) => s.date_start.startsWith(dayStr));
+        const ts = new Date(session.date).getTime();
+        sameDay.sort(
+          (a, b) =>
+            Math.abs(new Date(a.date_start).getTime() - ts) -
+            Math.abs(new Date(b.date_start).getTime() - ts)
+        );
+        match = sameDay[0];
+      }
+      if (match) keyMap.set(session.type, match.session_key);
+    }
+  } catch { /* silent */ }
+  return keyMap;
+}
+
+function formatLapTime(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secStr = (seconds % 60).toFixed(3).padStart(6, "0");
+  return `${mins}:${secStr}`;
+}
+
+function lapTimeToMs(timeStr: string): number {
+  const [minStr, secStr] = timeStr.split(":");
+  if (!minStr || !secStr) return Infinity;
+  return (parseInt(minStr) * 60 + parseFloat(secStr)) * 1000;
+}
+
+export async function fetchOpenF1PracticeResults(
+  sessionKey: number
+): Promise<PracticeDriverResult[]> {
+  try {
+    // z.record ile raw fetch — API field type değişimlerine karşı dayanıklı
+    const [rawLaps, drivers] = await Promise.all([
+      openF1Fetch(`/laps?session_key=${sessionKey}`, z.array(z.record(z.string(), z.unknown()))),
+      fetchOpenF1Drivers(sessionKey),
+    ]);
+
+    const driverMap = new Map(drivers.map((d) => [d.driver_number, d]));
+    const bestByDriver = new Map<number, number>();
+
+    for (const lap of rawLaps) {
+      const driverNum = typeof lap.driver_number === "number" ? lap.driver_number : null;
+      const lapDuration = typeof lap.lap_duration === "number" ? lap.lap_duration : null;
+      const isPitOut = lap.is_pit_out_lap === true;
+
+      if (!driverNum || !lapDuration || isPitOut || lapDuration <= 0) continue;
+
+      const current = bestByDriver.get(driverNum);
+      if (current == null || lapDuration < current) {
+        bestByDriver.set(driverNum, lapDuration);
+      }
+    }
+
+    const results: PracticeDriverResult[] = [];
+    for (const [driverNum, bestSecs] of bestByDriver) {
+      const driver = driverMap.get(driverNum);
+      results.push({
+        position: 0,
+        driverNumber: driverNum,
+        driverName: driver?.full_name ?? `#${driverNum}`,
+        driverCode: driver?.name_acronym,
+        team: driver?.team_name,
+        lapTime: formatLapTime(bestSecs),
+      });
+    }
+
+    results.sort((a, b) => lapTimeToMs(a.lapTime) - lapTimeToMs(b.lapTime));
+    results.forEach((r, i) => { r.position = i + 1; });
+
+    if (results.length > 0) {
+      const fastestMs = lapTimeToMs(results[0]!.lapTime);
+      results.forEach((r, i) => {
+        if (i > 0) {
+          const gapMs = lapTimeToMs(r.lapTime) - fastestMs;
+          r.gap = `+${(gapMs / 1000).toFixed(3)}`;
+        }
+      });
+    }
+
+    return results;
   } catch {
     return [];
   }

@@ -36,6 +36,19 @@ const SESSION_LABELS: Record<string, string> = {
   race: "YARIŞ",
 };
 
+const SESSION_WINDOW_BEFORE_MS = 15 * 60 * 1000;
+const SESSION_WINDOW_AFTER_MS = 2 * 60 * 60 * 1000;
+
+function findCurrentSession(sessions: RaceSession[]): RaceSession | null {
+  const now = Date.now();
+  return (
+    sessions.find((s) => {
+      const t = new Date(s.date).getTime();
+      return now >= t - SESSION_WINDOW_BEFORE_MS && now <= t + SESSION_WINDOW_AFTER_MS;
+    }) ?? null
+  );
+}
+
 const LIVE_POLL_MS = 30_000;
 const OF1_HEADERS = { "User-Agent": "MotorsportsHub/1.0" };
 
@@ -141,6 +154,7 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
   const [liveUpdatedAt, setLiveUpdatedAt] = useState<Date | null>(null);
   const [loading, setLoading] = useState(true);
   const meetingKeyRef = useRef<number | null>(null);
+  const [currentSession, setCurrentSession] = useState<RaceSession | null>(() => findCurrentSession(sessions));
 
   const sessionDates = useMemo(() => [
     ...new Set(sessions.map((s) => new Date(s.date).toISOString().split("T")[0])),
@@ -205,11 +219,19 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
       return;
     }
     let interval: ReturnType<typeof setInterval> | null = null;
+    let sessionCheckInterval: ReturnType<typeof setInterval> | null = null;
     let cancelled = false;
+
+    // Seans bazlı anlık durum tespiti (dakikada bir güncellenir)
+    sessionCheckInterval = setInterval(() => {
+      if (!cancelled) setCurrentSession(findCurrentSession(sessions));
+    }, 60_000);
 
     async function init() {
       setLoading(true);
-      const isLiveOrCompleted = status === "live" || status === "completed";
+      const active = findCurrentSession(sessions);
+      const isLiveOrCompleted = status === "live" || status === "completed" || active !== null;
+      const isPolling = status === "live" || active !== null;
 
       await Promise.allSettled([
         fetchForecast(),
@@ -217,8 +239,8 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
           if (!isLiveOrCompleted) return;
           if (enableOpenF1) {
             const ok = await fetchLiveWeather();
-            if (!ok && !cancelled && status === "live") await fetchMeteoLive();
-          } else if (status === "live") {
+            if (!ok && !cancelled && isPolling) await fetchMeteoLive();
+          } else if (isPolling) {
             await fetchMeteoLive();
           }
         })(),
@@ -226,7 +248,7 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
 
       if (!cancelled) setLoading(false);
 
-      if (status === "live" && !cancelled) {
+      if (isPolling && !cancelled) {
         interval = setInterval(async () => {
           if (cancelled) return;
           if (enableOpenF1) {
@@ -243,8 +265,9 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
     return () => {
       cancelled = true;
       if (interval) clearInterval(interval);
+      if (sessionCheckInterval) clearInterval(sessionCheckInterval);
     };
-  }, [status, fetchForecast, fetchLiveWeather, fetchMeteoLive, tooFarAhead]);
+  }, [status, sessions, fetchForecast, fetchLiveWeather, fetchMeteoLive, tooFarAhead]);
 
   if (tooFarAhead) {
     const daysUntilAvailable = daysUntilRace - FORECAST_HORIZON_DAYS;
@@ -286,11 +309,17 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
         <div className="rounded-lg border border-border bg-card px-3 py-3 space-y-2.5">
           <div className="flex items-center justify-between">
             <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
-              {status === "live"
-                ? live.source === "openf1" ? "Anlık Hava — OpenF1" : "Anlık Hava — Open-Meteo"
-                : live.source === "openf1" ? "Yarış Günü Hava — OpenF1" : "Yarış Günü Hava — Open-Meteo"}
+              {(() => {
+                const activeSession = currentSession ?? (status === "live" ? { type: "race", date: raceDate } : null);
+                const sessionLabel = activeSession ? SESSION_LABELS[activeSession.type] : null;
+                const isActive = status === "live" || currentSession !== null;
+                const sourceLabel = live.source === "openf1" ? "OpenF1" : "Open-Meteo";
+                if (isActive && sessionLabel) return `Anlık Hava — ${sessionLabel} · ${sourceLabel}`;
+                if (isActive) return `Anlık Hava — ${sourceLabel}`;
+                return live.source === "openf1" ? "Hafta Sonu Hava — OpenF1" : "Hafta Sonu Hava — Open-Meteo";
+              })()}
             </p>
-            {status === "live" && (
+            {(status === "live" || currentSession !== null) && (
               <div className="flex items-center gap-1.5">
                 {live.source === "openf1" && (
                   <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
