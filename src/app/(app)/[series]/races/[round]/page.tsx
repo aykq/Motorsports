@@ -4,130 +4,22 @@ import { getRaceDetail } from "@/lib/race-detail";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { notFound } from "next/navigation";
-import {
-  MapPin,
-  Calendar,
-  Clock,
-  Zap,
-  Trophy,
-  Timer,
-  Sparkles,
-  ChevronUp,
-  ChevronDown,
-  Minus,
-} from "lucide-react";
+import { MapPin, Calendar, Clock, Sparkles, Timer } from "lucide-react";
 import { BackButton } from "@/components/layout/BackButton";
-import { TireStints } from "@/components/race/TireStints";
-import { RaceControlSection } from "@/components/race/RaceControlSection";
 import { RaceWeatherSection } from "@/components/race/RaceWeatherSection";
-import { CircuitLayoutImage } from "@/components/race/CircuitLayoutImage";
+import { SessionTabs, type SessionTab } from "@/components/race/SessionTabs";
 import { CircuitHeroPhoto } from "@/components/race/CircuitHeroPhoto";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { getF1CircuitMapUrl, getF1CircuitCoords, getF1CircuitPhotoUrl } from "@/lib/circuit-data";
+import { getF1CircuitCoords, getF1CircuitPhotoUrl } from "@/lib/circuit-data";
 import { lookupCircuitCoords } from "@/lib/circuit-coords";
 import { getTranslations, getLocale } from "next-intl/server";
 import type { Metadata } from "next";
-import type { RaceResult, Standing } from "@/types/series";
 
 export const dynamic = "force-dynamic";
 
 interface Props {
   params: Promise<{ series: string; round: string }>;
-}
-
-function GridChange({ grid, position }: { grid?: number; position: number }) {
-  if (!grid) return null;
-  const diff = grid - position;
-  if (diff === 0) return <Minus className="w-3 h-3 text-muted-foreground" />;
-  if (diff > 0)
-    return (
-      <span className="flex items-center gap-0.5 text-green-500 text-[10px] font-medium">
-        <ChevronUp className="w-3 h-3" />{diff}
-      </span>
-    );
-  return (
-    <span className="flex items-center gap-0.5 text-red-500 text-[10px] font-medium">
-      <ChevronDown className="w-3 h-3" />{Math.abs(diff)}
-    </span>
-  );
-}
-
-function SectionHeader({ title }: { title: string }) {
-  return (
-    <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">{title}</h2>
-  );
-}
-
-function CompactResultRow({ result, slug }: { result: RaceResult; slug: string }) {
-  const { status } = result;
-  const isLapped = status.startsWith("+") && status.toLowerCase().includes("lap");
-  const isDNS = status === "Did Not Start" || status === "Withdrew";
-  const isDNF = status !== "Finished" && !isLapped && !isDNS;
-
-  const displayName = result.driverCode ?? result.driverName.split(" ").pop()!;
-  const displayTime = result.gap ?? (isDNS ? "DNS" : status);
-  const showingStatusText = result.gap == null;
-
-  return (
-    <div className="grid grid-cols-[1.5rem_1fr_4rem] items-center gap-1 text-xs px-2 py-1.5 hover:bg-accent/30 transition-colors">
-      <span className="text-right font-bold shrink-0 text-foreground">
-        {result.position}
-      </span>
-      <div className="px-1 min-w-0">
-        <Link
-          href={`/${slug}/drivers/${result.driverId}`}
-          className={cn(
-            "font-medium truncate block hover:underline cursor-pointer leading-snug",
-            (isDNF || isDNS) && "opacity-60",
-          )}
-        >
-          {displayName}
-        </Link>
-        <span className="text-[10px] text-muted-foreground truncate block leading-snug">
-          {result.team}
-        </span>
-      </div>
-      <span
-        className={cn(
-          "text-right text-[10px] shrink-0",
-          showingStatusText && (isDNF || isDNS) ? "text-red-400" : "text-foreground",
-        )}
-      >
-        {displayTime}
-      </span>
-    </div>
-  );
-}
-
-function StandingRow({ standing, rank }: { standing: Standing; rank: number }) {
-  const name = standing.driver
-    ? `${standing.driver.firstName} ${standing.driver.lastName}`
-    : (standing.team?.name ?? "—");
-  const sub = standing.driver?.team ?? standing.team?.nationality;
-  return (
-    <div className="flex items-center gap-3 px-3 py-2 text-xs border-b border-border last:border-0 hover:bg-accent/30 transition-colors">
-      <span
-        className={cn(
-          "w-5 text-right font-bold shrink-0",
-          rank === 1 && "text-yellow-500",
-          rank === 2 && "text-zinc-400",
-          rank === 3 && "text-amber-600",
-          rank > 3 && "text-muted-foreground"
-        )}
-      >
-        {rank}
-      </span>
-      <div className="flex-1 min-w-0">
-        <p className="font-medium truncate">{name}</p>
-        {sub && <p className="text-muted-foreground truncate">{sub}</p>}
-      </div>
-      <span className="font-bold shrink-0">{standing.points}</span>
-      {standing.wins > 0 && (
-        <span className="text-muted-foreground shrink-0">{standing.wins}G</span>
-      )}
-    </div>
-  );
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -150,6 +42,7 @@ export default async function RaceDetailPage({ params }: Props) {
 
   const t = await getTranslations("racePage");
   const tSessions = await getTranslations("sessions");
+  const tTabLabels = await getTranslations("tabLabels");
   const tStatus = await getTranslations("raceStatus");
   const locale = await getLocale();
   const dateLocale = locale === "tr" ? "tr-TR" : "en-US";
@@ -177,14 +70,70 @@ export default async function RaceDetailPage({ params }: Props) {
     if (race.circuitLat && race.circuitLng) return [race.circuitLat, race.circuitLng];
     return lookupCircuitCoords(race.circuitName);
   })();
-  const layoutUrl = slug === "f1" ? getF1CircuitMapUrl(race.circuitId) : null;
   const photoUrl = slug === "f1" ? getF1CircuitPhotoUrl(race.circuitId) : null;
 
-  const allResults = race.results ?? [];
-  const fastestLapHolder = allResults.find((r) => r.fastestLap);
+  const now = new Date();
+  const fp1Done = race.sessions.find((s) => s.type === "practice1") ? new Date(race.sessions.find((s) => s.type === "practice1")!.date) < now : false;
+  const fp2Done = race.sessions.find((s) => s.type === "practice2") ? new Date(race.sessions.find((s) => s.type === "practice2")!.date) < now : false;
+  const fp3Done = race.sessions.find((s) => s.type === "practice3") ? new Date(race.sessions.find((s) => s.type === "practice3")!.date) < now : false;
+  const sprintQualiDone = race.sessions.find((s) => s.type === "sprintQuali") ? new Date(race.sessions.find((s) => s.type === "sprintQuali")!.date) < now : false;
+  const sprintDone = race.sessions.find((s) => s.type === "sprint") ? new Date(race.sessions.find((s) => s.type === "sprint")!.date) < now : false;
+  const qualifyingDone = race.sessions.find((s) => s.type === "qualifying") ? new Date(race.sessions.find((s) => s.type === "qualifying")!.date) < now : false;
 
   const detail = await getRaceDetail(slug, year, round, race);
-  const { tireStints, raceControl, raceControlTr, driverStandingsAfter, teamStandingsAfter } = detail;
+  const {
+    tireStints,
+    raceControl,
+    raceControlTr,
+    driverStandingsAfter,
+    teamStandingsAfter,
+    qualifyingResults = [],
+    practice1Results = [],
+    practice2Results = [],
+    practice3Results = [],
+  } = detail;
+
+  const allResults = race.results ?? [];
+
+  // ── Build session tabs (only completed sessions with data) ──
+  const tabs: SessionTab[] = [];
+  if (fp1Done && practice1Results.length > 0)
+    tabs.push({ type: "practice1", shortLabel: tTabLabels("practice1"), fullLabel: tSessions("practice1") });
+  if (fp2Done && practice2Results.length > 0)
+    tabs.push({ type: "practice2", shortLabel: tTabLabels("practice2"), fullLabel: tSessions("practice2") });
+  if (fp3Done && practice3Results.length > 0)
+    tabs.push({ type: "practice3", shortLabel: tTabLabels("practice3"), fullLabel: tSessions("practice3") });
+  if (qualifyingDone && qualifyingResults.length > 0)
+    tabs.push({ type: "qualifying", shortLabel: tTabLabels("qualifying"), fullLabel: tSessions("qualifying") });
+  if ((isCompleted || isLive) && allResults.length > 0)
+    tabs.push({ type: "race", shortLabel: tTabLabels("race"), fullLabel: tSessions("race") });
+
+  // Default: last tab (most recent completed session)
+  const defaultTab = tabs[tabs.length - 1]?.type ?? "practice1";
+
+  // ── Label bundles ──
+  const practiceLabels = {
+    colPos: t("colPos"),
+    colDriverTeam: t("colDriverTeam"),
+    colGap: t("colGap"),
+    colLap: t("colLap"),
+  };
+  const qualifyingLabels = {
+    qualifyingResults: t("qualifyingResults"),
+    q2Eliminated: t("q2Eliminated"),
+    q1Eliminated: t("q1Eliminated"),
+  };
+  const raceLabels = {
+    results: t("results"),
+    tireStints: t("tireStints"),
+    championship: t("championship"),
+    driverChampionship: t("driverChampionship"),
+    teamChampionship: t("teamChampionship"),
+    colPos: t("colPos"),
+    colDriverTeam: t("colDriverTeam"),
+    colPoints: t("colPoints"),
+    colTimeStatus: t("colTimeStatus"),
+  };
 
   function formatDateTime(dateStr: string) {
     const date = new Date(dateStr);
@@ -258,12 +207,14 @@ export default async function RaceDetailPage({ params }: Props) {
 
       {/* ── Program ── */}
       <section className="space-y-2">
-        <SectionHeader title={t("schedule")} />
+        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+          {t("schedule")}
+        </h2>
         <div className="rounded-lg border border-border overflow-hidden">
           {race.sessions.map((session) => {
             const { date, time, dayName } = formatDateTime(session.date);
             const isRaceSession = session.type === "race";
-            const sessionKey = session.type as keyof typeof tSessions;
+            const sessionKey = session.type as Parameters<typeof tSessions>[0];
             return (
               <div
                 key={session.type}
@@ -301,163 +252,33 @@ export default async function RaceDetailPage({ params }: Props) {
         />
       )}
 
-      {/* ── Race Results ── */}
-      {isCompleted && allResults.length > 0 && (() => {
-        const topResults = allResults.filter((r) => r.position <= 10);
-        const nonPoints = allResults.filter((r) => r.position > 10);
-        const npHalf = Math.ceil(nonPoints.length / 2);
-        return (
-          <section className="space-y-2">
-            <div className="flex items-center justify-between">
-              <SectionHeader title={t("results")} />
-              {fastestLapHolder && (
-                <div className="flex items-center gap-1 text-xs text-purple-400">
-                  <Zap className="w-3 h-3" />
-                  <span>
-                    {fastestLapHolder.driverName.split(" ").pop()}
-                    {fastestLapHolder.fastestLapTime && (
-                      <span className="text-muted-foreground ml-1">({fastestLapHolder.fastestLapTime})</span>
-                    )}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            <div className="rounded-lg border border-border overflow-hidden">
-              <div className="grid grid-cols-[1.5rem_1rem_1fr_2.5rem_5rem] text-xs font-medium text-muted-foreground px-3 py-2 border-b border-border bg-muted/30 gap-1">
-                <span className="text-right">{t("colPos")}</span>
-                <span />
-                <span className="ml-1">{t("colDriverTeam")}</span>
-                <span className="text-right">{t("colPoints")}</span>
-                <span className="text-right">{t("colTimeStatus")}</span>
-              </div>
-
-              <div className="divide-y divide-border">
-                {topResults.map((result: RaceResult) => {
-                  const isFinished = result.status === "Finished" || result.status.startsWith("+");
-                  const displayTime = result.position === 1
-                    ? (result.time ?? "—")
-                    : (result.gap ?? (isFinished ? "—" : result.status));
-                  return (
-                    <div
-                      key={result.position}
-                      className="grid grid-cols-[1.5rem_1rem_1fr_2.5rem_5rem] text-xs px-3 py-2.5 hover:bg-accent/30 transition-colors gap-1"
-                    >
-                      <span
-                        className={cn(
-                          "text-right font-bold self-center shrink-0",
-                          result.position === 1 && "text-yellow-500",
-                          result.position === 2 && "text-zinc-400",
-                          result.position === 3 && "text-amber-600",
-                          result.position > 3 && "text-muted-foreground"
-                        )}
-                      >
-                        {result.position}
-                      </span>
-                      <div className="self-center">
-                        <GridChange grid={result.gridPosition} position={result.position} />
-                      </div>
-                      <div className="ml-1 min-w-0">
-                        <div className="flex items-center gap-1">
-                          <Link
-                            href={`/${slug}/drivers/${result.driverId}`}
-                            className="font-medium truncate hover:underline cursor-pointer"
-                          >
-                            {result.driverName}
-                          </Link>
-                          {result.fastestLap && <Zap className="w-3 h-3 text-purple-400 shrink-0" />}
-                        </div>
-                        <span className="text-muted-foreground truncate block">{result.team}</span>
-                      </div>
-                      <span className="text-right self-center font-medium shrink-0">
-                        {result.points > 0 ? result.points : "—"}
-                      </span>
-                      <span
-                        className={cn(
-                          "text-right self-center shrink-0",
-                          result.gap == null && !isFinished && result.position !== 1 ? "text-red-400" : "text-foreground"
-                        )}
-                      >
-                        {displayTime}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {nonPoints.length > 0 && (
-                <div className="border-t border-dashed border-border">
-                  <div className="grid grid-cols-2 divide-x divide-border">
-                    <div className="divide-y divide-border">
-                      {nonPoints.slice(0, npHalf).map((r) => (
-                        <CompactResultRow key={r.position} result={r} slug={slug} />
-                      ))}
-                    </div>
-                    <div className="divide-y divide-border">
-                      {nonPoints.slice(npHalf).map((r) => (
-                        <CompactResultRow key={r.position} result={r} slug={slug} />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </section>
-        );
-      })()}
-
-      {/* ── Tire Stints ── */}
-      {isCompleted && tireStints.length > 0 && (
-        <section className="space-y-2">
-          <SectionHeader title={t("tireStints")} />
-          <div className="rounded-lg border border-border p-3">
-            <TireStints stints={tireStints} results={allResults} />
-          </div>
-        </section>
-      )}
-
-      {/* ── Race Events ── */}
-      {isCompleted && raceControl.length > 0 && (
-        <RaceControlSection events={raceControl} eventsTr={raceControlTr} />
-      )}
-
-      {/* ── Championship Standings ── */}
-      {isCompleted && driverStandingsAfter.length > 0 && (
-        <section className="space-y-2">
-          <SectionHeader title={t("championship")} />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
-                <Trophy className="w-3 h-3" />
-                <span>{t("driverChampionship")}</span>
-              </div>
-              <div className="rounded-lg border border-border overflow-hidden">
-                {driverStandingsAfter.slice(0, 10).map((s) => (
-                  <StandingRow key={s.position} standing={s} rank={s.position} />
-                ))}
-              </div>
-            </div>
-
-            {teamStandingsAfter.length > 0 && (
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
-                  <Trophy className="w-3 h-3" />
-                  <span>{t("teamChampionship")}</span>
-                </div>
-                <div className="rounded-lg border border-border overflow-hidden">
-                  {teamStandingsAfter.slice(0, 10).map((s) => (
-                    <StandingRow key={s.position} standing={s} rank={s.position} />
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
+      {/* ── Session Tabs (Practice / Qualifying / Race) ── */}
+      {slug === "f1" && tabs.length > 0 && (
+        <SessionTabs
+          tabs={tabs}
+          defaultTab={defaultTab}
+          practice1Results={practice1Results}
+          practice2Results={practice2Results}
+          practice3Results={practice3Results}
+          qualifyingResults={qualifyingResults}
+          raceResults={allResults}
+          tireStints={tireStints}
+          raceControl={raceControl}
+          raceControlTr={raceControlTr}
+          driverStandingsAfter={driverStandingsAfter}
+          teamStandingsAfter={teamStandingsAfter}
+          slug={slug}
+          practiceLabels={practiceLabels}
+          qualifyingLabels={qualifyingLabels}
+          raceLabels={raceLabels}
+        />
       )}
 
       {/* ── Quotes Placeholder ── */}
       <section className="space-y-2">
-        <SectionHeader title={t("quotes")} />
+        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+          {t("quotes")}
+        </h2>
         <div className="rounded-lg border border-border border-dashed p-6 flex flex-col items-center gap-2 text-center">
           <Sparkles className="w-5 h-5 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">
@@ -468,7 +289,9 @@ export default async function RaceDetailPage({ params }: Props) {
 
       {/* ── Analysis Placeholder ── */}
       <section className="space-y-2">
-        <SectionHeader title={isCompleted ? t("analysis") : t("updates")} />
+        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+          {isCompleted ? t("analysis") : t("updates")}
+        </h2>
         <div className="rounded-lg border border-border border-dashed p-6 flex flex-col items-center gap-2 text-center">
           <Timer className="w-5 h-5 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">
@@ -477,7 +300,7 @@ export default async function RaceDetailPage({ params }: Props) {
         </div>
       </section>
 
-      {!isCompleted && !isLive && !coords && (
+      {!isCompleted && !isLive && !coords && tabs.length === 0 && (
         <div className="text-center py-4 text-muted-foreground">
           <p className="text-sm">{t("noDataPending")}</p>
         </div>

@@ -13,7 +13,7 @@
     "live": "CANLI",
     "completed": "Tamamlandı",
     "cancelled": "İptal",
-    "nextRace": "Sıradaki Yarışa",
+    "nextRace": "Sıradaki",
     "now": "— Şimdi —",
     "noUpcoming": "Yaklaşan yarış bulunamadı.",
     "noData": "Bu seri için henüz veri yok."
@@ -132,7 +132,21 @@
     "colDriverTeam": "Pilot / Takım",
     "colPoints": "Puan",
     "colTimeStatus": "Süre / Durum",
-    "colPos": "P"
+    "colPos": "P",
+    "colGap": "Fark",
+    "colLap": "Tur",
+    "qualifyingResults": "Sıralama Sonuçları",
+    "q2Eliminated": "Q2 — Elenenler",
+    "q1Eliminated": "Q1 — Elenenler"
+  },
+  "tabLabels": {
+    "practice1": "FP1",
+    "practice2": "FP2",
+    "practice3": "FP3",
+    "sprintQuali": "SQ",
+    "sprint": "SPRINT",
+    "qualifying": "SIRALAMA",
+    "race": "YARIŞ"
   },
   "sessions": {
     "practice1": "1. Antrenman",

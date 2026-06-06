@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { Race, Standing, Driver, Circuit, PitStop } from "@/types/series";
+import type { Race, Standing, Driver, Circuit, PitStop, QualifyingDriverResult } from "@/types/series";
 import { getCancelledRaceOverrides } from "./cancelled-races";
 
 const BASE_URL = "https://api.jolpi.ca/ergast/f1";
@@ -142,6 +142,27 @@ const PitStopsResponseSchema = z.object({
   }),
 });
 
+const QualifyingResultItemSchema = z.object({
+  position: z.string(),
+  Driver: DriverInfoSchema,
+  Constructor: ConstructorInfoSchema,
+  Q1: z.string().optional(),
+  Q2: z.string().optional(),
+  Q3: z.string().optional(),
+});
+
+const QualifyingResponseSchema = z.object({
+  MRData: z.object({
+    RaceTable: z.object({
+      Races: z.array(
+        z.object({
+          QualifyingResults: z.array(QualifyingResultItemSchema).optional(),
+        })
+      ),
+    }),
+  }),
+});
+
 // ─── Fetchers ────────────────────────────────────────────────────────────────
 
 const FETCH_TIMEOUT_MS = 30_000;
@@ -207,8 +228,8 @@ export async function jolpicaFetchSchedule(season: number): Promise<Race[]> {
     if (r.ThirdPractice) sessions.push({ type: "practice3", date: buildSessionDate(r.ThirdPractice) });
     if (r.SprintShootout ?? r.SprintQualifying)
       sessions.push({ type: "sprintQuali", date: buildSessionDate((r.SprintShootout ?? r.SprintQualifying)!) });
-    if (r.Qualifying) sessions.push({ type: "qualifying", date: buildSessionDate(r.Qualifying) });
     if (r.Sprint) sessions.push({ type: "sprint", date: buildSessionDate(r.Sprint) });
+    if (r.Qualifying) sessions.push({ type: "qualifying", date: buildSessionDate(r.Qualifying) });
     sessions.push({ type: "race", date: raceDate });
 
     const round = parseInt(r.round);
@@ -320,6 +341,32 @@ export async function jolpicaFetchPitStops(season: number, round: number): Promi
       lap: parseInt(p.lap),
       stop: parseInt(p.stop),
       duration: p.duration,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export async function jolpicaFetchQualifyingResults(
+  season: number,
+  round: number
+): Promise<QualifyingDriverResult[]> {
+  try {
+    const data = await jolpicaFetch(
+      `/${season}/${round}/qualifying.json?limit=25`,
+      QualifyingResponseSchema
+    );
+    const race = data.MRData.RaceTable.Races[0];
+    if (!race?.QualifyingResults?.length) return [];
+    return race.QualifyingResults.map((r) => ({
+      position: parseInt(r.position),
+      driverId: r.Driver.driverId,
+      driverName: `${r.Driver.givenName} ${r.Driver.familyName}`,
+      driverCode: r.Driver.code,
+      team: r.Constructor.name,
+      q1: r.Q1,
+      q2: r.Q2,
+      q3: r.Q3,
     }));
   } catch {
     return [];
