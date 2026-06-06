@@ -14,6 +14,7 @@
     "completed": "Tamamlandı",
     "cancelled": "İptal",
     "nextRace": "Sıradaki Yarışa",
+    "now": "— Şimdi —",
     "noUpcoming": "Yaklaşan yarış bulunamadı.",
     "noData": "Bu seri için henüz veri yok."
   },
@@ -83,7 +84,9 @@
     "season": "{year} Sezonu · {count} yarış",
     "upcoming": "Yaklaşan ({count})",
     "completed": "Tamamlanan ({count})",
-    "noData": "Henüz takvim verisi yok."
+    "noData": "Henüz takvim verisi yok.",
+    "now": "— Şimdi —",
+    "nextRace": "Sıradaki"
   },
   "standingsPage": {
     "title": "Puan Tablosu",
