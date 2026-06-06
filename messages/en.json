@@ -14,6 +14,7 @@
     "completed": "Finished",
     "cancelled": "Cancelled",
     "nextRace": "Next Race",
+    "now": "— Now —",
     "noUpcoming": "No upcoming races found.",
     "noData": "No data available for this series."
   },
@@ -83,7 +84,9 @@
     "season": "{year} Season · {count} races",
     "upcoming": "Upcoming ({count})",
     "completed": "Completed ({count})",
-    "noData": "No schedule data yet."
+    "noData": "No schedule data yet.",
+    "now": "— Now —",
+    "nextRace": "Next"
   },
   "standingsPage": {
     "title": "Standings",

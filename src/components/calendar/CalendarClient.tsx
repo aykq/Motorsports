@@ -2,10 +2,8 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
+import { cn, toTitleCase } from "@/lib/utils";
 import { Countdown } from "@/components/race/Countdown";
-import { RaceCard } from "@/components/race/RaceCard";
-import { Badge } from "@/components/ui/badge";
 import { useTranslations, useLocale } from "next-intl";
 import type { RaceStatus } from "@/types/series";
 import type { SeriesConfig } from "@/lib/series-config";
@@ -40,35 +38,230 @@ function getRaceDate(race: CalendarRace): Date {
   return new Date(raceSession?.date ?? race.date);
 }
 
-function groupByMonth(races: CalendarRace[]): Array<[string, CalendarRace[]]> {
-  const map = new Map<string, CalendarRace[]>();
-  for (const race of races) {
-    const d = getRaceDate(race);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    if (!map.has(key)) map.set(key, []);
-    map.get(key)!.push(race);
+type TimelineItem =
+  | { kind: "race"; race: CalendarRace; isNext: boolean }
+  | { kind: "now-marker" };
+
+function buildTimelineItems(races: CalendarRace[]): TimelineItem[] {
+  const upcoming = races
+    .filter((r) => r.status === "upcoming" || r.status === "live")
+    .sort((a, b) => getRaceDate(a).getTime() - getRaceDate(b).getTime());
+
+  const past = races
+    .filter((r) => r.status === "completed" || r.status === "cancelled")
+    .sort((a, b) => getRaceDate(b).getTime() - getRaceDate(a).getTime());
+
+  const items: TimelineItem[] = [];
+
+  upcoming.forEach((race, i) => {
+    items.push({ kind: "race", race, isNext: i === 0 });
+  });
+
+  if (upcoming.length > 0 && past.length > 0) {
+    items.push({ kind: "now-marker" });
   }
-  return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
+
+  past.forEach((race) => {
+    items.push({ kind: "race", race, isNext: false });
+  });
+
+  return items;
 }
 
-function monthLabel(key: string, locale: string): string {
-  const [year, month] = key.split("-").map(Number);
-  const d = new Date(year, month - 1, 1);
-  const label = d.toLocaleDateString(locale === "tr" ? "tr-TR" : "en-US", { month: "long", year: "numeric" });
-  return label.charAt(0).toUpperCase() + label.slice(1);
+function formatDate(date: Date, locale: string): string {
+  return date.toLocaleDateString(locale === "tr" ? "tr-TR" : "en-GB", {
+    day: "numeric",
+    month: "short",
+  });
+}
+
+function CalendarDot({ race, isNext }: { race: CalendarRace; isNext: boolean }) {
+  if (race.status === "live") {
+    return (
+      <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse ring-2 ring-rose-500/30 shrink-0" />
+    );
+  }
+  if (race.status === "cancelled") {
+    return (
+      <span className="relative w-2 h-2 shrink-0 flex items-center justify-center">
+        <span className="absolute w-full h-px bg-muted-foreground/50 rotate-45" />
+        <span className="absolute w-full h-px bg-muted-foreground/50 -rotate-45" />
+      </span>
+    );
+  }
+  if (race.status === "completed") {
+    return (
+      <span
+        className="w-2 h-2 rounded-full shrink-0"
+        style={{ backgroundColor: `${race.seriesColor}90` }}
+      />
+    );
+  }
+  if (isNext) {
+    return (
+      <span
+        className="w-2.5 h-2.5 rounded-full shrink-0 border-2"
+        style={{ borderColor: race.seriesColor, backgroundColor: `${race.seriesColor}20` }}
+      />
+    );
+  }
+  return <span className="w-2 h-2 rounded-full shrink-0 border border-border bg-transparent" />;
+}
+
+function CalendarTimelineRow({
+  race,
+  isNext,
+  subRaces,
+  locale,
+  statusLabels,
+}: {
+  race: CalendarRace;
+  isNext: boolean;
+  subRaces: CalendarRace[] | undefined;
+  locale: string;
+  statusLabels: Record<RaceStatus, string> & { next: string };
+}) {
+  const isCancelled = race.status === "cancelled";
+  const isLive = race.status === "live";
+  const isCompleted = race.status === "completed";
+  const date = getRaceDate(race);
+  const statusLabel = isNext ? statusLabels.next : statusLabels[race.status];
+
+  const inner = (
+    <div
+      className={cn(
+        "flex-1 min-w-0 flex items-start justify-between gap-2 rounded-lg px-2 py-1.5",
+        !isCancelled && "hover:bg-accent/40 transition-colors",
+        isCancelled && "opacity-50"
+      )}
+      style={
+        isNext
+          ? {
+              outline: `1px solid ${race.seriesColor}50`,
+              backgroundColor: `${race.seriesColor}08`,
+            }
+          : undefined
+      }
+    >
+      <div className="min-w-0">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span
+            className="text-xs font-bold px-1.5 py-0.5 rounded shrink-0"
+            style={{ backgroundColor: `${race.seriesColor}22`, color: race.seriesColor }}
+          >
+            {race.seriesShortName}
+          </span>
+          <span className="text-sm font-semibold leading-tight truncate">{toTitleCase(race.name)}</span>
+          {subRaces?.map((sr) => (
+            <span
+              key={`${sr.seriesSlug}-${sr.round}`}
+              className="text-xs font-bold px-1.5 py-0.5 rounded shrink-0"
+              style={{ backgroundColor: `${sr.seriesColor}22`, color: sr.seriesColor }}
+            >
+              {sr.seriesShortName}
+            </span>
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          {race.circuitName} · {formatDate(date, locale)}
+        </p>
+      </div>
+      <span
+        className={cn(
+          "shrink-0 text-xs font-medium whitespace-nowrap mt-0.5",
+          isCompleted && "text-muted-foreground",
+          isCancelled && "text-muted-foreground/60",
+          isLive && "text-rose-500"
+        )}
+        style={isNext ? { color: race.seriesColor } : undefined}
+      >
+        {statusLabel}
+      </span>
+    </div>
+  );
+
+  if (isCancelled) return <div className="flex-1 min-w-0">{inner}</div>;
+  return (
+    <Link href={`/${race.seriesSlug}/races/${race.round}`} className="flex-1 min-w-0">
+      {inner}
+    </Link>
+  );
+}
+
+function CalendarTimeline({
+  races,
+  subRacesLookup,
+  locale,
+  nowLabel,
+  statusLabels,
+}: {
+  races: CalendarRace[];
+  subRacesLookup: Map<string, CalendarRace[]>;
+  locale: string;
+  nowLabel: string;
+  statusLabels: Record<RaceStatus, string> & { next: string };
+}) {
+  const items = buildTimelineItems(races);
+
+  const lastRaceIndex = (() => {
+    for (let i = items.length - 1; i >= 0; i--) {
+      if (items[i].kind === "race") return i;
+    }
+    return -1;
+  })();
+
+  return (
+    <ol className="relative">
+      {items.map((item, index) => {
+        if (item.kind === "now-marker") {
+          return (
+            <li key="now-marker" className="flex items-center gap-3 my-3 px-2">
+              <div className="flex-1 h-px bg-border" />
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest whitespace-nowrap">
+                {nowLabel}
+              </span>
+              <div className="flex-1 h-px bg-border" />
+            </li>
+          );
+        }
+
+        const { race, isNext } = item;
+        const isLast = index === lastRaceIndex;
+        const subRaces = subRacesLookup.get(race.circuitId);
+
+        return (
+          <li key={`${race.seriesSlug}-${race.round}`} className="flex items-stretch gap-0">
+            <div className="flex flex-col items-center w-5 shrink-0 pt-[11px]">
+              <CalendarDot race={race} isNext={isNext} />
+              {!isLast && (
+                <div className="w-px flex-1 min-h-[20px] bg-border mt-1.5" />
+              )}
+            </div>
+            <div className="flex-1 min-w-0 pb-1">
+              <CalendarTimelineRow
+                race={race}
+                isNext={isNext}
+                subRaces={subRaces}
+                locale={locale}
+                statusLabels={statusLabels}
+              />
+            </div>
+          </li>
+        );
+      })}
+    </ol>
+  );
 }
 
 export function CalendarClient({ races, seriesCountdowns, availableSeries }: Props) {
   const t = useTranslations("calendar");
+  const raceStatusT = useTranslations("raceStatus");
   const locale = useLocale();
   const [selectedSeries, setSelectedSeries] = useState<string[]>([]);
 
   function toggleSeries(slug: string) {
     setSelectedSeries((prev) => {
-      if (prev.includes(slug)) {
-        const next = prev.filter((s) => s !== slug);
-        return next;
-      }
+      if (prev.includes(slug)) return prev.filter((s) => s !== slug);
       return [...prev, slug];
     });
   }
@@ -104,39 +297,19 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
     }
   }
 
-  const filteredRaces = primaryRaces;
-
-  const upcomingFiltered = filteredRaces
+  const upcomingFiltered = primaryRaces
     .filter((r) => r.status === "upcoming" || r.status === "live")
     .sort((a, b) => getRaceDate(a).getTime() - getRaceDate(b).getTime());
 
   const nextRace = upcomingFiltered[0] ?? null;
 
-  const grouped = groupByMonth(
-    filteredRaces.sort((a, b) => getRaceDate(a).getTime() - getRaceDate(b).getTime())
-  );
-
-  const monthsWithUpcoming = new Set(
-    filteredRaces
-      .filter((r) => r.status === "upcoming" || r.status === "live")
-      .map((r) => {
-        const d = getRaceDate(r);
-        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      })
-  );
-
-  const upcomingGroups = grouped.filter(([key]) => monthsWithUpcoming.has(key));
-  const pastGroups = grouped.filter(([key]) => !monthsWithUpcoming.has(key)).reverse();
-
-  function statusBadge(status: RaceStatus) {
-    if (status === "live")
-      return <Badge className="text-[10px] px-1.5 py-0 bg-red-500 text-white border-0 animate-pulse">{t("live")}</Badge>;
-    if (status === "completed")
-      return <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{t("completed")}</Badge>;
-    if (status === "cancelled")
-      return <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground">{t("cancelled")}</Badge>;
-    return null;
-  }
+  const statusLabels = {
+    upcoming: raceStatusT("upcoming"),
+    live: raceStatusT("live"),
+    completed: raceStatusT("completed"),
+    cancelled: raceStatusT("cancelled"),
+    next: t("nextRace"),
+  };
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
@@ -145,7 +318,6 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
         <p className="text-sm text-muted-foreground">{t("season", { year: new Date().getFullYear() })}</p>
       </div>
 
-      {/* ── Series Filter Chips ── */}
       {availableSeries.length > 1 && (
         <div className="flex gap-2 flex-wrap">
           <button
@@ -180,7 +352,6 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
         </div>
       )}
 
-      {/* ── Countdown Section ── */}
       {isAllSelected ? (
         <div className={cn(
           "grid gap-3",
@@ -243,130 +414,19 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
         </div>
       )}
 
-      {/* ── Upcoming Race Groups ── */}
-      {upcomingGroups.map(([key, monthRaces]) => (
-        <section key={key} className="space-y-2">
-          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-            {monthLabel(key, locale)}
-          </h2>
-          <div className="rounded-xl border border-border overflow-hidden divide-y divide-border bg-card">
-            {monthRaces.map((race) => (
-              <RaceRow
-                key={`${race.seriesSlug}-${race.round}`}
-                race={race}
-                past={race.status === "completed" || race.status === "cancelled"}
-                subRaces={subRacesLookup.get(race.circuitId)}
-                locale={locale}
-                statusBadge={statusBadge}
-              />
-            ))}
-          </div>
-        </section>
-      ))}
-
-      {/* ── Past Races ── */}
-      {pastGroups.length > 0 && (
-        <section className="space-y-4">
-          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-            {t("past")}
-          </h2>
-          {pastGroups.map(([key, monthRaces]) => (
-            <div key={key} className="space-y-2">
-              <p className="text-xs text-muted-foreground/60 pl-1">{monthLabel(key, locale)}</p>
-              <div className="rounded-xl border border-border overflow-hidden divide-y divide-border bg-card">
-                {monthRaces.map((race) => (
-                  <RaceRow
-                    key={`${race.seriesSlug}-${race.round}`}
-                    race={race}
-                    past={true}
-                    subRaces={subRacesLookup.get(race.circuitId)}
-                    locale={locale}
-                    statusBadge={statusBadge}
-                  />
-                ))}
-              </div>
-            </div>
-          ))}
-        </section>
-      )}
-
-      {filteredRaces.length === 0 && (
+      {primaryRaces.length > 0 ? (
+        <CalendarTimeline
+          races={primaryRaces}
+          subRacesLookup={subRacesLookup}
+          locale={locale}
+          nowLabel={t("completed")}
+          statusLabels={statusLabels}
+        />
+      ) : (
         <div className="text-center py-16 text-muted-foreground">
           <p className="text-sm">{t("noData")}</p>
         </div>
       )}
     </div>
-  );
-}
-
-function RaceRow({
-  race,
-  past = false,
-  subRaces,
-  locale,
-  statusBadge,
-}: {
-  race: CalendarRace;
-  past?: boolean;
-  subRaces?: CalendarRace[];
-  locale: string;
-  statusBadge: (status: RaceStatus) => React.ReactNode;
-}) {
-  const raceDate = getRaceDate(race);
-  const href = `/${race.seriesSlug}/races/${race.round}`;
-
-  const dateLocale = locale === "tr" ? "tr-TR" : "en-US";
-  const dateStr = raceDate.toLocaleDateString(dateLocale, { day: "numeric", month: "short" });
-  const timeStr = raceDate.toLocaleTimeString(dateLocale, {
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "Europe/Istanbul",
-  });
-
-  const hasTime = timeStr !== "00:00" && timeStr !== "03:00";
-  const isCancelled = race.status === "cancelled";
-
-  const Wrapper = isCancelled
-    ? ({ children }: { children: React.ReactNode }) => <div>{children}</div>
-    : ({ children }: { children: React.ReactNode }) => <Link href={href}>{children}</Link>;
-
-  return (
-    <Wrapper>
-      <div
-        className={cn(
-          "flex items-center gap-3 px-3 py-3 text-sm transition-colors",
-          !isCancelled && "hover:bg-accent/50 cursor-pointer",
-          (past || isCancelled) && "opacity-50"
-        )}
-      >
-        <div
-          className="w-1.5 h-1.5 rounded-full shrink-0"
-          style={{ backgroundColor: isCancelled ? "var(--muted-foreground)" : race.seriesColor }}
-        />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <p className="font-medium truncate">{race.name}</p>
-            {subRaces?.map((sr) => (
-              <span
-                key={`${sr.seriesSlug}-${sr.round}`}
-                className="text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0"
-                style={{ backgroundColor: `${sr.seriesColor}22`, color: sr.seriesColor }}
-              >
-                {sr.seriesShortName}
-              </span>
-            ))}
-          </div>
-          <p className="text-xs text-muted-foreground truncate">
-            {race.seriesShortName} · {race.circuitName}
-          </p>
-        </div>
-        <div className="text-right shrink-0 space-y-0.5">
-          <p className="text-xs text-muted-foreground">
-            {dateStr}{hasTime && <span className="ml-1.5 text-muted-foreground/70">{timeStr}</span>}
-          </p>
-          {statusBadge(race.status)}
-        </div>
-      </div>
-    </Wrapper>
   );
 }
