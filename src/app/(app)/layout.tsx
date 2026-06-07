@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { PreferenceSyncer } from "@/components/layout/PreferenceSyncer";
+import { PageTransitionWrapper } from "@/components/layout/PageTransitionWrapper";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -40,7 +41,9 @@ export default async function AppLayout({
         dbTheme={userPrefs?.theme ?? null}
       />
       <Sidebar user={{}} />
-      <main className="flex-1 min-w-0 pb-16 md:pb-0">{children}</main>
+      <main className="flex-1 min-w-0 pb-16 md:pb-0">
+        <PageTransitionWrapper>{children}</PageTransitionWrapper>
+      </main>
       <BottomNav />
       {DevSyncPanel && <DevSyncPanel />}
     </div>

@@ -3,6 +3,7 @@ import { getSeriesConfig } from "@/lib/series-config";
 import { getF1Team, getF1TeamByName } from "@/lib/f1-teams";
 import { notFound } from "next/navigation";
 import { BackButton } from "@/components/layout/BackButton";
+import Link from "next/link";
 import type { Metadata } from "next";
 
 interface Props {
@@ -134,7 +135,16 @@ export default async function DriverDetailPage({ params }: Props) {
               <span className="text-sm text-muted-foreground">{driver.nationality}</span>
             </div>
             {driver.team && (
-              <p className="text-sm text-muted-foreground mt-1 truncate">{driver.team}</p>
+              driver.teamId ? (
+                <Link
+                  href={`/${slug}/teams/${driver.teamId}`}
+                  className="text-sm text-muted-foreground mt-1 truncate block hover:text-foreground transition-colors hover:underline"
+                >
+                  {f1Team?.fullName ?? driver.team}
+                </Link>
+              ) : (
+                <p className="text-sm text-muted-foreground mt-1 truncate">{driver.team}</p>
+              )
             )}
           </div>
         </div>
@@ -173,9 +183,10 @@ export default async function DriverDetailPage({ params }: Props) {
                   result.status === "Did not start" || result.status === "DNS";
                 const isDNF = !isFinished;
                 return (
-                  <div
+                  <Link
                     key={race.round}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-card border border-border text-sm"
+                    href={`/${slug}/races/${race.round}`}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-card border border-border text-sm hover:bg-accent/50 transition-colors"
                   >
                     {positionBadge(result.position, result.status)}
                     <span className="flex-1 truncate">{race.name}</span>
@@ -197,7 +208,7 @@ export default async function DriverDetailPage({ params }: Props) {
                         )}
                       </div>
                     )}
-                  </div>
+                  </Link>
                 );
               })}
             </div>

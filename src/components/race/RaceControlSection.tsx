@@ -62,8 +62,8 @@ export function RaceControlSection({ events, eventsTr }: Props) {
           const isPenalty =
             event.message.toUpperCase().includes("PENALTY") ||
             event.message.toUpperCase().includes("INVESTIGATION");
-          const message =
-            lang === "tr" ? (eventsTr[i] ?? event.message) : event.message;
+          const raw = lang === "tr" ? (eventsTr[i] ?? event.message) : event.message;
+          const message = raw.replace(/\s*\(\d{2}:\d{2}:\d{2}\)\s*$/, "").trim();
 
           return (
             <div

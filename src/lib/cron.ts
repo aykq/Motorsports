@@ -1,13 +1,13 @@
 import cron from "node-cron";
 import { syncSeries } from "@/lib/sync";
-import { syncRaceDetails } from "@/lib/race-detail";
+import { isActiveRaceWeekend, syncActiveSessionData, syncRaceDetails } from "@/lib/race-detail";
+import { getCachedSchedule } from "@/lib/cache";
 import { adapters } from "@/lib/adapters";
 import { db } from "@/db";
 import { cachedRaces } from "@/db/schema";
 import { sendPushToSubscribers } from "@/lib/push";
 import type { Race } from "@/types/series";
 
-const LIVE_WINDOW_MS = 3 * 60 * 60 * 1000;
 const POST_RACE_WINDOW_MS = 12 * 60 * 60 * 1000;
 
 const SEASON = new Date().getFullYear();
@@ -26,14 +26,31 @@ cron.schedule(
         console.error(`[cron] ${slug} failed:`, err);
       }
     }
+    // F1 race details backfill — son 14 gündeki tamamlanmış yarışlar için race control + çeviri kontrol
+    try {
+      const { races } = await getCachedSchedule("f1", SEASON);
+      const fourteenDaysAgo = Date.now() - 14 * 24 * 60 * 60 * 1000;
+      const recentCompleted = races.filter(
+        (r) => r.status === "completed" && new Date(r.date).getTime() > fourteenDaysAgo
+      );
+      if (recentCompleted.length) {
+        const detailResult = await syncRaceDetails("f1", SEASON, recentCompleted);
+        if (detailResult.synced) console.log(`[cron] race details: ${detailResult.synced} updated`);
+        if (detailResult.errors.length) console.error("[cron] race detail errors:", detailResult.errors);
+      }
+    } catch (err) {
+      console.error("[cron] race details backfill error:", err);
+    }
+
     console.log("[cron] full sync finished");
   },
   { timezone: "UTC" }
 );
 
 // Pre-race bildirim — her 5 dakikada bir kontrol, yarıştan ~1 saat önce gönder
+// :01, :06, :11... olarak ofsetlendi (00:00 yığılmasını önlemek için)
 cron.schedule(
-  "*/5 * * * *",
+  "1-59/5 * * * *",
   async () => {
     const now = Date.now();
     const windowStart = now + 55 * 60 * 1000; // 55 dk sonra
@@ -64,37 +81,25 @@ cron.schedule(
   { timezone: "UTC" }
 );
 
-// Yarış anı sync — her 5 dakikada bir, live yarış varsa race detail güncelle
+// Aktif seans sync — her 2 dakikada bir
+// FP1/2/3, qualifying, sprint ve yarış seanslarını tüm hafta sonu izler
+// :02, :04, :06... — full sync :00 ile örtüşmez
 cron.schedule(
-  "*/5 * * * *",
+  "2-58/2 * * * *",
   async () => {
-    const now = Date.now();
     const allRows = await db.query.cachedRaces.findMany().catch(() => []);
-
-    const liveRows = allRows.filter((row) => {
-      const race = row.data as Race;
-      const raceSession = race.sessions?.find((s) => s.type === "race");
-      if (!raceSession) return false;
-      const raceTime = new Date(raceSession.date).getTime();
-      return raceTime <= now && raceTime > now - LIVE_WINDOW_MS;
-    });
-
-    if (!liveRows.length) return;
-
-    const bySlug = new Map<string, Race[]>();
-    for (const row of liveRows) {
-      const list = bySlug.get(row.seriesSlug) ?? [];
-      list.push(row.data as Race);
-      bySlug.set(row.seriesSlug, list);
-    }
-
-    console.log(`[cron] live race detected: ${[...bySlug.keys()].join(", ")}`);
     const season = new Date().getFullYear();
-    for (const [slug, races] of bySlug) {
+
+    const activeRows = allRows.filter((row) =>
+      isActiveRaceWeekend(row.data as Race)
+    );
+    if (!activeRows.length) return;
+
+    for (const row of activeRows) {
       try {
-        await syncRaceDetails(slug, season, races);
+        await syncActiveSessionData(row.seriesSlug, season, row.data as Race);
       } catch (err) {
-        console.error(`[cron] live sync error (${slug}):`, err);
+        console.error(`[cron] session sync error (${row.seriesSlug} R${(row.data as Race).round}):`, err);
       }
     }
   },
@@ -102,9 +107,9 @@ cron.schedule(
 );
 
 // Yarış sonrası sonuç yenileme — her 30 dakikada bir
-// Yarıştan 3-12 saat sonra eksik sonuç (< 15 pilot) varsa tam sync tetikler
+// :15, :45 olarak ofsetlendi (00/30 yığılmasını önlemek için)
 cron.schedule(
-  "*/30 * * * *",
+  "15,45 * * * *",
   async () => {
     const now = Date.now();
     const allRows = await db.query.cachedRaces.findMany().catch(() => []);
@@ -115,7 +120,7 @@ cron.schedule(
       if (!raceSession) return false;
       const raceTime = new Date(raceSession.date).getTime();
       const isPostRace =
-        raceTime <= now - LIVE_WINDOW_MS &&
+        raceTime <= now - 3 * 60 * 60 * 1000 &&
         raceTime > now - POST_RACE_WINDOW_MS;
       const hasIncompleteResults = !race.results || race.results.length < 15;
       return isPostRace && hasIncompleteResults;
@@ -137,4 +142,4 @@ cron.schedule(
   { timezone: "UTC" }
 );
 
-console.log("[cron] scheduled: full sync every 6h, post-race refresh every 30min, live race sync every 5min, pre-race notifications every 5min");
+console.log("[cron] scheduled: full sync @00/06/12/18 UTC, pre-race notify @:01/06/11..., session sync @:02/04/06..., post-race refresh @:15/:45");

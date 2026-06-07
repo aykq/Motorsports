@@ -96,7 +96,7 @@ export default async function StandingsPage({ params, searchParams }: Props) {
           {driverStandings.length === 0 ? (
             <p className="text-center py-8 text-sm text-muted-foreground">{t("noData")}</p>
           ) : (
-            driverStandings.map((s) => {
+            driverStandings.map((s, i) => {
               const f1Team = getF1Team(s.driver?.teamId) ?? getF1TeamByName(s.driver?.team);
               const teamColor = f1Team?.color ?? config.color;
               const driverImage = slug === "f1"
@@ -106,7 +106,8 @@ export default async function StandingsPage({ params, searchParams }: Props) {
                 <Link
                   key={s.position}
                   href={s.driver ? `/${slug}/drivers/${s.driver.id}` : "#"}
-                  className="flex items-center gap-3 px-3 py-2 rounded-lg bg-card border border-border overflow-hidden relative hover:bg-accent/50 transition-colors"
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg bg-card border border-border overflow-hidden relative hover:bg-accent/50 transition-colors animate-in fade-in slide-in-from-bottom-1 duration-300"
+                  style={{ animationDelay: `${Math.min(i * 35, 280)}ms` }}
                 >
                   <div
                     className="absolute left-0 top-0 bottom-0 w-0.5"
@@ -162,14 +163,15 @@ export default async function StandingsPage({ params, searchParams }: Props) {
           {teamStandings.length === 0 ? (
             <p className="text-center py-8 text-sm text-muted-foreground">{t("noData")}</p>
           ) : (
-            teamStandings.map((s) => {
+            teamStandings.map((s, i) => {
               const team = getF1Team(s.team?.id) ?? getF1TeamByName(s.team?.name);
               const teamColor = team?.color ?? config.color;
               return (
                 <Link
                   key={s.position}
                   href={s.team?.id ? `/${activeCat}/teams/${s.team.id}` : "#"}
-                  className="flex items-center gap-3 px-3 py-3 rounded-lg bg-card border border-border relative overflow-hidden hover:bg-accent/50 transition-colors"
+                  className="flex items-center gap-3 px-3 py-3 rounded-lg bg-card border border-border relative overflow-hidden hover:bg-accent/50 transition-colors animate-in fade-in slide-in-from-bottom-1 duration-300"
+                  style={{ animationDelay: `${Math.min(i * 35, 280)}ms` }}
                 >
                   <div
                     className="absolute left-0 top-0 bottom-0 w-0.5"

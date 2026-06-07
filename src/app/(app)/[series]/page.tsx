@@ -180,14 +180,15 @@ export default async function SeriesPage({ params }: Props) {
               </Link>
             </div>
             <div className="flex overflow-x-auto gap-3 pb-3 [scrollbar-width:thin] [scrollbar-color:theme(colors.border)_transparent] [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40">
-              {sortedDrivers.map((driver) => {
+              {sortedDrivers.map((driver, i) => {
                 const f1Team = slug === "f1" ? getF1Team(driver.teamId) : undefined;
                 const teamColor = f1Team?.color ?? config.color;
                 return (
                   <Link
                     key={driver.id}
                     href={`/${slug}/drivers/${driver.id}`}
-                    className="shrink-0 w-36 bg-card rounded-lg border border-border overflow-hidden flex flex-col relative hover:border-white/20 transition-colors"
+                    className="shrink-0 w-36 bg-card rounded-lg border border-border overflow-hidden flex flex-col relative hover:border-white/20 transition-colors animate-in fade-in slide-in-from-bottom-2 duration-300"
+                    style={{ animationDelay: `${Math.min(i * 50, 300)}ms` }}
                   >
                     <div className="h-28 relative overflow-hidden" style={{ backgroundColor: `${teamColor}18` }}>
                       {driver.image ? (
@@ -312,9 +313,10 @@ function StandingsTable({ color, rows }: { color: string; rows: StandingsRow[] }
             key={`${s.position}-${s.name}-${i}`}
             href={s.href}
             className={cn(
-              "flex items-center px-4 py-3 hover:bg-white/5 transition-colors",
+              "flex items-center px-4 py-3 hover:bg-white/5 transition-colors animate-in fade-in duration-300",
               i < rows.length - 1 ? "border-b border-border" : ""
             )}
+            style={{ animationDelay: `${i * 60}ms` }}
           >
             <div
               className="w-8 text-xl font-bold leading-none"

@@ -15,6 +15,16 @@ import {
 import { fetchRaceWeather } from "@/lib/weather";
 import { translateRaceControlMessages } from "@/lib/gemini";
 
+const SESSION_WINDOW_MS: Record<string, number> = {
+  practice1: 3 * 60 * 60 * 1000,
+  practice2: 3 * 60 * 60 * 1000,
+  practice3: 3 * 60 * 60 * 1000,
+  qualifying: 2 * 60 * 60 * 1000,
+  sprintQuali: 2 * 60 * 60 * 1000,
+  sprint: 4 * 60 * 60 * 1000,
+  race: 4 * 60 * 60 * 1000,
+};
+
 const EMPTY_DETAIL: RaceDetail = {
   pitStops: [],
   tireStints: [],
@@ -29,7 +39,7 @@ const EMPTY_DETAIL: RaceDetail = {
   practice3Results: [],
 };
 
-function isActiveRaceWeekend(race: Race): boolean {
+export function isActiveRaceWeekend(race: Race): boolean {
   const now = Date.now();
   const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
   const firstSession = race.sessions[0];
@@ -49,12 +59,21 @@ export async function getRaceDetail(
   const activeWeekend = !isCompleted && isActiveRaceWeekend(race);
 
   const cached = await getCachedRaceDetail(slug, season, round, isCompleted, race.date, activeWeekend);
-  // qualifyingResults === undefined → eski cache kaydı (yeni alanlar yok), yeniden çek
-  // raceControlFetched === undefined → raceControl hiç API'den çekilmedi, yeniden çek
+  // qualifyingResults === undefined → eski cache kaydı, yeniden çek
+  // raceControlFetched !== true → race control hiç çekilmedi, yeniden çek
+  // Yeni tamamlanmış yarış (< 6 saat) + boş raceControl → OpenF1 güncellenmiş olabilir, yeniden çek
+  const recentCompletedWithoutEvents =
+    isCompleted &&
+    Date.now() - new Date(race.date).getTime() < 6 * 60 * 60 * 1000 &&
+    (cached?.raceControl.length ?? 0) === 0;
+  // Tamamlanmış F1 yarışı stintsFetched=true değilse OpenF1'den çekilmemiş → re-fetch
+  const missingStintsData = isCompleted && slug === "f1" && cached !== null && !cached.stintsFetched;
   const cacheValid =
     cached !== null &&
     cached.qualifyingResults !== undefined &&
-    (!isCompleted || cached.raceControlFetched === true);
+    (!isCompleted || cached.raceControlFetched === true) &&
+    !recentCompletedWithoutEvents &&
+    !missingStintsData;
   if (cacheValid) return cached;
 
   if (slug !== "f1") return EMPTY_DETAIL;
@@ -125,14 +144,42 @@ export async function syncRaceDetails(
     }
   }
 
-  // Pass 2 — son 7 gün + live: tam veri yenileme
+  // Pass 2 — son 14 gün + live: tam veri yenileme
+  const fourteenDaysAgo = Date.now() - 14 * 24 * 60 * 60 * 1000;
   const recentRaces = completedRaces.filter(
-    (r) => r.status === "live" || new Date(r.date).getTime() > sevenDaysAgo
+    (r) => r.status === "live" || new Date(r.date).getTime() > fourteenDaysAgo
   );
 
   for (const race of recentRaces) {
     try {
       const isCompleted = race.status === "completed";
+
+      // Tamamlanmış yarış ve zaten tam veri varsa → sadece çeviri kontrol et (API fetch yapma)
+      if (isCompleted) {
+        const rawDetail = await getRaceDetailRaw(slug, season, race.round);
+        if (rawDetail?.raceControlFetched === true) {
+          const needsTr =
+            rawDetail.raceControl.length > 0 &&
+            (!rawDetail.raceControlTr?.length ||
+              rawDetail.raceControlTr[0] === rawDetail.raceControl[0]?.message);
+          if (needsTr) {
+            await new Promise((r) => setTimeout(r, 2000));
+            const translated = await translateRaceControlMessages(
+              rawDetail.raceControl.map((e) => e.message)
+            );
+            if (translated.length) {
+              await setCachedRaceDetail(slug, season, race.round, {
+                ...rawDetail,
+                raceControlTr: translated,
+              });
+              synced++;
+            }
+          }
+          continue;
+        }
+      }
+
+      // Veri eksik veya live yarış → tam re-fetch
       const existing = await getCachedRaceDetail(slug, season, race.round, isCompleted);
       const fresh = await fetchF1RaceDetail(season, race.round, race, isCompleted);
 
@@ -162,6 +209,130 @@ export async function syncRaceDetails(
   }
 
   return { synced, errors };
+}
+
+export async function syncActiveSessionData(
+  slug: string,
+  season: number,
+  race: Race
+): Promise<void> {
+  if (slug !== "f1") return;
+
+  const now = Date.now();
+  const existing = (await getRaceDetailRaw(slug, season, race.round)) ?? { ...EMPTY_DETAIL };
+
+  const activeSessions = race.sessions.filter((s) => {
+    const t = new Date(s.date).getTime();
+    if (t > now) return false;
+    const windowMs = SESSION_WINDOW_MS[s.type] ?? 4 * 60 * 60 * 1000;
+    if (now > t + windowMs) return false;
+    if (s.type === "practice1" && existing.practice1Complete) return false;
+    if (s.type === "practice2" && existing.practice2Complete) return false;
+    if (s.type === "practice3" && existing.practice3Complete) return false;
+    if (s.type === "qualifying" && existing.qualifyingComplete) return false;
+    if (s.type === "sprintQuali" && existing.sprintQualiComplete) return false;
+    if (s.type === "race" && existing.raceDataComplete) return false;
+    if (s.type === "sprint" && existing.sprintComplete) return false;
+    return true;
+  });
+
+  if (!activeSessions.length) return;
+
+  const of1Types = new Set(["practice1", "practice2", "practice3", "race", "sprint"]);
+  const of1Sessions = activeSessions.filter((s) => of1Types.has(s.type));
+  const sessionKeyMap =
+    of1Sessions.length > 0
+      ? await findOpenF1AllSessionKeys(season, of1Sessions)
+      : new Map<string, number>();
+
+  const updated = { ...existing };
+  let changed = false;
+
+  for (const session of activeSessions) {
+    const type = session.type;
+    try {
+      if (type === "practice1" || type === "practice2" || type === "practice3") {
+        const sessionKey = sessionKeyMap.get(type);
+        if (!sessionKey) continue;
+
+        const results = await fetchOpenF1PracticeResults(sessionKey);
+        if (type === "practice1") { updated.practice1Results = results; if (results.length >= 15) updated.practice1Complete = true; }
+        if (type === "practice2") { updated.practice2Results = results; if (results.length >= 15) updated.practice2Complete = true; }
+        if (type === "practice3") { updated.practice3Results = results; if (results.length >= 15) updated.practice3Complete = true; }
+        changed = true;
+        console.log(`[cron] session sync: ${slug} R${race.round} ${type} (${results.length} drivers, complete: ${results.length >= 15})`);
+      }
+
+      if (type === "qualifying") {
+        const results = await jolpicaFetchQualifyingResults(season, race.round);
+        updated.qualifyingResults = results;
+        const q3Count = results.filter((r) => r.q3).length;
+        if (q3Count >= 9) updated.qualifyingComplete = true;
+        changed = true;
+        console.log(`[cron] session sync: ${slug} R${race.round} qualifying (Q3 drivers: ${q3Count})`);
+      }
+
+      if (type === "sprintQuali") {
+        const results = await jolpicaFetchQualifyingResults(season, race.round);
+        updated.qualifyingResults = results;
+        const q1Count = results.filter((r) => r.q1).length;
+        if (q1Count >= 15) updated.sprintQualiComplete = true;
+        changed = true;
+        console.log(`[cron] session sync: ${slug} R${race.round} sprintQuali (Q1 drivers: ${q1Count})`);
+      }
+
+      if (type === "race" || type === "sprint") {
+        if (race.results && race.results.length >= 18) {
+          const fresh = await fetchF1RaceDetail(season, race.round, race, true);
+          const existingTr = updated.raceControlTr ?? [];
+          let raceControlTr = existingTr;
+
+          if (fresh.raceControl.length > 0) {
+            const needsTr =
+              !existingTr.length ||
+              fresh.raceControl.length > updated.raceControl.length;
+            if (needsTr) {
+              await new Promise((r) => setTimeout(r, 2000));
+              const translated = await translateRaceControlMessages(
+                fresh.raceControl.map((e) => e.message)
+              );
+              if (translated.length) raceControlTr = translated;
+            }
+          }
+
+          Object.assign(updated, { ...fresh, raceControlTr });
+          if (type === "race") updated.raceDataComplete = true;
+          if (type === "sprint") updated.sprintComplete = true;
+          console.log(`[cron] session sync: ${slug} R${race.round} ${type} COMPLETE`);
+        } else {
+          const sessionKey = sessionKeyMap.get(type);
+          if (sessionKey) {
+            const [stints, raceControl] = await Promise.all([
+              fetchOpenF1Stints(sessionKey),
+              fetchOpenF1RaceControl(sessionKey),
+            ]);
+            updated.tireStints = stints;
+            const hasNewEvents = raceControl.length > updated.raceControl.length;
+            updated.raceControl = raceControl;
+            if (hasNewEvents && raceControl.length > 0) {
+              const translated = await translateRaceControlMessages(
+                raceControl.map((e) => e.message)
+              );
+              if (translated.length) updated.raceControlTr = translated;
+            }
+          }
+          console.log(`[cron] session sync: ${slug} R${race.round} ${type} live (results: ${race.results?.length ?? 0})`);
+        }
+        changed = true;
+      }
+    } catch (err) {
+      console.error(`[cron] session sync error (${slug} R${race.round} ${type}):`, err);
+    }
+  }
+
+  if (changed) {
+    await setCachedRaceDetail(slug, season, race.round, updated);
+  }
 }
 
 async function fetchF1RaceDetail(
@@ -258,6 +429,7 @@ async function fetchF1RaceDetail(
     practice1Results: fp1Result.status === "fulfilled" ? fp1Result.value : [],
     practice2Results: fp2Result.status === "fulfilled" ? fp2Result.value : [],
     practice3Results: fp3Result.status === "fulfilled" ? fp3Result.value : [],
-    raceControlFetched: true,
+    raceControlFetched: isCompleted,
+    stintsFetched: isCompleted, // live fazda false → completed olunca re-fetch tetiklenir
   };
 }

@@ -45,13 +45,13 @@ export function Sidebar({ user }: SidebarProps) {
               key={href}
               href={href}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
                 active
                   ? "bg-rose-500/10 text-rose-500"
                   : "text-muted-foreground hover:text-foreground hover:bg-accent"
               )}
             >
-              <Icon className="w-4.5 h-4.5 shrink-0" />
+              <Icon className={cn("w-4.5 h-4.5 shrink-0 transition-transform duration-200", active && "scale-110")} />
               {label}
             </Link>
           );
