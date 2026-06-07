@@ -1,4 +1,5 @@
-import { getCachedRaceByRound, getCachedSchedule } from "@/lib/cache";
+import { getCachedRaceByRound, getCachedSchedule, setCachedSchedule } from "@/lib/cache";
+import { jolpicaFetchRaceResults } from "@/lib/adapters/f1/jolpica";
 import { getSeriesConfig } from "@/lib/series-config";
 import { getRaceDetail } from "@/lib/race-detail";
 import { Badge } from "@/components/ui/badge";
@@ -56,6 +57,15 @@ export default async function RaceDetailPage({ params }: Props) {
     race = races.find((r) => r.round === round) ?? null;
   }
   if (!race) notFound();
+
+  // Tamamlanmış yarış ama sonuç yok → Jolpica'dan tek round fetch et + cache güncelle
+  if (race.status === "completed" && !race.results?.length && slug === "f1") {
+    const freshResults = await jolpicaFetchRaceResults(year, round);
+    if (freshResults.length) {
+      race = { ...race, results: freshResults };
+      void setCachedSchedule(slug, year, [race]);
+    }
+  }
 
   const isCompleted = race.status === "completed";
   const isLive = race.status === "live";

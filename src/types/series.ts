@@ -165,4 +165,12 @@ export interface RaceDetail {
   practice2Results?: PracticeDriverResult[];
   practice3Results?: PracticeDriverResult[];
   raceControlFetched?: boolean;
+  stintsFetched?: boolean;
+  practice1Complete?: boolean;
+  practice2Complete?: boolean;
+  practice3Complete?: boolean;
+  qualifyingComplete?: boolean;
+  sprintQualiComplete?: boolean;
+  raceDataComplete?: boolean;
+  sprintComplete?: boolean;
 }

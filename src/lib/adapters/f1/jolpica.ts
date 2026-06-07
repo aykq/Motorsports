@@ -201,13 +201,14 @@ function buildSessionDate(s: { date: string; time?: string }): string {
   return s.time ? `${s.date}T${s.time.replace("Z", "+00:00")}` : `${s.date}T00:00:00+00:00`;
 }
 
-function detectStatus(raceDate: string, hasResults: boolean): Race["status"] {
+function detectStatus(raceDate: string, hasResults: boolean | null): Race["status"] {
   const now = Date.now();
   const date = new Date(raceDate).getTime();
   const twoHours = 2 * 60 * 60 * 1000;
   if (date > now) return "upcoming";
   if (date > now - twoHours) return "live";
-  // Geçmiş tarih ama sonuç yoksa iptal edilmiş demektir
+  // null → API hatası, yarışı iptal saymıyoruz
+  if (hasResults === null) return "completed";
   if (!hasResults) return "cancelled";
   return "completed";
 }
@@ -215,7 +216,7 @@ function detectStatus(raceDate: string, hasResults: boolean): Race["status"] {
 export async function jolpicaFetchSchedule(season: number): Promise<Race[]> {
   // Schedule ve results'ı paralel çek; results ile iptal tespiti yap
   // Jolpica API: iptal yarışlar schedule'da görünür ama results'da olmaz
-  const [scheduleData, resultsMap] = await Promise.all([
+  const [scheduleData, roundsWithResults] = await Promise.all([
     jolpicaFetch(`/${season}.json`, ScheduleResponseSchema),
     jolpicaFetchResultRounds(season),
   ]);
@@ -242,7 +243,7 @@ export async function jolpicaFetchSchedule(season: number): Promise<Race[]> {
       country: r.Circuit.Location.country,
       date: raceDate,
       sessions,
-      status: detectStatus(raceDate, resultsMap.has(round)),
+      status: detectStatus(raceDate, roundsWithResults === null ? null : roundsWithResults.has(round)),
       circuitLat: parseFloat(r.Circuit.Location.lat),
       circuitLng: parseFloat(r.Circuit.Location.long),
     };
@@ -252,7 +253,7 @@ export async function jolpicaFetchSchedule(season: number): Promise<Race[]> {
 }
 
 /** Sadece hangi round'ların sonucu olduğunu çeker; tam result verisi değil. */
-async function jolpicaFetchResultRounds(season: number): Promise<Set<number>> {
+async function jolpicaFetchResultRounds(season: number): Promise<Set<number> | null> {
   const rounds = new Set<number>();
   const PAGE = 100;
   let offset = 0;
@@ -271,8 +272,8 @@ async function jolpicaFetchResultRounds(season: number): Promise<Set<number>> {
       if (offset >= total) break;
     }
   } catch {
-    // API hatası durumunda tüm yarışları tamamlandı say (false positive iptal yaratma)
-    return new Set<number>();
+    // API hatası → null döndür; detectStatus "cancelled" kararı vermez
+    return null;
   }
 
   return rounds;
@@ -325,6 +326,38 @@ export async function jolpicaFetchResults(
   }
 
   return map;
+}
+
+export async function jolpicaFetchRaceResults(
+  season: number,
+  round: number
+): Promise<import("@/types/series").RaceResult[]> {
+  try {
+    const data = await jolpicaFetch(
+      `/${season}/${round}/results.json?limit=25`,
+      AllResultsResponseSchema
+    );
+    const race = data.MRData.RaceTable.Races[0];
+    if (!race?.Results?.length) return [];
+    return race.Results.map((r) => ({
+      position: parseInt(r.position),
+      driverId: r.Driver.driverId,
+      driverName: `${r.Driver.givenName} ${r.Driver.familyName}`,
+      driverCode: r.Driver.code,
+      driverNumber: r.Driver.permanentNumber ? parseInt(r.Driver.permanentNumber) : undefined,
+      team: r.Constructor.name,
+      time: r.position === "1" ? r.Time?.time : undefined,
+      gap: r.position !== "1" ? r.Time?.time : undefined,
+      points: parseFloat(r.points),
+      status: r.status,
+      fastestLap: r.FastestLap?.rank === "1",
+      fastestLapTime: r.FastestLap?.rank === "1" ? r.FastestLap?.Time?.time : undefined,
+      gridPosition: r.grid ? parseInt(r.grid) : undefined,
+      laps: r.laps ? parseInt(r.laps) : undefined,
+    }));
+  } catch {
+    return [];
+  }
 }
 
 export async function jolpicaFetchPitStops(season: number, round: number): Promise<PitStop[]> {

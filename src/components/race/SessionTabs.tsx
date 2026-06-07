@@ -96,38 +96,41 @@ export function SessionTabs({
       </div>
 
       {/* Content */}
-      {isPractice && (
-        <PracticeSection
-          sessionLabel={activeTab.fullLabel}
-          results={practiceData[active] ?? []}
-          labels={practiceLabels}
-        />
-      )}
-
-      {active === "qualifying" && (
-        <div className="space-y-3">
-          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-            {qualifyingLabels.qualifyingResults}
-          </h2>
-          <QualifyingSection
-            results={qualifyingResults}
-            labels={qualifyingLabels}
+      <div key={active} className="animate-in fade-in slide-in-from-bottom-1 duration-200">
+        {isPractice && (
+          <PracticeSection
+            sessionLabel={activeTab.fullLabel}
+            results={practiceData[active] ?? []}
+            labels={practiceLabels}
           />
-        </div>
-      )}
+        )}
 
-      {active === "race" && (
-        <RaceResultsSection
-          results={raceResults}
-          tireStints={tireStints}
-          raceControl={raceControl}
-          raceControlTr={raceControlTr}
-          driverStandingsAfter={driverStandingsAfter}
-          teamStandingsAfter={teamStandingsAfter}
-          labels={raceLabels}
-          slug={slug}
-        />
-      )}
+        {active === "qualifying" && (
+          <div className="space-y-3">
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+              {qualifyingLabels.qualifyingResults}
+            </h2>
+            <QualifyingSection
+              results={qualifyingResults}
+              labels={qualifyingLabels}
+              slug={slug}
+            />
+          </div>
+        )}
+
+        {active === "race" && (
+          <RaceResultsSection
+            results={raceResults}
+            tireStints={tireStints}
+            raceControl={raceControl}
+            raceControlTr={raceControlTr}
+            driverStandingsAfter={driverStandingsAfter}
+            teamStandingsAfter={teamStandingsAfter}
+            labels={raceLabels}
+            slug={slug}
+          />
+        )}
+      </div>
     </div>
   );
 }

@@ -20,7 +20,15 @@ export function isFresh(fetchedAt: Date): boolean {
 }
 
 function recomputeRaceStatus(race: Race): Race {
-  if (race.status === "cancelled") return race;
+  if (race.status === "cancelled") {
+    // Round 900+ → manuel iptal override (Bahrain, Suudi vb.), dokunma
+    if (race.round >= 900) return race;
+    // Normal round ama eski bir yarış → muhtemelen API hatası "cancelled" yazdı
+    // 1 haftadan yakın geçmişe güvenelim, eskileri zaman bazlı türetelim
+    const raceMs = new Date(race.sessions.find((s) => s.type === "race")?.date ?? race.date).getTime();
+    if (raceMs > Date.now() - 7 * 24 * 60 * 60 * 1000) return race; // son 7 gün → trust
+    // 7 günden eski "cancelled" normal yarış → zaman bazlı yeniden türet
+  }
   const raceSession = race.sessions.find((s) => s.type === "race");
   const raceDate = new Date(raceSession?.date ?? race.date).getTime();
   const now = Date.now();

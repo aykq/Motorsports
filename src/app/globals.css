@@ -119,6 +119,10 @@
 }
 
 @layer base {
+  .animate-in {
+    animation-fill-mode: both;
+  }
+
   * {
     @apply border-border outline-ring/50;
     cursor: inherit;

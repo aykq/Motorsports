@@ -27,14 +27,14 @@ export function BottomNav() {
               key={href}
               href={href}
               className={cn(
-                "flex flex-col items-center gap-1 px-3 py-2 rounded-lg text-xs transition-colors",
+                "flex flex-col items-center gap-1 px-3 py-2 rounded-lg text-xs transition-all duration-200",
                 active
                   ? "text-rose-500"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              <Icon className="w-5 h-5" />
-              <span>{label}</span>
+              <Icon className={cn("w-5 h-5 transition-transform duration-200", active && "scale-110")} />
+              <span className={cn("transition-all duration-200", active && "font-semibold")}>{label}</span>
             </Link>
           );
         })}

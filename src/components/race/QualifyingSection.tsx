@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Zap, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { QualifyingDriverResult } from "@/types/series";
@@ -11,6 +12,7 @@ export interface QualifyingLabels {
 interface Props {
   results: QualifyingDriverResult[];
   labels: QualifyingLabels;
+  slug: string;
 }
 
 function getBestTime(r: QualifyingDriverResult): string | undefined {
@@ -42,9 +44,11 @@ function SegmentHeader({ label, fastest }: { label: string; fastest?: Qualifying
 function QualifyingRow({
   result,
   timeKey,
+  slug,
 }: {
   result: QualifyingDriverResult;
   timeKey: "q1" | "q2" | "q3";
+  slug: string;
 }) {
   const time = result[timeKey];
   const isPole = result.position === 1;
@@ -70,7 +74,12 @@ function QualifyingRow({
       </span>
       <div className="min-w-0 px-1">
         <div className="flex items-center gap-1">
-          <span className="font-medium truncate">{displayName}</span>
+          <Link
+            href={`/${slug}/drivers/${result.driverId}`}
+            className="font-medium truncate hover:underline"
+          >
+            {displayName}
+          </Link>
           {isPole && <Trophy className="w-3 h-3 text-yellow-500 shrink-0" />}
         </div>
         <span className="text-[10px] text-muted-foreground truncate block">{result.team}</span>
@@ -82,7 +91,7 @@ function QualifyingRow({
   );
 }
 
-export function QualifyingSection({ results, labels }: Props) {
+export function QualifyingSection({ results, labels, slug }: Props) {
   if (!results.length) return null;
 
   const q3 = results.filter((r) => r.q3 != null);
@@ -99,7 +108,12 @@ export function QualifyingSection({ results, labels }: Props) {
         <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/5 px-4 py-3 flex items-center gap-3">
           <Trophy className="w-4 h-4 text-yellow-500 shrink-0" />
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold">{poleDriver.driverName}</p>
+            <Link
+              href={`/${slug}/drivers/${poleDriver.driverId}`}
+              className="text-sm font-bold hover:underline"
+            >
+              {poleDriver.driverName}
+            </Link>
             <p className="text-[10px] text-muted-foreground">{poleDriver.team}</p>
           </div>
           <div className="text-right shrink-0">
@@ -113,25 +127,25 @@ export function QualifyingSection({ results, labels }: Props) {
         <div className="rounded-lg border border-border overflow-hidden">
           <SegmentHeader label="Q3" fastest={poleDriver} />
           {q3.map((r) => (
-            <QualifyingRow key={r.driverId} result={r} timeKey="q3" />
+            <QualifyingRow key={r.driverId} result={r} timeKey="q3" slug={slug} />
           ))}
         </div>
       )}
 
       {q2Eliminated.length > 0 && (
         <div className="rounded-lg border border-border overflow-hidden">
-          <SegmentHeader label={labels.q2Eliminated} fastest={q2Fastest} />
+          <SegmentHeader label={labels.q2Eliminated}/>
           {q2Eliminated.map((r) => (
-            <QualifyingRow key={r.driverId} result={r} timeKey="q2" />
+            <QualifyingRow key={r.driverId} result={r} timeKey="q2" slug={slug} />
           ))}
         </div>
       )}
 
       {q1Eliminated.length > 0 && (
         <div className="rounded-lg border border-border overflow-hidden">
-          <SegmentHeader label={labels.q1Eliminated} fastest={q1Fastest} />
+          <SegmentHeader label={labels.q1Eliminated} />
           {q1Eliminated.map((r) => (
-            <QualifyingRow key={r.driverId} result={r} timeKey="q1" />
+            <QualifyingRow key={r.driverId} result={r} timeKey="q1" slug={slug} />
           ))}
         </div>
       )}
