@@ -67,7 +67,8 @@
     "magicLink": "Sihirli Bağlantı Gönder",
     "emailPlaceholder": "email@ornek.com",
     "or": "veya",
-    "devLogin": "Dev Login (şifresiz)"
+    "devLogin": "Dev Login (şifresiz)",
+    "error": "Bir hata oluştu. Lütfen tekrar deneyin."
   },
   "seriesPage": {
     "nextRound": "Sonraki Tur",

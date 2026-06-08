@@ -12,10 +12,15 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t("title") };
 }
 
-export default async function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
   const session = await auth();
   if (session) redirect("/");
 
+  const params = await searchParams;
   const t = await getTranslations("login");
   const isDev = process.env.NODE_ENV === "development";
 
@@ -29,6 +34,10 @@ export default async function LoginPage() {
           </div>
           <p className="text-muted-foreground text-sm">{t("tagline")}</p>
         </div>
+
+        {params.error && (
+          <p className="text-sm text-destructive text-center">{t("error")}</p>
+        )}
 
         <div className="space-y-4">
           <form
