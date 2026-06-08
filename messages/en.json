@@ -170,6 +170,14 @@
     "seconds": "Sec",
     "started": "Started!"
   },
+  "installPrompt": {
+    "title": "Add to Home Screen",
+    "description": "Install Motorsports Hub for faster access.",
+    "install": "Install",
+    "notNow": "Not now",
+    "gotIt": "Got it",
+    "iosInstruction": "Tap Share, then select \"Add to Home Screen\"."
+  },
   "common": {
     "back": "Back",
     "schedule": "Schedule"

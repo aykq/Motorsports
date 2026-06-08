@@ -4,6 +4,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { PreferenceSyncer } from "@/components/layout/PreferenceSyncer";
 import { PageTransitionWrapper } from "@/components/layout/PageTransitionWrapper";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -45,6 +46,7 @@ export default async function AppLayout({
         <PageTransitionWrapper>{children}</PageTransitionWrapper>
       </main>
       <BottomNav />
+      <InstallPrompt />
       {DevSyncPanel && <DevSyncPanel />}
     </div>
   );
