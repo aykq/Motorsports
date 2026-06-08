@@ -41,6 +41,7 @@ src/app/api/debug/
 src/components/dev/
 src/app/api/dev/
 
+
 .claude/
 CLAUDE.md
 
