@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { X, Share, Plus } from "lucide-react";
+import { Share, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 const STORAGE_KEY = "pwa-install-dismissed";
+const SESSION_KEY = "pwa-install-snoozed";
 
 type Platform = "ios" | "android";
 
@@ -24,6 +25,7 @@ export function InstallPrompt() {
 
   useEffect(() => {
     if (localStorage.getItem(STORAGE_KEY)) return;
+    if (sessionStorage.getItem(SESSION_KEY)) return;
 
     const isStandalone =
       window.matchMedia("(display-mode: standalone)").matches ||
@@ -58,9 +60,9 @@ export function InstallPrompt() {
     return () => window.removeEventListener("beforeinstallprompt", handler);
   }, []);
 
-  const dismiss = () => {
+  const remindLater = () => {
     setVisible(false);
-    localStorage.setItem(STORAGE_KEY, "1");
+    sessionStorage.setItem(SESSION_KEY, "1");
     setTimeout(() => setShow(false), 300);
   };
 
@@ -92,12 +94,6 @@ export function InstallPrompt() {
             <p className="text-sm font-semibold">{t("title")}</p>
             <p className="text-xs text-muted-foreground mt-0.5">{t("description")}</p>
           </div>
-          <button
-            onClick={dismiss}
-            className="text-muted-foreground hover:text-foreground transition-colors shrink-0 -mt-0.5 -mr-0.5 p-0.5"
-          >
-            <X className="w-4 h-4" />
-          </button>
         </div>
 
         {platform === "ios" ? (
@@ -107,13 +103,13 @@ export function InstallPrompt() {
               <span>{t("iosInstruction")}</span>
               <Plus className="w-3.5 h-3.5 shrink-0 text-foreground ml-auto" />
             </div>
-            <Button size="sm" variant="outline" className="w-full h-8 text-xs" onClick={dismiss}>
+            <Button size="sm" variant="outline" className="w-full h-8 text-xs" onClick={remindLater}>
               {t("gotIt")}
             </Button>
           </>
         ) : (
           <div className="flex gap-2">
-            <Button size="sm" variant="outline" className="flex-1 h-8 text-xs" onClick={dismiss}>
+            <Button size="sm" variant="outline" className="flex-1 h-8 text-xs" onClick={remindLater}>
               {t("notNow")}
             </Button>
             <Button
