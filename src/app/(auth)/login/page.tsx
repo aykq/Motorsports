@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
+import { LoginError } from "./LoginError";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("settings");
@@ -35,9 +36,7 @@ export default async function LoginPage({
           <p className="text-muted-foreground text-sm">{t("tagline")}</p>
         </div>
 
-        {params.error && (
-          <p className="text-sm text-destructive text-center">{t("error")}</p>
-        )}
+        {params.error && <LoginError message={t("error")} />}
 
         <div className="space-y-4">
           <form
