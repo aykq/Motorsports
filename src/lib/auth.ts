@@ -64,11 +64,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   callbacks: {
     jwt({ token, user }) {
-      if (user?.id) token.sub = user.id;
+      if (user) {
+        token.sub = user.id;
+        if (user.image) token.picture = user.image;
+        if (user.name) token.name = user.name;
+      }
       return token;
     },
     session({ session, token }) {
       if (token.sub) session.user.id = token.sub;
+      if (token.picture) session.user.image = token.picture as string;
+      if (token.name) session.user.name = token.name as string;
       return session;
     },
   },
