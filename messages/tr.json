@@ -170,6 +170,14 @@
     "seconds": "San",
     "started": "Başladı!"
   },
+  "installPrompt": {
+    "title": "Ana Ekrana Ekle",
+    "description": "Daha hızlı erişim için Motorsports Hub'ı ana ekranına ekle.",
+    "install": "Yükle",
+    "notNow": "Şimdi Değil",
+    "gotIt": "Anladım",
+    "iosInstruction": "Paylaş'a dokun, ardından \"Ana Ekrana Ekle\"yi seç."
+  },
   "common": {
     "back": "Geri",
     "schedule": "Takvim"
