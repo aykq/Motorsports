@@ -63,7 +63,10 @@ export function Sidebar({ user }: SidebarProps) {
           <LanguageToggle />
           <ThemeToggle />
         </div>
-        <div className="flex items-center gap-3 px-1">
+        <Link
+          href="/settings"
+          className="flex items-center gap-3 px-1 rounded-lg py-1.5 hover:bg-accent transition-colors duration-200 -mx-1"
+        >
           <Avatar className="w-8 h-8 shrink-0">
             <AvatarImage src={user.image ?? undefined} />
             <AvatarFallback className="text-xs bg-muted">
@@ -74,7 +77,7 @@ export function Sidebar({ user }: SidebarProps) {
             <p className="text-sm font-medium truncate">{user.name ?? "Kullanıcı"}</p>
             <p className="text-xs text-muted-foreground truncate">{user.email}</p>
           </div>
-        </div>
+        </Link>
       </div>
     </aside>
   );

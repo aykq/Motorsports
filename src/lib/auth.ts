@@ -3,6 +3,7 @@ import Google from "next-auth/providers/google";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { db } from "@/db";
 import { accounts, sessions, users, verificationTokens } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 const devProviders =
   process.env.NODE_ENV === "development" && process.env.ENABLE_DEV_LOGIN === "1"
@@ -48,6 +49,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: {
     signIn: "/login",
     error: "/login",
+  },
+  events: {
+    async signIn({ user, account, profile }) {
+      if (account?.provider === "google" && user.id && profile) {
+        const update: { image?: string; name?: string } = {};
+        if (profile.picture && user.image !== profile.picture) update.image = profile.picture as string;
+        if (profile.name && user.name !== profile.name) update.name = profile.name as string;
+        if (Object.keys(update).length > 0) {
+          await db.update(users).set(update).where(eq(users.id, user.id));
+        }
+      }
+    },
   },
   callbacks: {
     jwt({ token, user }) {
