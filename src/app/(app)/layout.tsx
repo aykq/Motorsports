@@ -40,7 +40,7 @@ export default async function AppLayout({
         dbLanguage={userPrefs?.language ?? null}
         dbTheme={userPrefs?.theme ?? null}
       />
-      <Sidebar user={{}} />
+      <Sidebar user={{ name: session.user?.name, email: session.user?.email, image: session.user?.image }} />
       <main className="flex-1 min-w-0 pb-16 md:pb-0">
         <PageTransitionWrapper>{children}</PageTransitionWrapper>
       </main>
