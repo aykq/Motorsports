@@ -67,7 +67,8 @@
     "magicLink": "Send Magic Link",
     "emailPlaceholder": "email@example.com",
     "or": "or",
-    "devLogin": "Dev Login (no password)"
+    "devLogin": "Dev Login (no password)",
+    "error": "Something went wrong. Please try again."
   },
   "seriesPage": {
     "nextRound": "Next Round",
