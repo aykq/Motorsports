@@ -47,7 +47,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
     Resend({
       apiKey: process.env.AUTH_RESEND_KEY ?? "",
-      from: "MSHub <onboarding@resend.dev>",
+      from: "MSHub <noreply@mshub.aykq.org.tr>",
     }),
     ...devProviders,
   ],
