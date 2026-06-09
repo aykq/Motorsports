@@ -145,7 +145,7 @@ export async function syncRaceDetails(
   }
 
   // Pass 2 — son 14 gün + live: tam veri yenileme
-  const fourteenDaysAgo = Date.now() - 14 * 24 * 60 * 60 * 1000;
+  const fourteenDaysAgo = Date.now() - 90 * 24 * 60 * 60 * 1000;
   const recentRaces = completedRaces.filter(
     (r) => r.status === "live" || new Date(r.date).getTime() > fourteenDaysAgo
   );
@@ -157,7 +157,7 @@ export async function syncRaceDetails(
       // Tamamlanmış yarış ve zaten tam veri varsa → sadece çeviri kontrol et (API fetch yapma)
       if (isCompleted) {
         const rawDetail = await getRaceDetailRaw(slug, season, race.round);
-        if (rawDetail?.raceControlFetched === true) {
+        if (rawDetail?.raceControlFetched === true && rawDetail.raceControl.length > 0) {
           const needsTr =
             rawDetail.raceControl.length > 0 &&
             (!rawDetail.raceControlTr?.length ||
