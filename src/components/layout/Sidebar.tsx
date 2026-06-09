@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, Grid2X2, Heart, Settings } from "lucide-react";
+import { CalendarDays, Grid2X2, Heart, Settings, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useTranslations } from "next-intl";
@@ -15,9 +15,10 @@ interface SidebarProps {
     email?: string | null;
     image?: string | null;
   };
+  isAdmin?: boolean;
 }
 
-export function Sidebar({ user }: SidebarProps) {
+export function Sidebar({ user, isAdmin }: SidebarProps) {
   const pathname = usePathname();
   const t = useTranslations("nav");
 
@@ -56,6 +57,20 @@ export function Sidebar({ user }: SidebarProps) {
             </Link>
           );
         })}
+        {isAdmin && (
+          <Link
+            href="/admin/users"
+            className={cn(
+              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
+              pathname.startsWith("/admin")
+                ? "bg-rose-500/10 text-rose-500"
+                : "text-muted-foreground hover:text-foreground hover:bg-accent"
+            )}
+          >
+            <Users className={cn("w-4.5 h-4.5 shrink-0 transition-transform duration-200", pathname.startsWith("/admin") && "scale-110")} />
+            Yönetim
+          </Link>
+        )}
       </nav>
 
       <div className="p-4 border-t border-border space-y-3">

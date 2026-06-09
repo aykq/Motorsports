@@ -6,7 +6,8 @@ import { eq } from "drizzle-orm";
 import { verifyAutoLoginToken } from "@/lib/admin-token";
 
 export async function GET(req: Request) {
-  const loginUrl = new URL("/login", req.url);
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.AUTH_URL ?? "http://localhost:3000";
+  const loginUrl = new URL("/login", appUrl);
   const token = new URL(req.url).searchParams.get("token");
   if (!token) return NextResponse.redirect(loginUrl);
 
@@ -36,7 +37,7 @@ export async function GET(req: Request) {
     maxAge: 30 * 24 * 60 * 60,
   });
 
-  const response = NextResponse.redirect(new URL("/", req.url));
+  const response = NextResponse.redirect(new URL("/", appUrl));
   response.cookies.set(cookieName, sessionJwt, {
     httpOnly: true,
     secure: isSecure,
