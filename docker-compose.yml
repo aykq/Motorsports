@@ -22,6 +22,9 @@ services:
       AUTH_TRUST_HOST: ${AUTH_TRUST_HOST}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       GEMINI_MODEL: ${GEMINI_MODEL}
+      DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_SECRET: ${ADMIN_SECRET}
     depends_on:
       db:
         condition: service_healthy

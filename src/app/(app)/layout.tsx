@@ -31,9 +31,11 @@ export default async function AppLayout({
   const userPrefs = session.user?.id
     ? await db.query.users.findFirst({
         where: eq(users.id, session.user.id),
-        columns: { language: true, theme: true },
+        columns: { language: true, theme: true, status: true },
       })
     : null;
+
+  if (userPrefs?.status !== "approved") redirect("/pending");
 
   return (
     <div className="flex min-h-screen">

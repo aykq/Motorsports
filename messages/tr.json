@@ -68,7 +68,14 @@
     "emailPlaceholder": "email@ornek.com",
     "or": "veya",
     "devLogin": "Dev Login (şifresiz)",
-    "error": "Bir hata oluştu. Lütfen tekrar deneyin."
+    "error": "Bir hata oluştu. Lütfen tekrar deneyin.",
+    "blocked": "Bu hesaba erişim engellendi."
+  },
+  "pending": {
+    "title": "Onay Bekleniyor",
+    "description": "Hesabınız inceleniyor. Onaylandığında otomatik olarak yönlendirileceksiniz.",
+    "emailNote": "Onaylandığında e-posta adresinize de bildirim gönderilecek.",
+    "signOut": "Çıkış Yap"
   },
   "seriesPage": {
     "nextRound": "Sonraki Tur",

@@ -5,6 +5,7 @@ import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { db } from "@/db";
 import { accounts, sessions, users, verificationTokens } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { sendNewUserDiscordNotification } from "./discord";
 
 const devProviders =
   process.env.NODE_ENV === "development" && process.env.ENABLE_DEV_LOGIN === "1"
@@ -21,9 +22,16 @@ const devProviders =
               if (!user) {
                 const [created] = await db
                   .insert(users)
-                  .values({ email, name: email.split("@")[0] })
+                  .values({ email, name: email.split("@")[0], status: "approved" })
                   .returning();
                 user = created;
+              } else if (user.status !== "approved") {
+                const [updated] = await db
+                  .update(users)
+                  .set({ status: "approved" })
+                  .where(eq(users.id, user.id))
+                  .returning();
+                user = updated;
               }
               return user;
             },
@@ -56,7 +64,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     error: "/login",
   },
   events: {
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account, profile, isNewUser }) {
       if (account?.provider === "google" && user.id && profile) {
         const update: { image?: string; name?: string } = {};
         if (profile.picture && user.image !== profile.picture) update.image = profile.picture as string;
@@ -65,9 +73,33 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           await db.update(users).set(update).where(eq(users.id, user.id));
         }
       }
+
+      if (isNewUser && user.id && account?.provider !== "credentials") {
+        try {
+          await sendNewUserDiscordNotification({
+            userId: user.id,
+            name: user.name ?? null,
+            email: user.email ?? null,
+            provider: account?.provider ?? "unknown",
+            image: user.image ?? null,
+            signupAt: new Date(),
+          });
+        } catch (err) {
+          console.error("Discord notification failed:", err);
+        }
+      }
     },
   },
   callbacks: {
+    async signIn({ user }) {
+      if (!user.id) return true;
+      const dbUser = await db.query.users.findFirst({
+        where: eq(users.id, user.id),
+        columns: { status: true },
+      });
+      if (dbUser?.status === "blocked") return false;
+      return true;
+    },
     jwt({ token, user }) {
       if (user) {
         token.sub = user.id;

@@ -15,6 +15,13 @@
       "when": 1780667789831,
       "tag": "0001_shallow_nekra",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1781031510396,
+      "tag": "0002_legal_thanos",
+      "breakpoints": true
     }
   ]
 }
