@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { users, accounts } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { UsersTable } from "./UsersTable";
 
 export default async function AdminUsersPage() {
@@ -25,6 +27,13 @@ export default async function AdminUsersPage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Ana Sayfa
+        </Link>
         <div className="space-y-1">
           <div className="flex items-baseline gap-1">
             <span className="text-2xl font-black text-rose-500">MS</span>
