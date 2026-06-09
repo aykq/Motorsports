@@ -68,6 +68,7 @@
     "emailPlaceholder": "email@ornek.com",
     "or": "veya",
     "devLogin": "Dev Login (şifresiz)",
+    "linkSent": "Link gönderildi, gelen kutunuzu kontrol edin.",
     "error": "Bir hata oluştu. Lütfen tekrar deneyin.",
     "blocked": "Bu hesaba erişim engellendi."
   },

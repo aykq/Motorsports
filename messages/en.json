@@ -68,6 +68,7 @@
     "emailPlaceholder": "email@example.com",
     "or": "or",
     "devLogin": "Dev Login (no password)",
+    "linkSent": "Link sent, check your inbox.",
     "error": "Something went wrong. Please try again.",
     "blocked": "Access to this account has been denied."
   },

@@ -7,6 +7,7 @@ import { auth } from "@/lib/auth";
 import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
 import { LoginError } from "./LoginError";
+import { MagicLinkForm } from "./MagicLinkForm";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("settings");
@@ -64,25 +65,7 @@ export default async function LoginPage({
             <Separator className="flex-1" />
           </div>
 
-          <form
-            action={async (formData: FormData) => {
-              "use server";
-              const email = formData.get("email") as string;
-              await signIn("resend", { email, redirectTo: "/" });
-            }}
-            className="space-y-3"
-          >
-            <Input
-              name="email"
-              type="email"
-              placeholder={t("emailPlaceholder")}
-              required
-              autoComplete="email"
-            />
-            <Button type="submit" className="w-full">
-              {t("magicLink")}
-            </Button>
-          </form>
+          <MagicLinkForm />
 
           {isDev && (
             <>
