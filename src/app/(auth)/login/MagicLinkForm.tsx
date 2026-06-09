@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -39,15 +38,14 @@ export function MagicLinkForm() {
     setLoading(true);
     setError(false);
     try {
-      const result = await signIn("resend", { email, redirect: false, callbackUrl: "/" });
-      if (result?.error) {
+      const res = await fetch("/api/send-magic-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) {
         setError(true);
       } else {
-        fetch("/api/notify-magic-link", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email }),
-        }).catch(() => {});
         setSent(true);
       }
     } catch {
