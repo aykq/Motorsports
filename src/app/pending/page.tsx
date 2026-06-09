@@ -17,8 +17,9 @@ export default async function PendingPage() {
     columns: { status: true },
   });
 
-  if (user?.status === "approved") redirect("/");
-  if (user?.status === "blocked") redirect("/login?error=AccessDenied");
+  if (!user) redirect("/login");
+  if (user.status === "approved") redirect("/");
+  if (user.status === "blocked") redirect("/login?error=AccessDenied");
 
   return (
     <PendingClient

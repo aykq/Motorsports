@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { PreferenceSyncer } from "@/components/layout/PreferenceSyncer";
+import { SessionGuard } from "@/components/layout/SessionGuard";
 import { PageTransitionWrapper } from "@/components/layout/PageTransitionWrapper";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { db } from "@/db";
@@ -35,13 +36,15 @@ export default async function AppLayout({
       })
     : null;
 
-  if (userPrefs?.status !== "approved") redirect("/pending");
+  if (!userPrefs) redirect("/login");
+  if (userPrefs.status !== "approved") redirect("/pending");
 
   return (
     <div className="flex min-h-screen">
+      <SessionGuard />
       <PreferenceSyncer
-        dbLanguage={userPrefs?.language ?? null}
-        dbTheme={userPrefs?.theme ?? null}
+        dbLanguage={userPrefs.language ?? null}
+        dbTheme={userPrefs.theme ?? null}
       />
       <Sidebar
         user={{ name: session.user?.name, email: session.user?.email, image: session.user?.image }}
