@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CheckCircle2, Loader2 } from "lucide-react";
@@ -9,10 +11,27 @@ import { useTranslations } from "next-intl";
 
 export function MagicLinkForm() {
   const t = useTranslations("login");
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState(false);
+
+  const { data: statusData } = useQuery({
+    queryKey: ["auth-status", email],
+    queryFn: async () => {
+      const res = await fetch(`/api/auth-status?email=${encodeURIComponent(email)}`);
+      return res.json() as Promise<{ status: string; autoLoginToken?: string }>;
+    },
+    enabled: sent && !!email,
+    refetchInterval: 5000,
+    retry: false,
+  });
+
+  useEffect(() => {
+    if (!statusData?.autoLoginToken) return;
+    router.push(`/api/auth/auto-login?token=${encodeURIComponent(statusData.autoLoginToken)}`);
+  }, [statusData, router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
