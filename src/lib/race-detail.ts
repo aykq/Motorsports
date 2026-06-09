@@ -145,7 +145,7 @@ export async function syncRaceDetails(
   }
 
   // Pass 2 — son 14 gün + live: tam veri yenileme
-  const fourteenDaysAgo = Date.now() - 90 * 24 * 60 * 60 * 1000;
+  const fourteenDaysAgo = Date.now() - 14 * 24 * 60 * 60 * 1000;
   const recentRaces = completedRaces.filter(
     (r) => r.status === "live" || new Date(r.date).getTime() > fourteenDaysAgo
   );
