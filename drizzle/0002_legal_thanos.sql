@@ -1,0 +1,1 @@
+ALTER TABLE "user" ADD COLUMN "status" text DEFAULT 'pending' NOT NULL;

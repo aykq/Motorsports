@@ -23,6 +23,7 @@ export const users = pgTable("user", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   language: text("language"), // 'tr' | 'en' — null means use browser default
   theme: text("theme"), // 'light' | 'dark' | 'system' — null means use browser default
+  status: text("status").default("pending").notNull(), // 'pending' | 'approved' | 'blocked'
 });
 
 export const accounts = pgTable(
