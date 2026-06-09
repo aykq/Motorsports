@@ -43,11 +43,14 @@ export default async function AppLayout({
         dbLanguage={userPrefs?.language ?? null}
         dbTheme={userPrefs?.theme ?? null}
       />
-      <Sidebar user={{ name: session.user?.name, email: session.user?.email, image: session.user?.image }} />
+      <Sidebar
+        user={{ name: session.user?.name, email: session.user?.email, image: session.user?.image }}
+        isAdmin={session.user?.email === process.env.ADMIN_EMAIL}
+      />
       <main className="flex-1 min-w-0 pb-16 md:pb-0">
         <PageTransitionWrapper>{children}</PageTransitionWrapper>
       </main>
-      <BottomNav />
+      <BottomNav isAdmin={session.user?.email === process.env.ADMIN_EMAIL} />
       <InstallPrompt />
       {DevSyncPanel && <DevSyncPanel />}
     </div>

@@ -2,11 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, Grid2X2, Heart, Settings } from "lucide-react";
+import { CalendarDays, Grid2X2, Heart, Settings, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
 
-export function BottomNav() {
+interface BottomNavProps {
+  isAdmin?: boolean;
+}
+
+export function BottomNav({ isAdmin }: BottomNavProps) {
   const pathname = usePathname();
   const t = useTranslations("nav");
 
@@ -38,6 +42,20 @@ export function BottomNav() {
             </Link>
           );
         })}
+        {isAdmin && (
+          <Link
+            href="/admin/users"
+            className={cn(
+              "flex flex-col items-center gap-1 px-3 py-2 rounded-lg text-xs transition-all duration-200",
+              pathname.startsWith("/admin")
+                ? "text-rose-500"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Users className={cn("w-5 h-5 transition-transform duration-200", pathname.startsWith("/admin") && "scale-110")} />
+            <span className={cn("transition-all duration-200", pathname.startsWith("/admin") && "font-semibold")}>Yönetim</span>
+          </Link>
+        )}
       </div>
     </nav>
   );
