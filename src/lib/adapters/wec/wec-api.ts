@@ -121,7 +121,9 @@ function buildStaticSchedule(season: number): Race[] {
   const now = Date.now();
   return calendar.map((r) => {
     const raceMs = new Date(r.date).getTime();
-    const status: RaceStatus = raceMs > now ? "upcoming" : raceMs > now - 28 * 3_600_000 ? "live" : "completed";
+    const durationMatch = r.name.match(/(\d+)\s*hour/i);
+    const liveWindowMs = durationMatch ? (parseInt(durationMatch[1], 10) + 2) * 3_600_000 : 3 * 3_600_000;
+    const status: RaceStatus = raceMs > now ? "upcoming" : raceMs > now - liveWindowMs ? "live" : "completed";
     const coords = lookupCircuitCoords(r.circuitName);
     return {
       round: r.round,
