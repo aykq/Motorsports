@@ -39,13 +39,14 @@ function slugify(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
-function computeStatus(raceDate: string): RaceStatus {
-  const now  = Date.now();
+function computeStatus(raceDate: string, seriesType: "sprint" | "endurance"): RaceStatus {
+  const now = Date.now();
   const race = new Date(raceDate).getTime();
-  const two  = 2 * 60 * 60 * 1000;
-  if (race < now - two) return "completed";
-  if (race <= now + two) return "live";
-  return "upcoming";
+  // Sprint ~1h yarış → 3h pencere, Endurance ~3h yarış → 5h pencere
+  const liveWindowMs = seriesType === "endurance" ? 5 * 60 * 60 * 1000 : 3 * 60 * 60 * 1000;
+  if (race > now) return "upcoming";
+  if (race > now - liveWindowMs) return "live";
+  return "completed";
 }
 
 function buildSprintSessions(e: CalendarEntry): RaceSession[] {
@@ -80,7 +81,7 @@ function calendarToRaces(entries: CalendarEntry[]): Race[] {
     country:     e.country,
     date:        e.raceDate,
     sessions:    e.seriesType === "sprint" ? buildSprintSessions(e) : buildEnduranceSessions(e),
-    status:      computeStatus(e.raceDate),
+    status:      computeStatus(e.raceDate, e.seriesType),
     circuitLat:  e.lat,
     circuitLng:  e.lng,
   }));

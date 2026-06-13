@@ -13,10 +13,24 @@ const TTL_MS = 30 * 60 * 1000;
 const RACE_DETAIL_COMPLETED_TTL_MS = 24 * 60 * 60 * 1000;
 const RACE_DETAIL_OLD_COMPLETED_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const RACE_DETAIL_UPCOMING_TTL_MS = 2 * 60 * 60 * 1000;
-const LIVE_WINDOW_MS = 3 * 60 * 60 * 1000;
+const DEFAULT_LIVE_WINDOW_MS = 3 * 60 * 60 * 1000;
 
 export function isFresh(fetchedAt: Date): boolean {
   return Date.now() - fetchedAt.getTime() < TTL_MS;
+}
+
+// "24 Hours of Le Mans" → 26h, "8 Hours of Bahrain" → 10h,
+// "Endurance Cup" → 5h, diğerleri → 3h
+function raceLiveWindowMs(raceName: string): number {
+  const hoursMatch = raceName.match(/(\d+)\s*hour/i);
+  if (hoursMatch) {
+    const hours = parseInt(hoursMatch[1], 10);
+    return (hours + 2) * 60 * 60 * 1000;
+  }
+  if (/endurance/i.test(raceName)) {
+    return 5 * 60 * 60 * 1000;
+  }
+  return DEFAULT_LIVE_WINDOW_MS;
 }
 
 function recomputeRaceStatus(race: Race): Race {
@@ -29,12 +43,18 @@ function recomputeRaceStatus(race: Race): Race {
     if (raceMs > Date.now() - 7 * 24 * 60 * 60 * 1000) return race; // son 7 gün → trust
     // 7 günden eski "cancelled" normal yarış → zaman bazlı yeniden türet
   }
+  // Sonuçlar geldiyse kesin "completed" — saat penceresini geçersiz kıl
+  if (race.results && race.results.length > 0) {
+    return { ...race, status: "completed" };
+  }
+
   const raceSession = race.sessions.find((s) => s.type === "race");
   const raceDate = new Date(raceSession?.date ?? race.date).getTime();
   const now = Date.now();
+  const liveWindowMs = raceLiveWindowMs(race.name);
   let status: Race["status"];
   if (raceDate > now) status = "upcoming";
-  else if (raceDate > now - LIVE_WINDOW_MS) status = "live";
+  else if (raceDate > now - liveWindowMs) status = "live";
   else status = "completed";
   return { ...race, status };
 }
