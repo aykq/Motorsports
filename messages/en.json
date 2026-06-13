@@ -45,7 +45,7 @@
       "notSupported": "Your browser does not support push notifications.",
       "httpsRequired": "Push notifications only work over HTTPS. This feature is unavailable because you're connected over HTTP.",
       "denied": "Notification permission was denied. Enable it in your browser settings.",
-      "description": "Enable to receive notifications 1 hour before races.",
+      "description": "Get notified 1 hour before, 15 minutes before, and at the start of practice, qualifying, sprint and race sessions.",
       "enable": "Enable Notifications",
       "disable": "Disable Notifications",
       "seriesQuestion": "Which series do you want notifications for?"
@@ -109,15 +109,44 @@
     "title": "Drivers",
     "count": "{count} drivers",
     "noData": "No driver data yet.",
-    "unknownTeam": "Unknown Team"
+    "unknownTeam": "Unknown Team",
+    "pilot": "Driver",
+    "ranking": "Ranking",
+    "points": "Points",
+    "wins": "Wins",
+    "raceResults": "{year} Race Results"
   },
   "teamsPage": {
     "title": "Teams",
-    "noData": "No team data yet."
+    "noData": "No team data yet.",
+    "season": "{year} Constructor Championship",
+    "team": "Team",
+    "points": "Points",
+    "ranking": "Ranking",
+    "wins": "Wins",
+    "pilots": "Drivers",
+    "raceResults": "Race Results",
+    "round": "Round {round}"
   },
   "circuitsPage": {
     "title": "Circuits",
-    "noData": "No circuit data yet."
+    "noData": "No circuit data yet.",
+    "count": "{count} circuit(s)",
+    "circuit": "Circuit",
+    "viewOnMap": "View on Map",
+    "specifications": "Circuit Info",
+    "length": "Length",
+    "corners": "Corners",
+    "drsZones": "DRS Zones",
+    "lapCount": "Laps",
+    "raceDistance": "Race distance ≈ {distance} km",
+    "thisSeason": "This Season ({year})",
+    "winner": "Winner",
+    "fastestLap": "Fastest Lap",
+    "winnerLabel": "Winner:",
+    "upcoming": "Upcoming",
+    "pastRaces": "Past Races",
+    "raceNumber": "Race {round}"
   },
   "racePage": {
     "round": "Race {round}",

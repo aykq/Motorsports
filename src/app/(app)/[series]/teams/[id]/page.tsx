@@ -5,6 +5,7 @@ import { TeamLogo } from "@/components/series/TeamLogo";
 import { notFound } from "next/navigation";
 import { BackButton } from "@/components/layout/BackButton";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
 
 interface Props {
@@ -14,9 +15,12 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { series: slug, id } = await params;
   const year = new Date().getFullYear();
-  const { standings } = await getCachedStandings(slug, year, "team");
+  const [{ standings }, t] = await Promise.all([
+    getCachedStandings(slug, year, "team"),
+    getTranslations("teamsPage"),
+  ]);
   const team = standings.find((s) => s.team?.id === id);
-  return { title: team?.team?.name ?? "Takım" };
+  return { title: team?.team?.name ?? t("team") };
 }
 
 function positionClass(pos: number): string {
@@ -31,6 +35,7 @@ export default async function TeamDetailPage({ params }: Props) {
   const config = getSeriesConfig(slug);
   if (!config || !config.available) notFound();
 
+  const t = await getTranslations("teamsPage");
   const year = new Date().getFullYear();
   const [{ standings: teamStandings }, { standings: driverStandings }, { drivers }, { races }] =
     await Promise.all([
@@ -54,7 +59,7 @@ export default async function TeamDetailPage({ params }: Props) {
   return (
     <div className="max-w-2xl mx-auto space-y-6 pb-8">
       <div className="px-4 pt-6">
-        <BackButton fallbackHref={`/${slug}/teams`} label="Takımlar" />
+        <BackButton fallbackHref={`/${slug}/teams`} label={t("title")} />
       </div>
 
       {/* ── Hero Banner ── */}
@@ -91,15 +96,15 @@ export default async function TeamDetailPage({ params }: Props) {
         <div className="grid grid-cols-3 gap-3">
           <div className="rounded-lg bg-card border border-border p-3 text-center">
             <p className="text-2xl font-black">{standing.position}</p>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">Sıralama</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">{t("ranking")}</p>
           </div>
           <div className="rounded-lg bg-card border border-border p-3 text-center">
             <p className="text-2xl font-black">{standing.points}</p>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">Puan</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">{t("points")}</p>
           </div>
           <div className="rounded-lg bg-card border border-border p-3 text-center">
             <p className="text-2xl font-black">{standing.wins}</p>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">Galibiyet</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">{t("wins")}</p>
           </div>
         </div>
 
@@ -107,7 +112,7 @@ export default async function TeamDetailPage({ params }: Props) {
         {teamDrivers.length > 0 && (
           <section className="space-y-2">
             <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-              Pilotlar
+              {t("pilots")}
             </h2>
             <div className="grid grid-cols-2 gap-3">
               {teamDrivers.map((driver) => {
@@ -146,7 +151,7 @@ export default async function TeamDetailPage({ params }: Props) {
                       {ds && (
                         <div className="flex items-center justify-between text-xs pt-1 border-t border-border">
                           <span className="text-muted-foreground">P{ds.position}</span>
-                          <span className="font-bold">{ds.points} puan</span>
+                          <span className="font-bold">{ds.points} {t("points").toLowerCase()}</span>
                         </div>
                       )}
                     </div>
@@ -161,7 +166,7 @@ export default async function TeamDetailPage({ params }: Props) {
         {completedRaces.length > 0 && (
           <section className="space-y-2">
             <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-              Yarış Sonuçları
+              {t("raceResults")}
             </h2>
             <div className="space-y-1.5">
               {completedRaces.map((race) => {
@@ -175,7 +180,7 @@ export default async function TeamDetailPage({ params }: Props) {
                       <div className="flex items-center justify-between mb-1.5">
                         <p className="text-sm font-medium truncate">{race.name}</p>
                         <span className="text-xs text-muted-foreground shrink-0 ml-2">
-                          Tur {race.round}
+                          {t("round", { round: race.round })}
                         </span>
                       </div>
                       <div className="flex gap-4">
