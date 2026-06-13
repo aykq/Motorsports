@@ -1,6 +1,6 @@
 import cron from "node-cron";
 import { eq, and } from "drizzle-orm";
-import { syncSeries } from "@/lib/sync";
+import { syncSeries, syncScheduleOnly } from "@/lib/sync";
 import { isActiveRaceWeekend, syncActiveSessionData, syncRaceDetails } from "@/lib/race-detail";
 import { getCachedSchedule, getRaceDetailRaw } from "@/lib/cache";
 import { adapters } from "@/lib/adapters";
@@ -22,6 +22,10 @@ const RESULTS_WINDOW: Record<string, { minMs: number; maxMs: number }> = {
   sprint:      { minMs: 25 * 60 * 1000,       maxMs:  2 * 60 * 60 * 1000 },
   race:        { minMs: 90 * 60 * 1000,       maxMs: 32 * 60 * 60 * 1000 }, // 32h: Le Mans + buffer
 };
+
+// MotoGP API "FINISHED" ve TheSportsDB "FT" status'ünü DB'ye yazar;
+// race.status === "completed" kontrolü time-based yerine kullanılır.
+const STATUS_DRIVEN_SERIES = new Set(["motogp", "moto2", "moto3", "wec"]);
 
 const SESSION_LABELS: Record<string, string> = {
   practice1: "1. Antrenman",
@@ -189,14 +193,18 @@ cron.schedule(
               if (session.type === "sprint")      resultsReady = !!detail?.sprintComplete;
             }
           } else {
-            // Non-F1: zaman bazlı
             if (session.type === "race") {
-              // Endurance-aware: live penceresi dolunca sonuçlar hazır sayılır
-              const m = race.name.match(/(\d+)\s*hour/i);
-              const liveWindowMs = m
-                ? (parseInt(m[1], 10) + 2) * 60 * 60 * 1000
-                : /endurance/i.test(race.name) ? 5 * 60 * 60 * 1000 : 3 * 60 * 60 * 1000;
-              resultsReady = elapsed > liveWindowMs;
+              if (STATUS_DRIVEN_SERIES.has(row.seriesSlug)) {
+                // MotoGP/WEC: API status "FINISHED"/"FT" → DB "completed" → bildirim
+                resultsReady = race.status === "completed";
+              } else {
+                // GT3/Carrera: live penceresi dolunca (zaman bazlı)
+                const m = race.name.match(/(\d+)\s*hour/i);
+                const liveWindowMs = m
+                  ? (parseInt(m[1], 10) + 2) * 60 * 60 * 1000
+                  : /endurance/i.test(race.name) ? 5 * 60 * 60 * 1000 : 3 * 60 * 60 * 1000;
+                resultsReady = elapsed > liveWindowMs;
+              }
             } else {
               resultsReady = true; // sıralama / sprint: minMs dolunca gönder
             }
@@ -245,6 +253,38 @@ cron.schedule(
   { timezone: "UTC" }
 );
 
+// Non-F1 aktif yarış haftası status refresh — her 10 dakikada bir
+// MotoGP API "FINISHED" / TheSportsDB "FT" → DB "completed" → bildirim cron'u yakalar
+// :03, :13, :23... — diğer cron'larla örtüşmez
+cron.schedule(
+  "3-59/10 * * * *",
+  async () => {
+    const allRows = await db.query.cachedRaces.findMany().catch(() => []);
+    const season = new Date().getFullYear();
+
+    const activeSlugs = [...new Set(
+      allRows
+        .filter((row) =>
+          STATUS_DRIVEN_SERIES.has(row.seriesSlug) &&
+          isActiveRaceWeekend(row.data as Race)
+        )
+        .map((row) => row.seriesSlug)
+    )];
+
+    if (!activeSlugs.length) return;
+
+    for (const slug of activeSlugs) {
+      try {
+        await syncScheduleOnly(slug, season);
+        console.log(`[cron] status refresh: ${slug}`);
+      } catch (err) {
+        console.error(`[cron] status refresh error (${slug}):`, err);
+      }
+    }
+  },
+  { timezone: "UTC" }
+);
+
 // Yarış sonrası sonuç yenileme — her 30 dakikada bir
 // :15, :45 olarak ofsetlendi (00/30 yığılmasını önlemek için)
 cron.schedule(
@@ -281,4 +321,4 @@ cron.schedule(
   { timezone: "UTC" }
 );
 
-console.log("[cron] scheduled: full sync @00/06/12/18 UTC, session notify @:01/06/11..., session sync @:02/04/06..., post-race refresh @:15/:45");
+console.log("[cron] scheduled: full sync @00/06/12/18 UTC, session notify @:01/06/11..., session sync @:02/04/06..., non-F1 status refresh @:03/13/23..., post-race refresh @:15/:45");

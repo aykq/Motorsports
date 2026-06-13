@@ -55,6 +55,14 @@ async function mergeRemovedAsCancelled(
   ];
 }
 
+export async function syncScheduleOnly(slug: string, season: number): Promise<void> {
+  const adapter = getAdapter(slug);
+  if (!adapter) return;
+  const races = await adapter.fetchSchedule(season);
+  const racesWithCancelled = await mergeRemovedAsCancelled(slug, season, races);
+  await setCachedSchedule(slug, season, racesWithCancelled);
+}
+
 export async function syncSeries(slug: string, season: number): Promise<SyncResult> {
   const adapter = getAdapter(slug);
   if (!adapter) throw new Error(`Unknown series: ${slug}`);
