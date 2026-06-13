@@ -5,6 +5,7 @@ import {
   jolpicaFetchRoundDriverStandings,
   jolpicaFetchRoundTeamStandings,
   jolpicaFetchQualifyingResults,
+  jolpicaFetchSprintResults,
 } from "@/lib/adapters/f1/jolpica";
 import {
   findOpenF1AllSessionKeys,
@@ -34,6 +35,7 @@ const EMPTY_DETAIL: RaceDetail = {
   teamStandingsAfter: [],
   weather: [],
   qualifyingResults: [],
+  sprintResults: [],
   practice1Results: [],
   practice2Results: [],
   practice3Results: [],
@@ -281,7 +283,36 @@ export async function syncActiveSessionData(
         console.log(`[cron] session sync: ${slug} R${race.round} sprintQuali (Q1 drivers: ${q1Count})`);
       }
 
-      if (type === "race" || type === "sprint") {
+      if (type === "sprint") {
+        const sprintResults = await jolpicaFetchSprintResults(season, race.round);
+        if (sprintResults.length > 0) {
+          updated.sprintResults = sprintResults;
+          if (sprintResults.length >= 18) updated.sprintComplete = true;
+        }
+        // Also pull live OpenF1 data while sprint is ongoing
+        if (!updated.sprintComplete) {
+          const sessionKey = sessionKeyMap.get("sprint");
+          if (sessionKey) {
+            const [stints, raceControl] = await Promise.all([
+              fetchOpenF1Stints(sessionKey),
+              fetchOpenF1RaceControl(sessionKey),
+            ]);
+            updated.tireStints = stints;
+            const hasNewEvents = raceControl.length > updated.raceControl.length;
+            updated.raceControl = raceControl;
+            if (hasNewEvents && raceControl.length > 0) {
+              const translated = await translateRaceControlMessages(
+                raceControl.map((e) => e.message)
+              );
+              if (translated.length) updated.raceControlTr = translated;
+            }
+          }
+        }
+        console.log(`[cron] session sync: ${slug} R${race.round} sprint (results: ${sprintResults.length}, complete: ${!!updated.sprintComplete})`);
+        changed = true;
+      }
+
+      if (type === "race") {
         if (race.results && race.results.length >= 18) {
           const fresh = await fetchF1RaceDetail(season, race.round, race, true);
           const existingTr = updated.raceControlTr ?? [];
@@ -301,11 +332,10 @@ export async function syncActiveSessionData(
           }
 
           Object.assign(updated, { ...fresh, raceControlTr });
-          if (type === "race") updated.raceDataComplete = true;
-          if (type === "sprint") updated.sprintComplete = true;
-          console.log(`[cron] session sync: ${slug} R${race.round} ${type} COMPLETE`);
+          updated.raceDataComplete = true;
+          console.log(`[cron] session sync: ${slug} R${race.round} race COMPLETE`);
         } else {
-          const sessionKey = sessionKeyMap.get(type);
+          const sessionKey = sessionKeyMap.get("race");
           if (sessionKey) {
             const [stints, raceControl] = await Promise.all([
               fetchOpenF1Stints(sessionKey),
@@ -321,7 +351,7 @@ export async function syncActiveSessionData(
               if (translated.length) updated.raceControlTr = translated;
             }
           }
-          console.log(`[cron] session sync: ${slug} R${race.round} ${type} live (results: ${race.results?.length ?? 0})`);
+          console.log(`[cron] session sync: ${slug} R${race.round} race live (results: ${race.results?.length ?? 0})`);
         }
         changed = true;
       }

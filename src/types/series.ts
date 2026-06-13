@@ -161,6 +161,7 @@ export interface RaceDetail {
   teamStandingsAfter: Standing[];
   weather: WeatherDay[];
   qualifyingResults?: QualifyingDriverResult[];
+  sprintResults?: RaceResult[];
   practice1Results?: PracticeDriverResult[];
   practice2Results?: PracticeDriverResult[];
   practice3Results?: PracticeDriverResult[];

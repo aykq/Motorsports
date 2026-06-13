@@ -2,7 +2,7 @@ import cron from "node-cron";
 import { eq, and } from "drizzle-orm";
 import { syncSeries } from "@/lib/sync";
 import { isActiveRaceWeekend, syncActiveSessionData, syncRaceDetails } from "@/lib/race-detail";
-import { getCachedSchedule } from "@/lib/cache";
+import { getCachedSchedule, getRaceDetailRaw } from "@/lib/cache";
 import { adapters } from "@/lib/adapters";
 import { db } from "@/db";
 import { cachedRaces, sentNotifications } from "@/db/schema";
@@ -13,12 +13,14 @@ const POST_RACE_WINDOW_MS = 12 * 60 * 60 * 1000;
 
 const SEASON = new Date().getFullYear();
 
-// Window after session START during which we send the "results" notification.
-// minMs = earliest expected results; maxMs = give up after this (session already stale).
-const RESULT_NOTIFICATION_SESSIONS: Record<string, { minMs: number; maxMs: number }> = {
-  qualifying:  { minMs: 60 * 60 * 1000,      maxMs: 3 * 60 * 60 * 1000 },
-  sprintQuali: { minMs: 30 * 60 * 1000,      maxMs: 2 * 60 * 60 * 1000 },
-  sprint:      { minMs: 25 * 60 * 1000,      maxMs: 90 * 60 * 1000     },
+// Sonuç bildirimi: seans başlangıcından bu kadar sonra kontrol et
+// F1: ilgili DB flag'i (qualifyingComplete vs.) true olunca gönderilir
+// Non-F1: live penceresi dolunca (race) veya minMs dolunca (diğerleri) gönderilir
+const RESULTS_WINDOW: Record<string, { minMs: number; maxMs: number }> = {
+  qualifying:  { minMs: 60 * 60 * 1000,       maxMs:  4 * 60 * 60 * 1000 },
+  sprintQuali: { minMs: 30 * 60 * 1000,       maxMs:  2 * 60 * 60 * 1000 },
+  sprint:      { minMs: 25 * 60 * 1000,       maxMs:  2 * 60 * 60 * 1000 },
+  race:        { minMs: 90 * 60 * 1000,       maxMs: 32 * 60 * 60 * 1000 }, // 32h: Le Mans + buffer
 };
 
 const SESSION_LABELS: Record<string, string> = {
@@ -110,17 +112,22 @@ cron.schedule(
 
 // Seans bildirimleri — her 5 dakikada bir kontrol
 // :01, :06, :11... olarak ofsetlendi (00:00 yığılmasını önlemek için)
-// Her seans için: 1 saat önce, 15 dakika önce ve başlangıçta bildirim gönderilir.
+// Antrenman seanslarında ön bildirim yok.
+// Sıralama / sprint / yarış: 1h önce, 15dk önce, başlangıç bildirimi.
+// Sonuç bildirimleri: F1 için DB flag'i (data-driven), non-F1 için zaman bazlı.
 cron.schedule(
   "1-59/5 * * * *",
   async () => {
     const now = Date.now();
 
-    const windows = {
+    const preWindows = {
       pre_1h:  { start: now + 55 * 60 * 1000, end: now + 65 * 60 * 1000 },
       pre_15m: { start: now + 10 * 60 * 1000, end: now + 20 * 60 * 1000 },
       start:   { start: now -  2 * 60 * 1000, end: now +  3 * 60 * 1000 },
     };
+
+    const isPractice = (type: string) =>
+      type === "practice1" || type === "practice2" || type === "practice3";
 
     try {
       const allRaces = await db.query.cachedRaces.findMany();
@@ -133,53 +140,77 @@ cron.schedule(
           const label = SESSION_LABELS[session.type] ?? session.type;
           const icon  = SESSION_ICONS[session.type] ?? "🏎️";
 
-          for (const [notifType, window] of Object.entries(windows)) {
-            if (sessionTime < window.start || sessionTime > window.end) continue;
+          // ── Ön bildirimler (antrenman hariç) ─────────────────────────
+          if (!isPractice(session.type)) {
+            for (const [notifType, window] of Object.entries(preWindows)) {
+              if (sessionTime < window.start || sessionTime > window.end) continue;
 
-            const alreadySent = await isNotifSent(
-              row.seriesSlug, row.season, race.round, session.type, notifType
-            );
-            if (alreadySent) continue;
-
-            let title: string;
-            if (notifType === "pre_1h") {
-              title = `${icon} ${label} 1 saat sonra başlıyor`;
-            } else if (notifType === "pre_15m") {
-              title = `${icon} ${label} 15 dakika sonra başlıyor`;
-            } else {
-              title = `${icon} ${label} başladı!`;
-            }
-
-            await sendPushToSubscribers(row.seriesSlug, {
-              title,
-              body: `${race.name} — ${race.circuitName}`,
-              url: `/${row.seriesSlug}`,
-            });
-
-            await markNotifSent(row.seriesSlug, row.season, race.round, session.type, notifType);
-
-            console.log(`[cron] notif sent: [${notifType}] ${row.seriesSlug} R${race.round} ${session.type}`);
-          }
-
-          // Results notification for qualifying / sprintQuali / sprint
-          const resultWindow = RESULT_NOTIFICATION_SESSIONS[session.type];
-          if (resultWindow) {
-            const elapsed = now - sessionTime;
-            if (elapsed >= resultWindow.minMs && elapsed <= resultWindow.maxMs) {
               const alreadySent = await isNotifSent(
-                row.seriesSlug, row.season, race.round, session.type, "results"
+                row.seriesSlug, row.season, race.round, session.type, notifType
               );
-              if (!alreadySent) {
-                await sendPushToSubscribers(row.seriesSlug, {
-                  title: `${icon} ${label} Sonuçları Açıklandı`,
-                  body: `${race.name} — ${race.circuitName}`,
-                  url: `/${row.seriesSlug}/races/${race.round}`,
-                });
-                await markNotifSent(row.seriesSlug, row.season, race.round, session.type, "results");
-                console.log(`[cron] notif sent: [results] ${row.seriesSlug} R${race.round} ${session.type}`);
-              }
+              if (alreadySent) continue;
+
+              const title =
+                notifType === "pre_1h"  ? `${icon} ${label} 1 saat sonra başlıyor` :
+                notifType === "pre_15m" ? `${icon} ${label} 15 dakika sonra başlıyor` :
+                                          `${icon} ${label} başladı!`;
+
+              await sendPushToSubscribers(row.seriesSlug, {
+                title,
+                body: `${race.name} — ${race.circuitName}`,
+                url: `/${row.seriesSlug}`,
+              });
+              await markNotifSent(row.seriesSlug, row.season, race.round, session.type, notifType);
+              console.log(`[cron] notif sent: [${notifType}] ${row.seriesSlug} R${race.round} ${session.type}`);
             }
           }
+
+          // ── Sonuç bildirimleri ────────────────────────────────────────
+          const resWindow = RESULTS_WINDOW[session.type];
+          if (!resWindow) continue;
+
+          const elapsed = now - sessionTime;
+          if (elapsed < resWindow.minMs || elapsed > resWindow.maxMs) continue;
+
+          const alreadySent = await isNotifSent(
+            row.seriesSlug, row.season, race.round, session.type, "results"
+          );
+          if (alreadySent) continue;
+
+          let resultsReady = false;
+
+          if (row.seriesSlug === "f1") {
+            if (session.type === "race") {
+              resultsReady = (race.results?.length ?? 0) >= 18;
+            } else {
+              const detail = await getRaceDetailRaw("f1", row.season, race.round);
+              if (session.type === "qualifying")  resultsReady = !!detail?.qualifyingComplete;
+              if (session.type === "sprintQuali") resultsReady = !!detail?.sprintQualiComplete;
+              if (session.type === "sprint")      resultsReady = !!detail?.sprintComplete;
+            }
+          } else {
+            // Non-F1: zaman bazlı
+            if (session.type === "race") {
+              // Endurance-aware: live penceresi dolunca sonuçlar hazır sayılır
+              const m = race.name.match(/(\d+)\s*hour/i);
+              const liveWindowMs = m
+                ? (parseInt(m[1], 10) + 2) * 60 * 60 * 1000
+                : /endurance/i.test(race.name) ? 5 * 60 * 60 * 1000 : 3 * 60 * 60 * 1000;
+              resultsReady = elapsed > liveWindowMs;
+            } else {
+              resultsReady = true; // sıralama / sprint: minMs dolunca gönder
+            }
+          }
+
+          if (!resultsReady) continue;
+
+          await sendPushToSubscribers(row.seriesSlug, {
+            title: `${icon} ${label} Sonuçları Açıklandı`,
+            body: `${race.name} — ${race.circuitName}`,
+            url: `/${row.seriesSlug}/races/${race.round}`,
+          });
+          await markNotifSent(row.seriesSlug, row.season, race.round, session.type, "results");
+          console.log(`[cron] notif sent: [results] ${row.seriesSlug} R${race.round} ${session.type}`);
         }
       }
     } catch (err) {
