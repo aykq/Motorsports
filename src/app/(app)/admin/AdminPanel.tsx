@@ -137,35 +137,37 @@ export function AdminPanel({ lastSyncTimes }: Props) {
           <Trash2 className="w-4 h-4 text-muted-foreground" />
           <h2 className="text-sm font-semibold">Race Detail Cache Temizle</h2>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <select
             value={clearSlug}
             onChange={(e) => setClearSlug(e.target.value)}
-            className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            className="w-full sm:flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           >
             <option value="">Seri seç</option>
             {ALL_SERIES.map((s) => (
               <option key={s} value={s}>{s.toUpperCase()}</option>
             ))}
           </select>
-          <input
-            type="number"
-            placeholder="Round"
-            value={clearRound}
-            onChange={(e) => setClearRound(e.target.value)}
-            className="w-24 rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-          />
-          <button
-            onClick={handleClear}
-            disabled={clearPending || !clearSlug || !clearRound}
-            className={cn(
-              "flex items-center gap-1.5 rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground",
-              "hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            )}
-          >
-            {clearPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-            Temizle
-          </button>
+          <div className="flex gap-2">
+            <input
+              type="number"
+              placeholder="Round"
+              value={clearRound}
+              onChange={(e) => setClearRound(e.target.value)}
+              className="flex-1 sm:w-24 sm:flex-none rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+            <button
+              onClick={handleClear}
+              disabled={clearPending || !clearSlug || !clearRound}
+              title="Temizle"
+              className={cn(
+                "flex items-center justify-center rounded-md bg-destructive px-3 py-2 text-destructive-foreground",
+                "hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              )}
+            >
+              {clearPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+            </button>
+          </div>
         </div>
       </section>
 

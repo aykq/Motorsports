@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { cachedRaces, users, accounts } from "@/db/schema";
+import { max } from "drizzle-orm";
 import { AdminPanel } from "./AdminPanel";
 import { UsersTable } from "./UsersTable";
 import { ShieldAlert, Users } from "lucide-react";
@@ -11,16 +12,12 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Yönetim" };
 
 async function getLastSyncTimes(): Promise<Record<string, string | null>> {
-  const rows = await db.query.cachedRaces.findMany();
-  const bySlug: Record<string, Date | null> = {};
-  for (const row of rows) {
-    const prev = bySlug[row.seriesSlug];
-    if (!prev || row.fetchedAt > prev) {
-      bySlug[row.seriesSlug] = row.fetchedAt;
-    }
-  }
+  const rows = await db
+    .select({ seriesSlug: cachedRaces.seriesSlug, lastSync: max(cachedRaces.fetchedAt) })
+    .from(cachedRaces)
+    .groupBy(cachedRaces.seriesSlug);
   return Object.fromEntries(
-    Object.entries(bySlug).map(([slug, d]) => [slug, d ? d.toISOString() : null])
+    rows.map((r) => [r.seriesSlug, r.lastSync ? r.lastSync.toISOString() : null])
   );
 }
 
