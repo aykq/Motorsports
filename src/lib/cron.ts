@@ -13,6 +13,14 @@ const POST_RACE_WINDOW_MS = 12 * 60 * 60 * 1000;
 
 const SEASON = new Date().getFullYear();
 
+// Window after session START during which we send the "results" notification.
+// minMs = earliest expected results; maxMs = give up after this (session already stale).
+const RESULT_NOTIFICATION_SESSIONS: Record<string, { minMs: number; maxMs: number }> = {
+  qualifying:  { minMs: 60 * 60 * 1000,      maxMs: 3 * 60 * 60 * 1000 },
+  sprintQuali: { minMs: 30 * 60 * 1000,      maxMs: 2 * 60 * 60 * 1000 },
+  sprint:      { minMs: 25 * 60 * 1000,      maxMs: 90 * 60 * 1000     },
+};
+
 const SESSION_LABELS: Record<string, string> = {
   practice1: "1. Antrenman",
   practice2: "2. Antrenman",
@@ -151,6 +159,26 @@ cron.schedule(
             await markNotifSent(row.seriesSlug, row.season, race.round, session.type, notifType);
 
             console.log(`[cron] notif sent: [${notifType}] ${row.seriesSlug} R${race.round} ${session.type}`);
+          }
+
+          // Results notification for qualifying / sprintQuali / sprint
+          const resultWindow = RESULT_NOTIFICATION_SESSIONS[session.type];
+          if (resultWindow) {
+            const elapsed = now - sessionTime;
+            if (elapsed >= resultWindow.minMs && elapsed <= resultWindow.maxMs) {
+              const alreadySent = await isNotifSent(
+                row.seriesSlug, row.season, race.round, session.type, "results"
+              );
+              if (!alreadySent) {
+                await sendPushToSubscribers(row.seriesSlug, {
+                  title: `${icon} ${label} Sonuçları Açıklandı`,
+                  body: `${race.name} — ${race.circuitName}`,
+                  url: `/${row.seriesSlug}/races/${race.round}`,
+                });
+                await markNotifSent(row.seriesSlug, row.season, race.round, session.type, "results");
+                console.log(`[cron] notif sent: [results] ${row.seriesSlug} R${race.round} ${session.type}`);
+              }
+            }
           }
         }
       }
