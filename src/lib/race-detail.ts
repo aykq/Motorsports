@@ -70,12 +70,16 @@ export async function getRaceDetail(
     (cached?.raceControl.length ?? 0) === 0;
   // Tamamlanmış F1 yarışı stintsFetched=true değilse OpenF1'den çekilmemiş → re-fetch
   const missingStintsData = isCompleted && slug === "f1" && cached !== null && !cached.stintsFetched;
+  // Sprint hafta sonu ama sprintComplete yoksa → sprint sonuçları hiç çekilmemiş → re-fetch
+  const hasSprintSession = race.sessions.some((s) => s.type === "sprint");
+  const missingSprintResults = isCompleted && slug === "f1" && hasSprintSession && cached !== null && !cached.sprintComplete;
   const cacheValid =
     cached !== null &&
     cached.qualifyingResults !== undefined &&
     (!isCompleted || cached.raceControlFetched === true) &&
     !recentCompletedWithoutEvents &&
-    !missingStintsData;
+    !missingStintsData &&
+    !missingSprintResults;
   if (cacheValid) return cached;
 
   if (slug !== "f1") return EMPTY_DETAIL;
@@ -379,7 +383,9 @@ async function fetchF1RaceDetail(
   const fp2Session = race.sessions.find((s) => s.type === "practice2");
   const fp3Session = race.sessions.find((s) => s.type === "practice3");
 
+  const sprintSession = race.sessions.find((s) => s.type === "sprint");
   const qualifyingDone = qualifyingSession ? new Date(qualifyingSession.date) < now : false;
+  const sprintDone = sprintSession ? new Date(sprintSession.date) < now : false;
   const fp1Done = fp1Session ? new Date(fp1Session.date) < now : false;
   const fp2Done = fp2Session ? new Date(fp2Session.date) < now : false;
   const fp3Done = fp3Session ? new Date(fp3Session.date) < now : false;
@@ -398,6 +404,7 @@ async function fetchF1RaceDetail(
     driverStandingsResult,
     teamStandingsResult,
     qualifyingResult,
+    sprintResult,
     sessionKeyMapResult,
   ] = await Promise.allSettled([
     isCompleted ? jolpicaFetchPitStops(season, round) : Promise.resolve([]),
@@ -407,6 +414,7 @@ async function fetchF1RaceDetail(
     isCompleted ? jolpicaFetchRoundDriverStandings(season, round) : Promise.resolve([]),
     isCompleted ? jolpicaFetchRoundTeamStandings(season, round) : Promise.resolve([]),
     qualifyingDone ? jolpicaFetchQualifyingResults(season, round) : Promise.resolve([]),
+    sprintDone ? jolpicaFetchSprintResults(season, round) : Promise.resolve([]),
     sessionsToFind.length > 0
       ? findOpenF1AllSessionKeys(season, sessionsToFind)
       : Promise.resolve(new Map<string, number>()),
@@ -456,10 +464,14 @@ async function fetchF1RaceDetail(
     weather: weatherResult.status === "fulfilled" ? weatherResult.value : [],
     qualifyingResults:
       qualifyingResult.status === "fulfilled" ? qualifyingResult.value : [],
+    sprintResults:
+      sprintResult.status === "fulfilled" ? sprintResult.value : [],
+    sprintComplete:
+      sprintResult.status === "fulfilled" && sprintResult.value.length >= 18 ? true : undefined,
     practice1Results: fp1Result.status === "fulfilled" ? fp1Result.value : [],
     practice2Results: fp2Result.status === "fulfilled" ? fp2Result.value : [],
     practice3Results: fp3Result.status === "fulfilled" ? fp3Result.value : [],
     raceControlFetched: isCompleted,
-    stintsFetched: isCompleted, // live fazda false → completed olunca re-fetch tetiklenir
+    stintsFetched: isCompleted,
   };
 }
