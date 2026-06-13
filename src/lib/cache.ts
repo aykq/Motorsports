@@ -15,6 +15,16 @@ const RACE_DETAIL_OLD_COMPLETED_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const RACE_DETAIL_UPCOMING_TTL_MS = 2 * 60 * 60 * 1000;
 const DEFAULT_LIVE_WINDOW_MS = 3 * 60 * 60 * 1000;
 
+// Sprint seansı live pencereleri (seri bazlı) — süre + buffer
+const SPRINT_LIVE_WINDOW_MS: Record<string, number> = {
+  f1:     90 * 60 * 1000,  // F1 Sprint ~30 dk
+  motogp: 90 * 60 * 1000,  // MotoGP Sprint ~20 dk
+  moto2:  90 * 60 * 1000,
+  moto3:  90 * 60 * 1000,
+  gt3:     2 * 60 * 60 * 1000, // GT3 Sprint yarışı ~1 saat
+};
+const DEFAULT_SPRINT_LIVE_WINDOW_MS = 2 * 60 * 60 * 1000;
+
 export function isFresh(fetchedAt: Date): boolean {
   return Date.now() - fetchedAt.getTime() < TTL_MS;
 }
@@ -33,7 +43,7 @@ function raceLiveWindowMs(raceName: string): number {
   return DEFAULT_LIVE_WINDOW_MS;
 }
 
-function recomputeRaceStatus(race: Race): Race {
+function recomputeRaceStatus(race: Race, seriesSlug?: string): Race {
   if (race.status === "cancelled") {
     // Round 900+ → manuel iptal override (Bahrain, Suudi vb.), dokunma
     if (race.round >= 900) return race;
@@ -48,9 +58,22 @@ function recomputeRaceStatus(race: Race): Race {
     return { ...race, status: "completed" };
   }
 
+  const now = Date.now();
+
+  // Sprint seansı aktifse "live" — ana yarıştan bağımsız kontrol
+  const sprintSession = race.sessions.find((s) => s.type === "sprint");
+  if (sprintSession) {
+    const sprintTime = new Date(sprintSession.date).getTime();
+    const sprintWindow = seriesSlug
+      ? (SPRINT_LIVE_WINDOW_MS[seriesSlug] ?? DEFAULT_SPRINT_LIVE_WINDOW_MS)
+      : DEFAULT_SPRINT_LIVE_WINDOW_MS;
+    if (sprintTime <= now && sprintTime > now - sprintWindow) {
+      return { ...race, status: "live" };
+    }
+  }
+
   const raceSession = race.sessions.find((s) => s.type === "race");
   const raceDate = new Date(raceSession?.date ?? race.date).getTime();
-  const now = Date.now();
   const liveWindowMs = raceLiveWindowMs(race.name);
   let status: Race["status"];
   if (raceDate > now) status = "upcoming";
@@ -71,7 +94,7 @@ export async function getCachedSchedule(
   });
   if (!rows.length) return { races: [], fresh: false };
   const fresh = isFresh(rows[rows.length - 1].fetchedAt);
-  return { races: rows.map((r) => recomputeRaceStatus(r.data as Race)), fresh };
+  return { races: rows.map((r) => recomputeRaceStatus(r.data as Race, r.seriesSlug)), fresh };
 }
 
 export async function setCachedSchedule(
@@ -199,7 +222,7 @@ export async function getCachedRaceByRound(
       eq(cachedRaces.round, round)
     ),
   });
-  return row ? recomputeRaceStatus(row.data as Race) : null;
+  return row ? recomputeRaceStatus(row.data as Race, row.seriesSlug) : null;
 }
 
 // ─── Race Detail ──────────────────────────────────────────────────────────────
