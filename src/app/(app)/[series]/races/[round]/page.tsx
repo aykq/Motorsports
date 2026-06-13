@@ -98,6 +98,7 @@ export default async function RaceDetailPage({ params }: Props) {
     driverStandingsAfter,
     teamStandingsAfter,
     qualifyingResults = [],
+    sprintResults = [],
     practice1Results = [],
     practice2Results = [],
     practice3Results = [],
@@ -113,6 +114,8 @@ export default async function RaceDetailPage({ params }: Props) {
     tabs.push({ type: "practice2", shortLabel: tTabLabels("practice2"), fullLabel: tSessions("practice2") });
   if (fp3Done && practice3Results.length > 0)
     tabs.push({ type: "practice3", shortLabel: tTabLabels("practice3"), fullLabel: tSessions("practice3") });
+  if (sprintDone && sprintResults.length > 0)
+    tabs.push({ type: "sprint", shortLabel: tTabLabels("sprint"), fullLabel: tSessions("sprint") });
   if (qualifyingDone && qualifyingResults.length > 0)
     tabs.push({ type: "qualifying", shortLabel: tTabLabels("qualifying"), fullLabel: tSessions("qualifying") });
   if ((isCompleted || isLive) && allResults.length > 0)
@@ -271,6 +274,7 @@ export default async function RaceDetailPage({ params }: Props) {
           practice2Results={practice2Results}
           practice3Results={practice3Results}
           qualifyingResults={qualifyingResults}
+          sprintResults={sprintResults}
           raceResults={allResults}
           tireStints={tireStints}
           raceControl={raceControl}
