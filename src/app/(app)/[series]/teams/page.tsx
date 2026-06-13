@@ -5,6 +5,7 @@ import { getF1Team } from "@/lib/f1-teams";
 import { TeamLogo } from "@/components/series/TeamLogo";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
 import type { Driver } from "@/types/series";
 
@@ -15,7 +16,8 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { series: slug } = await params;
   const config = getSeriesConfig(slug);
-  return { title: `Takımlar — ${config?.name ?? slug.toUpperCase()}` };
+  const t = await getTranslations("teamsPage");
+  return { title: `${t("title")} — ${config?.name ?? slug.toUpperCase()}` };
 }
 
 export default async function TeamsPage({ params }: Props) {
@@ -23,6 +25,7 @@ export default async function TeamsPage({ params }: Props) {
   const config = getSeriesConfig(slug);
   if (!config || !config.available) notFound();
 
+  const t = await getTranslations("teamsPage");
   const year = new Date().getFullYear();
   const [{ standings }, { drivers }] = await Promise.all([
     getCachedStandings(slug, year, "team"),
@@ -42,8 +45,8 @@ export default async function TeamsPage({ params }: Props) {
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
       <div className="space-y-1">
         <BackButton fallbackHref={`/${slug}`} label={config.shortName} />
-        <h1 className="text-2xl font-bold">Takımlar</h1>
-        <p className="text-sm text-muted-foreground">{year} Konstruktör Şampiyonası</p>
+        <h1 className="text-2xl font-bold">{t("title")}</h1>
+        <p className="text-sm text-muted-foreground">{t("season", { year })}</p>
       </div>
 
       <div className="space-y-2">
@@ -85,7 +88,7 @@ export default async function TeamsPage({ params }: Props) {
 
                 <div className="text-right shrink-0">
                   <p className="font-black text-xl">{s.points}</p>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">puan</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("points")}</p>
                 </div>
               </div>
             </Link>
@@ -95,7 +98,7 @@ export default async function TeamsPage({ params }: Props) {
 
       {standings.length === 0 && (
         <div className="text-center py-16 text-muted-foreground">
-          <p className="text-sm">Henüz veri yok.</p>
+          <p className="text-sm">{t("noData")}</p>
         </div>
       )}
     </div>

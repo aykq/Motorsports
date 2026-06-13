@@ -4,6 +4,7 @@ import { getF1Team, getF1TeamByName } from "@/lib/f1-teams";
 import { notFound } from "next/navigation";
 import { BackButton } from "@/components/layout/BackButton";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
 
 interface Props {
@@ -12,9 +13,12 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { series: slug, id } = await params;
-  const { drivers } = await getCachedDrivers(slug);
+  const [{ drivers }, t] = await Promise.all([
+    getCachedDrivers(slug),
+    getTranslations("driversPage"),
+  ]);
   const driver = drivers.find((d) => d.id === id);
-  return { title: driver ? `${driver.firstName} ${driver.lastName}` : "Pilot" };
+  return { title: driver ? `${driver.firstName} ${driver.lastName}` : t("pilot") };
 }
 
 function positionBadge(pos: number, status: string) {
@@ -55,6 +59,7 @@ export default async function DriverDetailPage({ params }: Props) {
   const config = getSeriesConfig(slug);
   if (!config || !config.available) notFound();
 
+  const t = await getTranslations("driversPage");
   const year = new Date().getFullYear();
   const [{ drivers }, { standings: driverStandings }, { races }] = await Promise.all([
     getCachedDrivers(slug),
@@ -82,7 +87,7 @@ export default async function DriverDetailPage({ params }: Props) {
   return (
     <div className="max-w-2xl mx-auto space-y-6 pb-8">
       <div className="px-4 pt-6">
-        <BackButton fallbackHref={`/${slug}/drivers`} label="Pilotlar" />
+        <BackButton fallbackHref={`/${slug}/drivers`} label={t("title")} />
       </div>
 
       {/* ── Hero ── */}
@@ -156,15 +161,15 @@ export default async function DriverDetailPage({ params }: Props) {
           <div className="grid grid-cols-3 gap-3">
             <div className="rounded-lg bg-card border border-border p-3 text-center">
               <p className="text-2xl font-black">{standing.position}</p>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">Sıralama</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">{t("ranking")}</p>
             </div>
             <div className="rounded-lg bg-card border border-border p-3 text-center">
               <p className="text-2xl font-black">{standing.points}</p>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">Puan</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">{t("points")}</p>
             </div>
             <div className="rounded-lg bg-card border border-border p-3 text-center">
               <p className="text-2xl font-black">{standing.wins}</p>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">Galibiyet</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">{t("wins")}</p>
             </div>
           </div>
         )}
@@ -173,7 +178,7 @@ export default async function DriverDetailPage({ params }: Props) {
         {raceResults.length > 0 && (
           <section className="space-y-2">
             <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-              {year} Yarış Sonuçları
+              {t("raceResults", { year })}
             </h2>
             <div className="space-y-1.5">
               {raceResults.map(({ race, result }) => {

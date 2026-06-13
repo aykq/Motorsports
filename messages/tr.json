@@ -45,7 +45,7 @@
       "notSupported": "Tarayıcınız push bildirimleri desteklemiyor.",
       "httpsRequired": "Push bildirimler yalnızca HTTPS bağlantısında çalışır. HTTP üzerinden eriştiğiniz için bu özellik kullanılamıyor.",
       "denied": "Bildirim izni reddedildi. Tarayıcı ayarlarından etkinleştirin.",
-      "description": "Yarışlardan 1 saat önce bildirim almak için etkinleştirin.",
+      "description": "Antrenman, sıralama, sprint ve yarış seansları için 1 saat önce, 15 dakika önce ve seans başında bildirim alın.",
       "enable": "Bildirimleri Etkinleştir",
       "disable": "Bildirimleri Kapat",
       "seriesQuestion": "Hangi seriler için bildirim almak istiyorsun?"
@@ -109,15 +109,44 @@
     "title": "Pilotlar",
     "count": "{count} pilot",
     "noData": "Henüz pilot verisi yok.",
-    "unknownTeam": "Bilinmeyen Takım"
+    "unknownTeam": "Bilinmeyen Takım",
+    "pilot": "Pilot",
+    "ranking": "Sıralama",
+    "points": "Puan",
+    "wins": "Galibiyet",
+    "raceResults": "{year} Yarış Sonuçları"
   },
   "teamsPage": {
     "title": "Takımlar",
-    "noData": "Henüz takım verisi yok."
+    "noData": "Henüz takım verisi yok.",
+    "season": "{year} Konstruktör Şampiyonası",
+    "team": "Takım",
+    "points": "Puan",
+    "ranking": "Sıralama",
+    "wins": "Galibiyet",
+    "pilots": "Pilotlar",
+    "raceResults": "Yarış Sonuçları",
+    "round": "Tur {round}"
   },
   "circuitsPage": {
     "title": "Pistler",
-    "noData": "Henüz pist verisi yok."
+    "noData": "Henüz pist verisi yok.",
+    "count": "{count} pist",
+    "circuit": "Pist",
+    "viewOnMap": "Haritada Gör",
+    "specifications": "Pist Bilgileri",
+    "length": "Uzunluk",
+    "corners": "Virajlar",
+    "drsZones": "DRS Bölgesi",
+    "lapCount": "Tur Sayısı",
+    "raceDistance": "Yarış mesafesi ≈ {distance} km",
+    "thisSeason": "Bu Sezon ({year})",
+    "winner": "Kazanan",
+    "fastestLap": "En Hızlı",
+    "winnerLabel": "Kazanan:",
+    "upcoming": "Yaklaşan",
+    "pastRaces": "Geçmiş Yarışlar",
+    "raceNumber": "Yarış {round}"
   },
   "racePage": {
     "round": "Yarış {round}",

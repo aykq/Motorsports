@@ -4,6 +4,7 @@ import { BackButton } from "@/components/layout/BackButton";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { MapPin } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
 
 interface Props {
@@ -13,7 +14,8 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { series: slug } = await params;
   const config = getSeriesConfig(slug);
-  return { title: `${config?.name ?? slug} — Pistler` };
+  const t = await getTranslations("circuitsPage");
+  return { title: `${config?.name ?? slug} — ${t("title")}` };
 }
 
 export default async function CircuitsListPage({ params }: Props) {
@@ -21,6 +23,7 @@ export default async function CircuitsListPage({ params }: Props) {
   const config = getSeriesConfig(slug);
   if (!config || !config.available) notFound();
 
+  const t = await getTranslations("circuitsPage");
   const year = new Date().getFullYear();
   const { races } = await getCachedSchedule(slug, year);
 
@@ -32,12 +35,12 @@ export default async function CircuitsListPage({ params }: Props) {
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
       <div className="space-y-1">
         <BackButton fallbackHref={`/${slug}`} label={config.shortName} />
-        <h1 className="text-xl font-bold">{config.name} — Pistler</h1>
-        <p className="text-xs text-muted-foreground">{circuits.length} pist</p>
+        <h1 className="text-xl font-bold">{config.name} — {t("title")}</h1>
+        <p className="text-xs text-muted-foreground">{t("count", { count: circuits.length })}</p>
       </div>
 
       {circuits.length === 0 ? (
-        <p className="text-center py-16 text-sm text-muted-foreground">Henüz pist verisi yok.</p>
+        <p className="text-center py-16 text-sm text-muted-foreground">{t("noData")}</p>
       ) : (
         <div className="space-y-1.5">
           {circuits.map((race) => (
@@ -55,7 +58,7 @@ export default async function CircuitsListPage({ params }: Props) {
                     {race.location}, {race.country}
                   </p>
                 </div>
-                <span className="text-xs text-muted-foreground shrink-0">Yarış {race.round}</span>
+                <span className="text-xs text-muted-foreground shrink-0">{t("raceNumber", { round: race.round })}</span>
               </div>
             </Link>
           ))}

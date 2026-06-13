@@ -1,16 +1,69 @@
 import cron from "node-cron";
+import { eq, and } from "drizzle-orm";
 import { syncSeries } from "@/lib/sync";
 import { isActiveRaceWeekend, syncActiveSessionData, syncRaceDetails } from "@/lib/race-detail";
 import { getCachedSchedule } from "@/lib/cache";
 import { adapters } from "@/lib/adapters";
 import { db } from "@/db";
-import { cachedRaces } from "@/db/schema";
+import { cachedRaces, sentNotifications } from "@/db/schema";
 import { sendPushToSubscribers } from "@/lib/push";
 import type { Race } from "@/types/series";
 
 const POST_RACE_WINDOW_MS = 12 * 60 * 60 * 1000;
 
 const SEASON = new Date().getFullYear();
+
+const SESSION_LABELS: Record<string, string> = {
+  practice1: "1. Antrenman",
+  practice2: "2. Antrenman",
+  practice3: "3. Antrenman",
+  qualifying: "Sıralama Turları",
+  sprintQuali: "Sprint Sıralama",
+  sprint: "Sprint Yarışı",
+  race: "Yarış",
+};
+
+const SESSION_ICONS: Record<string, string> = {
+  practice1: "🔧",
+  practice2: "🔧",
+  practice3: "🔧",
+  qualifying: "⏱️",
+  sprintQuali: "⏱️",
+  sprint: "💨",
+  race: "🏁",
+};
+
+async function isNotifSent(
+  seriesSlug: string,
+  season: number,
+  round: number,
+  sessionType: string,
+  notifType: string
+): Promise<boolean> {
+  const row = await db.query.sentNotifications.findFirst({
+    where: and(
+      eq(sentNotifications.seriesSlug, seriesSlug),
+      eq(sentNotifications.season, season),
+      eq(sentNotifications.round, round),
+      eq(sentNotifications.sessionType, sessionType),
+      eq(sentNotifications.notifType, notifType)
+    ),
+  });
+  return !!row;
+}
+
+async function markNotifSent(
+  seriesSlug: string,
+  season: number,
+  round: number,
+  sessionType: string,
+  notifType: string
+): Promise<void> {
+  await db
+    .insert(sentNotifications)
+    .values({ seriesSlug, season, round, sessionType, notifType })
+    .onConflictDoNothing();
+}
 
 // Tam veri sync — her 6 saatte bir (00, 06, 12, 18 UTC)
 cron.schedule(
@@ -47,35 +100,62 @@ cron.schedule(
   { timezone: "UTC" }
 );
 
-// Pre-race bildirim — her 5 dakikada bir kontrol, yarıştan ~1 saat önce gönder
+// Seans bildirimleri — her 5 dakikada bir kontrol
 // :01, :06, :11... olarak ofsetlendi (00:00 yığılmasını önlemek için)
+// Her seans için: 1 saat önce, 15 dakika önce ve başlangıçta bildirim gönderilir.
 cron.schedule(
   "1-59/5 * * * *",
   async () => {
     const now = Date.now();
-    const windowStart = now + 55 * 60 * 1000; // 55 dk sonra
-    const windowEnd = now + 65 * 60 * 1000;   // 65 dk sonra
+
+    const windows = {
+      pre_1h:  { start: now + 55 * 60 * 1000, end: now + 65 * 60 * 1000 },
+      pre_15m: { start: now + 10 * 60 * 1000, end: now + 20 * 60 * 1000 },
+      start:   { start: now -  2 * 60 * 1000, end: now +  3 * 60 * 1000 },
+    };
 
     try {
       const allRaces = await db.query.cachedRaces.findMany();
 
       for (const row of allRaces) {
         const race = row.data as Race;
-        const raceSession = race.sessions?.find((s) => s.type === "race");
-        if (!raceSession) continue;
 
-        const raceTime = new Date(raceSession.date).getTime();
-        if (raceTime >= windowStart && raceTime <= windowEnd) {
-          await sendPushToSubscribers(row.seriesSlug, {
-            title: `🏁 ${race.name} 1 saat sonra başlıyor!`,
-            body: `${race.circuitName} — ${race.location}`,
-            url: `/${row.seriesSlug}`,
-          });
-          console.log(`[cron] notification sent: ${row.seriesSlug} - ${race.name}`);
+        for (const session of (race.sessions ?? [])) {
+          const sessionTime = new Date(session.date).getTime();
+          const label = SESSION_LABELS[session.type] ?? session.type;
+          const icon  = SESSION_ICONS[session.type] ?? "🏎️";
+
+          for (const [notifType, window] of Object.entries(windows)) {
+            if (sessionTime < window.start || sessionTime > window.end) continue;
+
+            const alreadySent = await isNotifSent(
+              row.seriesSlug, row.season, race.round, session.type, notifType
+            );
+            if (alreadySent) continue;
+
+            let title: string;
+            if (notifType === "pre_1h") {
+              title = `${icon} ${label} 1 saat sonra başlıyor`;
+            } else if (notifType === "pre_15m") {
+              title = `${icon} ${label} 15 dakika sonra başlıyor`;
+            } else {
+              title = `${icon} ${label} başladı!`;
+            }
+
+            await sendPushToSubscribers(row.seriesSlug, {
+              title,
+              body: `${race.name} — ${race.circuitName}`,
+              url: `/${row.seriesSlug}`,
+            });
+
+            await markNotifSent(row.seriesSlug, row.season, race.round, session.type, notifType);
+
+            console.log(`[cron] notif sent: [${notifType}] ${row.seriesSlug} R${race.round} ${session.type}`);
+          }
         }
       }
     } catch (err) {
-      console.error("[cron] pre-race notification error:", err);
+      console.error("[cron] session notification error:", err);
     }
   },
   { timezone: "UTC" }
@@ -142,4 +222,4 @@ cron.schedule(
   { timezone: "UTC" }
 );
 
-console.log("[cron] scheduled: full sync @00/06/12/18 UTC, pre-race notify @:01/06/11..., session sync @:02/04/06..., post-race refresh @:15/:45");
+console.log("[cron] scheduled: full sync @00/06/12/18 UTC, session notify @:01/06/11..., session sync @:02/04/06..., post-race refresh @:15/:45");

@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 import { MapPin, Zap, ExternalLink } from "lucide-react";
 import { BackButton } from "@/components/layout/BackButton";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
 
 interface Props {
@@ -17,9 +18,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { series: slug, id } = await params;
   const year = new Date().getFullYear();
   const config = getSeriesConfig(slug);
-  const { races } = await getCachedSchedule(slug, year);
+  const [{ races }, t] = await Promise.all([
+    getCachedSchedule(slug, year),
+    getTranslations("circuitsPage"),
+  ]);
   const race = races.find((r) => r.circuitId === id);
-  return { title: race ? `${race.circuitName} — ${config?.name ?? slug}` : "Pist" };
+  return { title: race ? `${race.circuitName} — ${config?.name ?? slug}` : t("circuit") };
 }
 
 function StatCard({ label, value }: { label: string; value: string | number }) {
@@ -36,6 +40,7 @@ export default async function CircuitDetailPage({ params }: Props) {
   const config = getSeriesConfig(slug);
   if (!config || !config.available) notFound();
 
+  const t = await getTranslations("circuitsPage");
   const year = new Date().getFullYear();
   const { races } = await getCachedSchedule(slug, year);
 
@@ -71,7 +76,7 @@ export default async function CircuitDetailPage({ params }: Props) {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-      <BackButton fallbackHref={`/${slug}/circuits`} label="Pistler" />
+      <BackButton fallbackHref={`/${slug}/circuits`} label={t("title")} />
 
       {/* ── Header ── */}
       <div className="space-y-2">
@@ -89,7 +94,7 @@ export default async function CircuitDetailPage({ params }: Props) {
               className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors border border-border rounded px-2 py-1"
             >
               <ExternalLink className="w-3 h-3" />
-              Haritada Gör
+              {t("viewOnMap")}
             </a>
           )}
         </div>
@@ -102,17 +107,17 @@ export default async function CircuitDetailPage({ params }: Props) {
       {specs && (
         <section className="space-y-2">
           <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-            Pist Bilgileri
+            {t("specifications")}
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            <StatCard label="Uzunluk" value={`${specs.lengthKm} km`} />
-            <StatCard label="Virajlar" value={specs.corners} />
-            <StatCard label="DRS Bölgesi" value={specs.drsZones} />
-            <StatCard label="Tur Sayısı" value={totalLaps ?? "—"} />
+            <StatCard label={t("length")} value={`${specs.lengthKm} km`} />
+            <StatCard label={t("corners")} value={specs.corners} />
+            <StatCard label={t("drsZones")} value={specs.drsZones} />
+            <StatCard label={t("lapCount")} value={totalLaps ?? "—"} />
           </div>
           {totalLaps && (
             <p className="text-xs text-muted-foreground text-right">
-              Yarış mesafesi ≈ {(specs.lengthKm * totalLaps).toFixed(1)} km
+              {t("raceDistance", { distance: (specs.lengthKm * totalLaps).toFixed(1) })}
             </p>
           )}
         </section>
@@ -122,12 +127,12 @@ export default async function CircuitDetailPage({ params }: Props) {
       {(fastestLapResult || raceWinner) && (
         <section className="space-y-2">
           <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-            Bu Sezon ({year})
+            {t("thisSeason", { year })}
           </h2>
           <div className="rounded-lg border border-border overflow-hidden">
             {raceWinner && (
               <div className="flex items-center gap-3 px-3 py-2.5 border-b border-border last:border-0 text-sm">
-                <span className="text-xs text-muted-foreground w-20 shrink-0">Kazanan</span>
+                <span className="text-xs text-muted-foreground w-20 shrink-0">{t("winner")}</span>
                 <span className="font-medium flex-1 truncate">{raceWinner.driverName}</span>
                 <span className="text-xs text-muted-foreground truncate shrink-0">{raceWinner.team}</span>
               </div>
@@ -136,7 +141,7 @@ export default async function CircuitDetailPage({ params }: Props) {
               <div className="flex items-center gap-3 px-3 py-2.5 text-sm">
                 <span className="text-xs text-muted-foreground w-20 shrink-0 flex items-center gap-1">
                   <Zap className="w-3 h-3 text-purple-400" />
-                  En Hızlı
+                  {t("fastestLap")}
                 </span>
                 <span className="font-medium flex-1 truncate">{fastestLapResult.driverName}</span>
                 {fastestLapResult.fastestLapTime && (
@@ -154,7 +159,7 @@ export default async function CircuitDetailPage({ params }: Props) {
       {upcomingRaces.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-            Yaklaşan
+            {t("upcoming")}
           </h2>
           {upcomingRaces.map((race) => {
             const raceSession = race.sessions.find((s) => s.type === "race");
@@ -163,7 +168,7 @@ export default async function CircuitDetailPage({ params }: Props) {
                 <div className="rounded-lg bg-card border border-border p-4 space-y-2 hover:bg-accent/50 transition-colors cursor-pointer">
                   <div className="flex items-center justify-between">
                     <p className="font-semibold text-sm">{race.name}</p>
-                    <Badge variant="outline" className="text-xs">Yarış {race.round}</Badge>
+                    <Badge variant="outline" className="text-xs">{t("raceNumber", { round: race.round })}</Badge>
                   </div>
                   {raceSession && (
                     <p className="text-xs text-muted-foreground">
@@ -185,7 +190,7 @@ export default async function CircuitDetailPage({ params }: Props) {
       {completedRaces.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-            Geçmiş Yarışlar
+            {t("pastRaces")}
           </h2>
           {completedRaces.map((race) => {
             const winner = race.results?.[0];
@@ -194,11 +199,11 @@ export default async function CircuitDetailPage({ params }: Props) {
                 <div className="rounded-lg bg-card border border-border p-4 space-y-2 hover:bg-accent/50 transition-colors cursor-pointer">
                   <div className="flex items-center justify-between">
                     <p className="font-semibold text-sm">{race.name}</p>
-                    <Badge variant="secondary" className="text-xs">Yarış {race.round}</Badge>
+                    <Badge variant="secondary" className="text-xs">{t("raceNumber", { round: race.round })}</Badge>
                   </div>
                   {winner && (
                     <p className="text-xs text-muted-foreground">
-                      Kazanan: <span className="text-foreground font-medium">{winner.driverName}</span>
+                      {t("winnerLabel")} <span className="text-foreground font-medium">{winner.driverName}</span>
                       {winner.time && <span> · {winner.time}</span>}
                     </p>
                   )}

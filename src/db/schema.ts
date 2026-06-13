@@ -149,3 +149,19 @@ export const cachedRaceDetails = pgTable(
   },
   (t) => [uniqueIndex("cached_race_detail_idx").on(t.seriesSlug, t.season, t.round)]
 );
+
+export const sentNotifications = pgTable(
+  "sent_notification",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    seriesSlug: text("series_slug").notNull(),
+    season: integer("season").notNull(),
+    round: integer("round").notNull(),
+    sessionType: text("session_type").notNull(),
+    notifType: text("notif_type").notNull(), // "pre_1h" | "pre_15m" | "start"
+    sentAt: timestamp("sent_at").defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex("sent_notification_unique_idx").on(t.seriesSlug, t.season, t.round, t.sessionType, t.notifType)]
+);
