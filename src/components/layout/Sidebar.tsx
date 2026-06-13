@@ -59,7 +59,7 @@ export function Sidebar({ user, isAdmin }: SidebarProps) {
         })}
         {isAdmin && (
           <Link
-            href="/admin/users"
+            href="/admin"
             className={cn(
               "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
               pathname.startsWith("/admin")
