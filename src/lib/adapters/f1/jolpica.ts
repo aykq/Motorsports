@@ -142,6 +142,19 @@ const PitStopsResponseSchema = z.object({
   }),
 });
 
+const RaceWithSprintResultsSchema = z.object({
+  round: z.string(),
+  SprintResults: z.array(RaceResultItemSchema).optional(),
+});
+
+const SprintResultsResponseSchema = z.object({
+  MRData: z.object({
+    RaceTable: z.object({
+      Races: z.array(RaceWithSprintResultsSchema),
+    }),
+  }),
+});
+
 const QualifyingResultItemSchema = z.object({
   position: z.string(),
   Driver: DriverInfoSchema,
@@ -340,6 +353,38 @@ export async function jolpicaFetchRaceResults(
     const race = data.MRData.RaceTable.Races[0];
     if (!race?.Results?.length) return [];
     return race.Results.map((r) => ({
+      position: parseInt(r.position),
+      driverId: r.Driver.driverId,
+      driverName: `${r.Driver.givenName} ${r.Driver.familyName}`,
+      driverCode: r.Driver.code,
+      driverNumber: r.Driver.permanentNumber ? parseInt(r.Driver.permanentNumber) : undefined,
+      team: r.Constructor.name,
+      time: r.position === "1" ? r.Time?.time : undefined,
+      gap: r.position !== "1" ? r.Time?.time : undefined,
+      points: parseFloat(r.points),
+      status: r.status,
+      fastestLap: r.FastestLap?.rank === "1",
+      fastestLapTime: r.FastestLap?.rank === "1" ? r.FastestLap?.Time?.time : undefined,
+      gridPosition: r.grid ? parseInt(r.grid) : undefined,
+      laps: r.laps ? parseInt(r.laps) : undefined,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export async function jolpicaFetchSprintResults(
+  season: number,
+  round: number
+): Promise<import("@/types/series").RaceResult[]> {
+  try {
+    const data = await jolpicaFetch(
+      `/${season}/${round}/sprint.json?limit=25`,
+      SprintResultsResponseSchema
+    );
+    const race = data.MRData.RaceTable.Races[0];
+    if (!race?.SprintResults?.length) return [];
+    return race.SprintResults.map((r) => ({
       position: parseInt(r.position),
       driverId: r.Driver.driverId,
       driverName: `${r.Driver.givenName} ${r.Driver.familyName}`,
