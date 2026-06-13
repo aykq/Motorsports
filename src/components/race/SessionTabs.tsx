@@ -29,6 +29,7 @@ interface Props {
   practice2Results: PracticeDriverResult[];
   practice3Results: PracticeDriverResult[];
   qualifyingResults: QualifyingDriverResult[];
+  sprintResults: RaceResult[];
   raceResults: RaceResult[];
   tireStints: TireStint[];
   raceControl: RaceControlEvent[];
@@ -48,6 +49,7 @@ export function SessionTabs({
   practice2Results,
   practice3Results,
   qualifyingResults,
+  sprintResults,
   raceResults,
   tireStints,
   raceControl,
@@ -102,6 +104,19 @@ export function SessionTabs({
             sessionLabel={activeTab.fullLabel}
             results={practiceData[active] ?? []}
             labels={practiceLabels}
+          />
+        )}
+
+        {active === "sprint" && (
+          <RaceResultsSection
+            results={sprintResults}
+            tireStints={[]}
+            raceControl={[]}
+            raceControlTr={[]}
+            driverStandingsAfter={[]}
+            teamStandingsAfter={[]}
+            labels={raceLabels}
+            slug={slug}
           />
         )}
 
