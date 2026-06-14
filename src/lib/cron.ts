@@ -1,83 +1,15 @@
 import cron from "node-cron";
-import { eq, and } from "drizzle-orm";
 import { syncSeries, syncScheduleOnly } from "@/lib/sync";
 import { isActiveRaceWeekend, syncActiveSessionData, syncRaceDetails } from "@/lib/race-detail";
-import { getCachedSchedule, getRaceDetailRaw } from "@/lib/cache";
+import { getCachedSchedule } from "@/lib/cache";
 import { adapters } from "@/lib/adapters";
 import { db } from "@/db";
-import { cachedRaces, sentNotifications } from "@/db/schema";
-import { sendPushToSubscribers } from "@/lib/push";
+import { notifySessions } from "@/lib/notify-sessions";
 import type { Race } from "@/types/series";
 
 const POST_RACE_WINDOW_MS = 12 * 60 * 60 * 1000;
 
 const SEASON = new Date().getFullYear();
-
-// Sonuç bildirimi: seans başlangıcından bu kadar sonra kontrol et
-// F1: ilgili DB flag'i (qualifyingComplete vs.) true olunca gönderilir
-// Non-F1: live penceresi dolunca (race) veya minMs dolunca (diğerleri) gönderilir
-const RESULTS_WINDOW: Record<string, { minMs: number; maxMs: number }> = {
-  qualifying:  { minMs: 60 * 60 * 1000,       maxMs:  4 * 60 * 60 * 1000 },
-  sprintQuali: { minMs: 30 * 60 * 1000,       maxMs:  2 * 60 * 60 * 1000 },
-  sprint:      { minMs: 25 * 60 * 1000,       maxMs:  2 * 60 * 60 * 1000 },
-  race:        { minMs: 90 * 60 * 1000,       maxMs: 32 * 60 * 60 * 1000 }, // 32h: Le Mans + buffer
-};
-
-// MotoGP API "FINISHED" ve TheSportsDB "FT" status'ünü DB'ye yazar;
-// race.status === "completed" kontrolü time-based yerine kullanılır.
-const STATUS_DRIVEN_SERIES = new Set(["motogp", "moto2", "moto3", "wec"]);
-
-const SESSION_LABELS: Record<string, string> = {
-  practice1: "1. Antrenman",
-  practice2: "2. Antrenman",
-  practice3: "3. Antrenman",
-  qualifying: "Sıralama Turları",
-  sprintQuali: "Sprint Sıralama",
-  sprint: "Sprint Yarışı",
-  race: "Yarış",
-};
-
-const SESSION_ICONS: Record<string, string> = {
-  practice1: "🔧",
-  practice2: "🔧",
-  practice3: "🔧",
-  qualifying: "⏱️",
-  sprintQuali: "⏱️",
-  sprint: "💨",
-  race: "🏁",
-};
-
-async function isNotifSent(
-  seriesSlug: string,
-  season: number,
-  round: number,
-  sessionType: string,
-  notifType: string
-): Promise<boolean> {
-  const row = await db.query.sentNotifications.findFirst({
-    where: and(
-      eq(sentNotifications.seriesSlug, seriesSlug),
-      eq(sentNotifications.season, season),
-      eq(sentNotifications.round, round),
-      eq(sentNotifications.sessionType, sessionType),
-      eq(sentNotifications.notifType, notifType)
-    ),
-  });
-  return !!row;
-}
-
-async function markNotifSent(
-  seriesSlug: string,
-  season: number,
-  round: number,
-  sessionType: string,
-  notifType: string
-): Promise<void> {
-  await db
-    .insert(sentNotifications)
-    .values({ seriesSlug, season, round, sessionType, notifType })
-    .onConflictDoNothing();
-}
 
 // Tam veri sync — her 6 saatte bir (00, 06, 12, 18 UTC)
 cron.schedule(
@@ -114,113 +46,15 @@ cron.schedule(
   { timezone: "UTC" }
 );
 
-// Seans bildirimleri — her 5 dakikada bir kontrol
-// :01, :06, :11... olarak ofsetlendi (00:00 yığılmasını önlemek için)
-// Antrenman seanslarında ön bildirim yok.
-// Sıralama / sprint / yarış: 1h önce, 15dk önce, başlangıç bildirimi.
-// Sonuç bildirimleri: F1 için DB flag'i (data-driven), non-F1 için zaman bazlı.
+// Seans bildirimleri — her 5 dakikada bir
+// Antrenman hariç: 1h önce, 15dk önce, başlangıç + sonuç bildirimleri
 cron.schedule(
   "1-59/5 * * * *",
   async () => {
-    const now = Date.now();
-
-    const preWindows = {
-      pre_1h:  { start: now + 55 * 60 * 1000, end: now + 65 * 60 * 1000 },
-      pre_15m: { start: now + 10 * 60 * 1000, end: now + 20 * 60 * 1000 },
-      start:   { start: now -  2 * 60 * 1000, end: now +  3 * 60 * 1000 },
-    };
-
-    const isPractice = (type: string) =>
-      type === "practice1" || type === "practice2" || type === "practice3";
-
     try {
-      const allRaces = await db.query.cachedRaces.findMany();
-
-      for (const row of allRaces) {
-        const race = row.data as Race;
-
-        for (const session of (race.sessions ?? [])) {
-          const sessionTime = new Date(session.date).getTime();
-          const label = SESSION_LABELS[session.type] ?? session.type;
-          const icon  = SESSION_ICONS[session.type] ?? "🏎️";
-
-          // ── Ön bildirimler (antrenman hariç) ─────────────────────────
-          if (!isPractice(session.type)) {
-            for (const [notifType, window] of Object.entries(preWindows)) {
-              if (sessionTime < window.start || sessionTime > window.end) continue;
-
-              const alreadySent = await isNotifSent(
-                row.seriesSlug, row.season, race.round, session.type, notifType
-              );
-              if (alreadySent) continue;
-
-              const title =
-                notifType === "pre_1h"  ? `${icon} ${label} 1 saat sonra başlıyor` :
-                notifType === "pre_15m" ? `${icon} ${label} 15 dakika sonra başlıyor` :
-                                          `${icon} ${label} başladı!`;
-
-              await sendPushToSubscribers(row.seriesSlug, {
-                title,
-                body: `${race.name} — ${race.circuitName}`,
-                url: `/${row.seriesSlug}`,
-              });
-              await markNotifSent(row.seriesSlug, row.season, race.round, session.type, notifType);
-              console.log(`[cron] notif sent: [${notifType}] ${row.seriesSlug} R${race.round} ${session.type}`);
-            }
-          }
-
-          // ── Sonuç bildirimleri ────────────────────────────────────────
-          const resWindow = RESULTS_WINDOW[session.type];
-          if (!resWindow) continue;
-
-          const elapsed = now - sessionTime;
-          if (elapsed < resWindow.minMs || elapsed > resWindow.maxMs) continue;
-
-          const alreadySent = await isNotifSent(
-            row.seriesSlug, row.season, race.round, session.type, "results"
-          );
-          if (alreadySent) continue;
-
-          let resultsReady = false;
-
-          if (row.seriesSlug === "f1") {
-            if (session.type === "race") {
-              resultsReady = (race.results?.length ?? 0) >= 18;
-            } else {
-              const detail = await getRaceDetailRaw("f1", row.season, race.round);
-              if (session.type === "qualifying")  resultsReady = !!detail?.qualifyingComplete;
-              if (session.type === "sprintQuali") resultsReady = !!detail?.sprintQualiComplete;
-              if (session.type === "sprint")      resultsReady = !!detail?.sprintComplete;
-            }
-          } else {
-            if (session.type === "race") {
-              if (STATUS_DRIVEN_SERIES.has(row.seriesSlug)) {
-                // MotoGP/WEC: API status "FINISHED"/"FT" → DB "completed" → bildirim
-                resultsReady = race.status === "completed";
-              } else {
-                // GT3/Carrera: live penceresi dolunca (zaman bazlı)
-                const m = race.name.match(/(\d+)\s*hour/i);
-                const liveWindowMs = m
-                  ? (parseInt(m[1], 10) + 2) * 60 * 60 * 1000
-                  : /endurance/i.test(race.name) ? 5 * 60 * 60 * 1000 : 3 * 60 * 60 * 1000;
-                resultsReady = elapsed > liveWindowMs;
-              }
-            } else {
-              resultsReady = true; // sıralama / sprint: minMs dolunca gönder
-            }
-          }
-
-          if (!resultsReady) continue;
-
-          await sendPushToSubscribers(row.seriesSlug, {
-            title: `${icon} ${label} Sonuçları Açıklandı`,
-            body: `${race.name} — ${race.circuitName}`,
-            url: `/${row.seriesSlug}/races/${race.round}`,
-          });
-          await markNotifSent(row.seriesSlug, row.season, race.round, session.type, "results");
-          console.log(`[cron] notif sent: [results] ${row.seriesSlug} R${race.round} ${session.type}`);
-        }
-      }
+      const result = await notifySessions();
+      if (result.sent.length) console.log("[cron] notif sent:", result.sent);
+      if (result.errors.length) console.error("[cron] notif errors:", result.errors);
     } catch (err) {
       console.error("[cron] session notification error:", err);
     }
@@ -321,4 +155,4 @@ cron.schedule(
   { timezone: "UTC" }
 );
 
-console.log("[cron] scheduled: full sync @00/06/12/18 UTC, session notify @:01/06/11..., session sync @:02/04/06..., non-F1 status refresh @:03/13/23..., post-race refresh @:15/:45");
+console.log("[cron] scheduled: full sync @00/06/12/18 UTC, session notify @:01/06/11..., session sync @:02/04/06..., status refresh @:03/13/23..., post-race refresh @:15/:45");
