@@ -2,16 +2,16 @@ import { eq, and } from "drizzle-orm";
 import { db } from "@/db";
 import { sentNotifications } from "@/db/schema";
 import { sendPushToSubscribers } from "@/lib/push";
-import { getRaceDetailRaw } from "@/lib/cache";
+import { jolpicaFetchQualifyingResults, jolpicaFetchSprintResults } from "@/lib/adapters/f1/jolpica";
 import type { Race } from "@/types/series";
 
 const STATUS_DRIVEN_SERIES = new Set(["motogp", "moto2", "moto3", "wec"]);
 
-const RESULTS_WINDOW: Record<string, { minMs: number; maxMs: number }> = {
-  qualifying:  { minMs: 60 * 60 * 1000,       maxMs:  4 * 60 * 60 * 1000 },
-  sprintQuali: { minMs: 30 * 60 * 1000,       maxMs:  2 * 60 * 60 * 1000 },
-  sprint:      { minMs: 25 * 60 * 1000,       maxMs:  2 * 60 * 60 * 1000 },
-  race:        { minMs: 90 * 60 * 1000,       maxMs: 32 * 60 * 60 * 1000 },
+const RESULTS_WINDOW: Record<string, number> = {
+  qualifying:   4 * 60 * 60 * 1000,
+  sprintQuali:  2 * 60 * 60 * 1000,
+  sprint:       2 * 60 * 60 * 1000,
+  race:        32 * 60 * 60 * 1000,
 };
 
 const SESSION_LABELS: Record<string, string> = {
@@ -117,11 +117,11 @@ export async function notifySessions(): Promise<NotifySessionsResult> {
       }
 
       // Results notifications
-      const resWindow = RESULTS_WINDOW[session.type];
-      if (!resWindow) continue;
+      const maxMs = RESULTS_WINDOW[session.type];
+      if (maxMs === undefined) continue;
 
       const elapsed = now - sessionTime;
-      if (elapsed < resWindow.minMs || elapsed > resWindow.maxMs) continue;
+      if (elapsed < 0 || elapsed > maxMs) continue;
 
       try {
         if (await isNotifSent(row.seriesSlug, row.season, race.round, session.type, "results")) continue;
@@ -131,11 +131,15 @@ export async function notifySessions(): Promise<NotifySessionsResult> {
         if (row.seriesSlug === "f1") {
           if (session.type === "race") {
             resultsReady = (race.results?.length ?? 0) >= 18;
-          } else {
-            const detail = await getRaceDetailRaw("f1", row.season, race.round);
-            if (session.type === "qualifying")  resultsReady = !!detail?.qualifyingComplete;
-            if (session.type === "sprintQuali") resultsReady = !!detail?.sprintQualiComplete;
-            if (session.type === "sprint")      resultsReady = !!detail?.sprintComplete;
+          } else if (session.type === "qualifying") {
+            const results = await jolpicaFetchQualifyingResults(row.season, race.round);
+            resultsReady = results.filter((r) => r.q3).length >= 9;
+          } else if (session.type === "sprintQuali") {
+            const results = await jolpicaFetchQualifyingResults(row.season, race.round);
+            resultsReady = results.filter((r) => r.q1).length >= 15;
+          } else if (session.type === "sprint") {
+            const results = await jolpicaFetchSprintResults(row.season, race.round);
+            resultsReady = results.length >= 18;
           }
         } else {
           if (session.type === "race") {
