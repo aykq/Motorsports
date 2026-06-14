@@ -8,6 +8,7 @@ import { notifySessions } from "@/lib/notify-sessions";
 import type { Race } from "@/types/series";
 
 const POST_RACE_WINDOW_MS = 12 * 60 * 60 * 1000;
+const STATUS_DRIVEN_SERIES = new Set(["motogp", "moto2", "moto3", "wec"]);
 
 const SEASON = new Date().getFullYear();
 
