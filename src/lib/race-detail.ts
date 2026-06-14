@@ -160,9 +160,11 @@ export async function syncRaceDetails(
     try {
       const isCompleted = race.status === "completed";
 
+      // Fetch existing raw detail upfront — used for translation check and preserving completion flags
+      const rawDetail = await getRaceDetailRaw(slug, season, race.round);
+
       // Tamamlanmış yarış ve zaten tam veri varsa → sadece çeviri kontrol et (API fetch yapma)
       if (isCompleted) {
-        const rawDetail = await getRaceDetailRaw(slug, season, race.round);
         if (rawDetail?.raceControlFetched === true && rawDetail.raceControl.length > 0) {
           const needsTr =
             rawDetail.raceControl.length > 0 &&
@@ -207,7 +209,18 @@ export async function syncRaceDetails(
         if (translated.length) raceControlTr = translated;
       }
 
-      await setCachedRaceDetail(slug, season, race.round, { ...fresh, raceControlTr });
+      // Preserve completion flags set by active session sync — fresh fetch only sets
+      // qualifyingComplete and sprintComplete; the rest come from syncActiveSessionData
+      await setCachedRaceDetail(slug, season, race.round, {
+        ...fresh,
+        raceControlTr,
+        qualifyingComplete: fresh.qualifyingComplete ?? rawDetail?.qualifyingComplete,
+        sprintQualiComplete: rawDetail?.sprintQualiComplete,
+        practice1Complete: rawDetail?.practice1Complete,
+        practice2Complete: rawDetail?.practice2Complete,
+        practice3Complete: rawDetail?.practice3Complete,
+        raceDataComplete: rawDetail?.raceDataComplete ?? fresh.raceDataComplete,
+      });
       synced++;
     } catch (err) {
       errors.push(`round ${race.round}: ${err instanceof Error ? err.message : String(err)}`);
@@ -453,6 +466,10 @@ async function fetchF1RaceDetail(
 
   const raceControl = raceControlResult.status === "fulfilled" ? raceControlResult.value : [];
 
+  const qualifyingResults =
+    qualifyingResult.status === "fulfilled" ? qualifyingResult.value : [];
+  const q3Count = qualifyingResults.filter((r) => r.q3).length;
+
   return {
     pitStops: enrichedPitStops,
     tireStints: stintsResult.status === "fulfilled" ? stintsResult.value : [],
@@ -462,8 +479,8 @@ async function fetchF1RaceDetail(
     teamStandingsAfter:
       teamStandingsResult.status === "fulfilled" ? teamStandingsResult.value : [],
     weather: weatherResult.status === "fulfilled" ? weatherResult.value : [],
-    qualifyingResults:
-      qualifyingResult.status === "fulfilled" ? qualifyingResult.value : [],
+    qualifyingResults,
+    qualifyingComplete: q3Count >= 9 ? true : undefined,
     sprintResults:
       sprintResult.status === "fulfilled" ? sprintResult.value : [],
     sprintComplete:
