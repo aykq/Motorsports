@@ -47,10 +47,10 @@ cron.schedule(
   { timezone: "UTC" }
 );
 
-// Seans bildirimleri — her 5 dakikada bir
+// Seans bildirimleri — her 10 dakikada bir
 // Antrenman hariç: 1h önce, 15dk önce, başlangıç + sonuç bildirimleri
 cron.schedule(
-  "1-59/5 * * * *",
+  "1-51/10 * * * *",
   async () => {
     try {
       const result = await notifySessions();
@@ -156,4 +156,4 @@ cron.schedule(
   { timezone: "UTC" }
 );
 
-console.log("[cron] scheduled: full sync @00/06/12/18 UTC, session notify @:01/06/11..., session sync @:02/04/06..., status refresh @:03/13/23..., post-race refresh @:15/:45");
+console.log("[cron] scheduled: full sync @00/06/12/18 UTC, session notify @:01/11/21..., session sync @:02/04/06..., status refresh @:03/13/23..., post-race refresh @:15/:45");
