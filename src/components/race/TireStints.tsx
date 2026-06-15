@@ -7,7 +7,7 @@ const COMPOUND_STYLES: Record<TireCompound, { bg: string; label: string; text: s
   HARD: { bg: "bg-zinc-300 dark:bg-zinc-500", label: "H", text: "text-black dark:text-white" },
   INTERMEDIATE: { bg: "bg-green-500", label: "I", text: "text-white" },
   WET: { bg: "bg-blue-500", label: "W", text: "text-white" },
-  UNKNOWN: { bg: "bg-zinc-600", label: "?", text: "text-white" },
+  UNKNOWN: { bg: "bg-zinc-600", label: "", text: "text-white" },
 };
 
 interface Props {
