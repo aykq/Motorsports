@@ -93,6 +93,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 <body style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif">
   <div style="padding:40px 16px">
     <div style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.08)">
+      <div style="height:4px;background:#dc2626"></div>
       <div style="background:#0f172a;padding:28px 32px">
         <div style="font-size:22px;font-weight:900;color:#ffffff;letter-spacing:-0.5px">MSHub</div>
         <div style="font-size:12px;color:#94a3b8;margin-top:3px">Motorsports takip platformu</div>
