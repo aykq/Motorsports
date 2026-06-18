@@ -86,25 +86,36 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           ? `Hesabınıza giriş yapmak için aşağıdaki bağlantıya tıklayın:\n\n${url}\n\nBağlantı 24 saat geçerlidir.`
           : `Hesabınız onaylandı. Giriş yapmak için aşağıdaki bağlantıya tıklayın:\n\n${url}\n\nBağlantı 24 saat geçerlidir.`;
 
+        const footerNote = "Bu bağlantı 24 saat geçerlidir. Eğer bu isteği siz yapmadıysanız görmezden gelebilirsiniz.";
+        const html = `<!DOCTYPE html>
+<html lang="tr">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif">
+  <div style="padding:40px 16px">
+    <div style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.08)">
+      <div style="background:#0f172a;padding:28px 32px">
+        <div style="font-size:22px;font-weight:900;color:#ffffff;letter-spacing:-0.5px">MSHub</div>
+        <div style="font-size:12px;color:#94a3b8;margin-top:3px">Motorsports takip platformu</div>
+      </div>
+      <div style="padding:36px 32px">
+        <h2 style="font-size:20px;font-weight:700;color:#0f172a;margin:0 0 12px;line-height:1.3">${heading}</h2>
+        <p style="font-size:14px;color:#475569;line-height:1.7;margin:0 0 32px">${body}</p>
+        <a href="${url}" style="display:inline-block;background:#0f172a;color:#ffffff;padding:13px 28px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;letter-spacing:0.01em">Giriş Yap</a>
+      </div>
+      <div style="padding:20px 32px;border-top:1px solid #f1f5f9">
+        <p style="font-size:11px;color:#94a3b8;margin:0;line-height:1.6">${footerNote}</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+
         await transport.sendMail({
           to: email,
           from: provider.from,
           subject,
           text: textBody,
-          html: `
-            <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px">
-              <h1 style="font-size:24px;font-weight:900;margin:0 0 8px">MSHub</h1>
-              <p style="color:#6b7280;margin:0 0 32px;font-size:14px">Motorsports takip platformu</p>
-              <h2 style="font-size:18px;font-weight:700;margin:0 0 12px">${heading}</h2>
-              <p style="color:#374151;font-size:14px;margin:0 0 24px">${body}</p>
-              <a href="${url}" style="display:inline-block;background:#000;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600">
-                Giriş Yap
-              </a>
-              <p style="color:#9ca3af;font-size:12px;margin:24px 0 0">
-                Bu bağlantı 24 saat geçerlidir. Eğer bu isteği siz yapmadıysanız görmezden gelebilirsiniz.
-              </p>
-            </div>
-          `,
+          html,
         });
       },
     }),
