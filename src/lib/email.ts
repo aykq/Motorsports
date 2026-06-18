@@ -23,6 +23,9 @@ function buildEmailHtml(heading: string, body: string, buttonText: string, butto
   <div style="padding:40px 16px">
     <div style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.08)">
 
+      <!-- Accent stripe -->
+      <div style="height:4px;background:#dc2626"></div>
+
       <!-- Header -->
       <div style="background:#0f172a;padding:28px 32px">
         <div style="font-size:22px;font-weight:900;color:#ffffff;letter-spacing:-0.5px">MSHub</div>
