@@ -70,19 +70,33 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       sendVerificationRequest: async ({ identifier: email, url, provider }) => {
         const { createTransport } = await import("nodemailer");
         const transport = createTransport(provider.server as object);
+
+        const existingUser = await db.query.users.findFirst({
+          where: eq(users.email, email),
+          columns: { status: true },
+        });
+        const isReturning = existingUser?.status === "approved";
+
+        const subject = isReturning ? "MSHub — Giriş Bağlantınız" : "MSHub — Hesabınız Onaylandı";
+        const heading = isReturning ? "Giriş Yapın" : "Hesabınız Onaylandı";
+        const body = isReturning
+          ? "Hesabınıza giriş yapmak için aşağıdaki butona tıklayın."
+          : "Hesabınız onaylandı. Aşağıdaki butona tıklayarak giriş yapabilirsiniz.";
+        const textBody = isReturning
+          ? `Hesabınıza giriş yapmak için aşağıdaki bağlantıya tıklayın:\n\n${url}\n\nBağlantı 24 saat geçerlidir.`
+          : `Hesabınız onaylandı. Giriş yapmak için aşağıdaki bağlantıya tıklayın:\n\n${url}\n\nBağlantı 24 saat geçerlidir.`;
+
         await transport.sendMail({
           to: email,
           from: provider.from,
-          subject: "MSHub — Hesabınız Onaylandı",
-          text: `Hesabınız onaylandı. Giriş yapmak için aşağıdaki bağlantıya tıklayın:\n\n${url}\n\nBağlantı 24 saat geçerlidir.`,
+          subject,
+          text: textBody,
           html: `
             <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px">
               <h1 style="font-size:24px;font-weight:900;margin:0 0 8px">MSHub</h1>
               <p style="color:#6b7280;margin:0 0 32px;font-size:14px">Motorsports takip platformu</p>
-              <h2 style="font-size:18px;font-weight:700;margin:0 0 12px">Hesabınız Onaylandı</h2>
-              <p style="color:#374151;font-size:14px;margin:0 0 24px">
-                Hesabınız onaylandı. Aşağıdaki butona tıklayarak giriş yapabilirsiniz.
-              </p>
+              <h2 style="font-size:18px;font-weight:700;margin:0 0 12px">${heading}</h2>
+              <p style="color:#374151;font-size:14px;margin:0 0 24px">${body}</p>
               <a href="${url}" style="display:inline-block;background:#000;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600">
                 Giriş Yap
               </a>
