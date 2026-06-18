@@ -1,19 +1,13 @@
-import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { users, accounts } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-
-function isAdmin(email?: string | null) {
-  return !!email && email === process.env.ADMIN_EMAIL;
-}
+import { requireAdmin } from "@/lib/admin-guard";
 
 export async function GET() {
-  const session = await auth();
-  if (!isAdmin(session?.user?.email)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const adminId = await requireAdmin();
+  if (!adminId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const [userRows, accountRows] = await Promise.all([
     db.select().from(users).orderBy(users.createdAt),
@@ -33,10 +27,8 @@ const ActionSchema = z.object({
 });
 
 export async function POST(req: Request) {
-  const session = await auth();
-  if (!isAdmin(session?.user?.email)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const adminId = await requireAdmin();
+  if (!adminId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const parsed = ActionSchema.safeParse(await req.json());
   if (!parsed.success) {

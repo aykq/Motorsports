@@ -24,6 +24,7 @@ export const users = pgTable("user", {
   language: text("language"), // 'tr' | 'en' — null means use browser default
   theme: text("theme"), // 'light' | 'dark' | 'system' — null means use browser default
   status: text("status").default("pending").notNull(), // 'pending' | 'approved' | 'blocked'
+  role: text("role").default("user").notNull(), // 'user' | 'admin'
 });
 
 export const accounts = pgTable(

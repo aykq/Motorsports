@@ -1,21 +1,19 @@
 "use server";
 
-import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { cachedRaceDetails, cachedRaces } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { syncSeries } from "@/lib/sync";
 import { sendPushToSubscribers } from "@/lib/push";
+import { requireAdmin } from "@/lib/admin-guard";
 
-async function requireAdmin() {
-  const session = await auth();
-  if (session?.user?.email !== process.env.ADMIN_EMAIL) {
-    throw new Error("Unauthorized");
-  }
+async function checkAdmin() {
+  const adminId = await requireAdmin();
+  if (!adminId) throw new Error("Unauthorized");
 }
 
 export async function syncSeriesAction(slug: string): Promise<{ ok: boolean; message: string }> {
-  await requireAdmin();
+  await checkAdmin();
   const year = new Date().getFullYear();
   try {
     const result = await syncSeries(slug, year);
@@ -30,7 +28,7 @@ export async function clearRaceDetailAction(
   slug: string,
   round: number
 ): Promise<{ ok: boolean; message: string }> {
-  await requireAdmin();
+  await checkAdmin();
   const year = new Date().getFullYear();
   try {
     await db
@@ -53,7 +51,7 @@ export async function sendTestNotifAction(
   title: string,
   body: string
 ): Promise<{ ok: boolean; message: string }> {
-  await requireAdmin();
+  await checkAdmin();
   try {
     await sendPushToSubscribers(slug, { title, body, url: `/${slug}` });
     return { ok: true, message: `Notification sent to ${slug} subscribers` };
@@ -63,7 +61,7 @@ export async function sendTestNotifAction(
 }
 
 export async function getLastSyncTimesAction(): Promise<Record<string, string | null>> {
-  await requireAdmin();
+  await checkAdmin();
   const rows = await db.query.cachedRaces.findMany();
   const bySlug: Record<string, Date | null> = {};
   for (const row of rows) {

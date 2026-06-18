@@ -1,10 +1,10 @@
-import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { users, accounts } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { verifyApprovalToken } from "@/lib/admin-token";
 import { ApproveActions } from "./ApproveActions";
+import { requireAdmin } from "@/lib/admin-guard";
 
 interface Props {
   searchParams: Promise<{ token?: string }>;
@@ -27,9 +27,8 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export default async function AdminApprovePage({ searchParams }: Props) {
-  const session = await auth();
-  if (!session) redirect("/login");
-  if (session.user?.email !== process.env.ADMIN_EMAIL) redirect("/");
+  const adminId = await requireAdmin();
+  if (!adminId) redirect("/");
 
   const { token } = await searchParams;
   if (!token) return <ErrorPage message="Token eksik." />;

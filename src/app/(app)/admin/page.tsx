@@ -1,5 +1,5 @@
-import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { requireAdmin } from "@/lib/admin-guard";
 import { db } from "@/db";
 import { cachedRaces, users, accounts } from "@/db/schema";
 import { max } from "drizzle-orm";
@@ -35,11 +35,8 @@ async function getInitialUsers() {
 }
 
 export default async function AdminPage() {
-  const session = await auth();
-
-  if (!session?.user?.email || session.user.email !== process.env.ADMIN_EMAIL) {
-    redirect("/");
-  }
+  const adminId = await requireAdmin();
+  if (!adminId) redirect("/");
 
   const [lastSyncTimes, initialUsers] = await Promise.all([
     getLastSyncTimes(),

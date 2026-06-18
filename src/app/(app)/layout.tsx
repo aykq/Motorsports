@@ -32,11 +32,12 @@ export default async function AppLayout({
   const userPrefs = session.user?.id
     ? await db.query.users.findFirst({
         where: eq(users.id, session.user.id),
-        columns: { language: true, theme: true, status: true },
+        columns: { language: true, theme: true, status: true, role: true },
       })
     : null;
 
   if (!userPrefs) redirect("/login");
+  if (userPrefs.status === "blocked") redirect("/blocked");
   if (userPrefs.status !== "approved") redirect("/pending");
 
   return (
@@ -48,12 +49,12 @@ export default async function AppLayout({
       />
       <Sidebar
         user={{ name: session.user?.name, email: session.user?.email, image: session.user?.image }}
-        isAdmin={session.user?.email === process.env.ADMIN_EMAIL}
+        isAdmin={userPrefs.role === "admin"}
       />
       <main className="flex-1 min-w-0 pb-16 md:pb-0">
         <PageTransitionWrapper>{children}</PageTransitionWrapper>
       </main>
-      <BottomNav isAdmin={session.user?.email === process.env.ADMIN_EMAIL} />
+      <BottomNav isAdmin={userPrefs.role === "admin"} />
       <InstallPrompt />
       {DevSyncPanel && <DevSyncPanel />}
     </div>

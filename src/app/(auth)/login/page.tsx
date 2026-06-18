@@ -8,6 +8,7 @@ import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
 import { LoginError } from "./LoginError";
 import { MagicLinkForm } from "./MagicLinkForm";
+import { getPendingUserId } from "@/lib/pending-cookie";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("settings");
@@ -21,6 +22,9 @@ export default async function LoginPage({
 }) {
   const session = await auth();
   if (session) redirect("/");
+
+  const pendingUserId = await getPendingUserId();
+  if (pendingUserId) redirect("/pending");
 
   const params = await searchParams;
   const t = await getTranslations("login");
@@ -78,7 +82,7 @@ export default async function LoginPage({
                 action={async (formData: FormData) => {
                   "use server";
                   const email = formData.get("email") as string;
-                  await signIn("credentials", { email, redirectTo: "/" });
+                  await signIn("dev-credentials", { email, redirectTo: "/" });
                 }}
                 className="space-y-3"
               >

@@ -11,7 +11,7 @@ interface NewUserNotificationData {
 
 const PROVIDER_LABELS: Record<string, string> = {
   google: "Google OAuth",
-  resend: "E-posta (Magic Link)",
+  nodemailer: "E-posta (Magic Link)",
 };
 
 export async function sendNewUserDiscordNotification(data: NewUserNotificationData) {

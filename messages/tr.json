@@ -69,14 +69,25 @@
     "or": "veya",
     "devLogin": "Dev Login (şifresiz)",
     "linkSent": "Link gönderildi, gelen kutunuzu kontrol edin.",
+    "awaitingApproval": "Onay Bekleniyor",
+    "redirecting": "Yönlendiriliyorsunuz...",
     "error": "Bir hata oluştu. Lütfen tekrar deneyin.",
-    "blocked": "Bu hesaba erişim engellendi."
+    "blocked": "Bu hesaba erişim engellendi.",
+    "rateLimited": "Çok fazla deneme. Lütfen bir süre bekleyin."
   },
   "pending": {
     "title": "Onay Bekleniyor",
     "description": "Hesabınız inceleniyor. Onaylandığında otomatik olarak yönlendirileceksiniz.",
     "emailNote": "Onaylandığında e-posta adresinize de bildirim gönderilecek.",
     "signOut": "Çıkış Yap"
+  },
+  "blocked": {
+    "title": "Hesap Engellendi",
+    "subtitle": "Hesabınıza erişim engellendi.",
+    "waitingUnblock": "Engel kaldırılırsa otomatik yönlendirileceksiniz."
+  },
+  "signout": {
+    "loading": "Çıkış yapılıyor..."
   },
   "seriesPage": {
     "nextRound": "Sonraki Tur",
