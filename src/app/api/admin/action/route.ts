@@ -1,11 +1,13 @@
-import { auth } from "@/lib/auth";
+import { signIn } from "@/lib/auth";
+import { requireAdmin } from "@/lib/admin-guard";
 import { verifyApprovalToken } from "@/lib/admin-token";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { sendApprovalEmail } from "@/lib/email";
+import { sendUnblockedEmail } from "@/lib/email";
+import { broadcastUserStatus } from "@/lib/sse";
 
 const BodySchema = z.object({
   token: z.string(),
@@ -13,10 +15,8 @@ const BodySchema = z.object({
 });
 
 export async function POST(req: Request) {
-  const session = await auth();
-  if (!session?.user?.email || session.user.email !== process.env.ADMIN_EMAIL) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const adminId = await requireAdmin();
+  if (!adminId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const parsed = BodySchema.safeParse(await req.json());
   if (!parsed.success) {
@@ -31,15 +31,25 @@ export async function POST(req: Request) {
   }
 
   if (action === "approve") {
-    const [updated] = await db
+    const current = await db.query.users.findFirst({
+      where: eq(users.id, payload.userId),
+      columns: { email: true, status: true },
+    });
+
+    await db
       .update(users)
       .set({ status: "approved" })
-      .where(eq(users.id, payload.userId))
-      .returning({ email: users.email, name: users.name });
+      .where(eq(users.id, payload.userId));
 
-    if (updated?.email) {
+    broadcastUserStatus(payload.userId, { status: "approved" });
+
+    if (current?.email) {
       try {
-        await sendApprovalEmail(updated.email, updated.name);
+        if (current.status === "blocked") {
+          await sendUnblockedEmail(current.email);
+        } else {
+          await signIn("nodemailer", { email: current.email, redirect: false, callbackUrl: "/" });
+        }
       } catch (err) {
         console.error("Approval email failed:", err);
       }
@@ -47,7 +57,12 @@ export async function POST(req: Request) {
   } else if (action === "reject") {
     await db.delete(users).where(eq(users.id, payload.userId));
   } else {
-    await db.update(users).set({ status: "blocked" }).where(eq(users.id, payload.userId));
+    await db
+      .update(users)
+      .set({ status: "blocked" })
+      .where(eq(users.id, payload.userId));
+
+    broadcastUserStatus(payload.userId, { status: "blocked" });
   }
 
   return NextResponse.json({ ok: true });

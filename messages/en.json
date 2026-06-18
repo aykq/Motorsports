@@ -69,14 +69,25 @@
     "or": "or",
     "devLogin": "Dev Login (no password)",
     "linkSent": "Link sent, check your inbox.",
+    "awaitingApproval": "Awaiting Approval",
+    "redirecting": "Redirecting you...",
     "error": "Something went wrong. Please try again.",
-    "blocked": "Access to this account has been denied."
+    "blocked": "Access to this account has been denied.",
+    "rateLimited": "Too many attempts. Please wait a moment."
   },
   "pending": {
     "title": "Awaiting Approval",
     "description": "Your account is under review. You will be redirected automatically once approved.",
     "emailNote": "You will also receive an email notification when your account is approved.",
     "signOut": "Sign Out"
+  },
+  "blocked": {
+    "title": "Account Blocked",
+    "subtitle": "Access to your account has been blocked.",
+    "waitingUnblock": "You will be redirected automatically if the block is lifted."
+  },
+  "signout": {
+    "loading": "Signing out..."
   },
   "seriesPage": {
     "nextRound": "Next Round",

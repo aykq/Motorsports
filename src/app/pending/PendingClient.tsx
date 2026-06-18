@@ -1,36 +1,91 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
-import { signOut } from "next-auth/react";
+import { signIn, signOut } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 
 interface PendingClientProps {
+  hasSession: boolean;
+  userId: string;
   userName: string | null;
   userEmail: string | null;
 }
 
-export function PendingClient({ userName, userEmail }: PendingClientProps) {
+function clearPendingCookie() {
+  document.cookie = "mshub-pending=; max-age=0; path=/";
+}
+
+export function PendingClient({ hasSession, userId, userName, userEmail }: PendingClientProps) {
   const router = useRouter();
   const t = useTranslations("pending");
-
-  const { data } = useQuery({
-    queryKey: ["me-status"],
-    queryFn: async () => {
-      const res = await fetch("/api/me/status");
-      return res.json() as Promise<{ status: string }>;
-    },
-    refetchInterval: 5000,
-    retry: false,
-  });
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    if (data?.status === "approved") router.push("/");
-    if (data?.status === "blocked") signOut({ callbackUrl: "/login?error=AccessDenied" });
-  }, [data, router]);
+    async function handleApproved() {
+      if (hasSession) {
+        router.push("/");
+      } else {
+        const result = await signIn("pending-approval", { userId, redirect: false });
+        if (result && !result.error) {
+          clearPendingCookie();
+          router.push("/");
+        }
+      }
+    }
+
+    function handleBlocked() {
+      if (hasSession) {
+        signOut({ callbackUrl: "/blocked" });
+      } else {
+        clearPendingCookie();
+        window.location.href = "/login?error=AccessDenied";
+      }
+    }
+
+    // SSE stream
+    const es = new EventSource("/api/me/approval-stream");
+    es.onmessage = async (event) => {
+      const data = JSON.parse(event.data as string) as { status: string };
+      if (data.status === "approved") {
+        es.close();
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        await handleApproved();
+      }
+      if (data.status === "blocked") {
+        es.close();
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        handleBlocked();
+      }
+    };
+
+    // Fallback polling (5 saniye)
+    intervalRef.current = setInterval(async () => {
+      try {
+        const res = await fetch("/api/me/status");
+        const data = await res.json() as { status: string };
+        if (data.status === "approved") {
+          if (intervalRef.current) clearInterval(intervalRef.current);
+          es.close();
+          await handleApproved();
+        }
+        if (data.status === "blocked") {
+          if (intervalRef.current) clearInterval(intervalRef.current);
+          es.close();
+          handleBlocked();
+        }
+      } catch {
+        // network error — retry on next interval
+      }
+    }, 5000);
+
+    return () => {
+      es.close();
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [hasSession, userId, router]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
@@ -68,7 +123,10 @@ export function PendingClient({ userName, userEmail }: PendingClientProps) {
           variant="ghost"
           size="sm"
           className="text-muted-foreground"
-          onClick={() => signOut({ callbackUrl: "/login" })}
+          onClick={() => {
+            clearPendingCookie();
+            signOut({ callbackUrl: "/login" });
+          }}
         >
           {t("signOut")}
         </Button>

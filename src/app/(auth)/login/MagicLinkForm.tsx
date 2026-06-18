@@ -1,61 +1,50 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { CheckCircle2, Clock, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
+
+type State = "idle" | "loading" | "pending" | "email-sent" | "error" | "blocked" | "rate-limited";
 
 export function MagicLinkForm() {
   const t = useTranslations("login");
   const router = useRouter();
   const [email, setEmail] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [sent, setSent] = useState(false);
-  const [error, setError] = useState(false);
-
-  const { data: statusData } = useQuery({
-    queryKey: ["auth-status", email],
-    queryFn: async () => {
-      const res = await fetch(`/api/auth-status?email=${encodeURIComponent(email)}`);
-      return res.json() as Promise<{ status: string; autoLoginToken?: string }>;
-    },
-    enabled: sent && !!email,
-    refetchInterval: 5000,
-    retry: false,
-  });
-
-  useEffect(() => {
-    if (!statusData?.autoLoginToken) return;
-    router.push(`/api/auth/auto-login?token=${encodeURIComponent(statusData.autoLoginToken)}`);
-  }, [statusData, router]);
+  const [state, setState] = useState<State>("idle");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email) return;
-    setLoading(true);
-    setError(false);
+    setState("loading");
     try {
       const res = await fetch("/api/send-magic-link", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
-      if (!res.ok) {
-        setError(true);
+      const data = await res.json() as { ok?: boolean; status?: string; error?: string };
+      if (res.status === 429) {
+        setState("rate-limited");
+        return;
+      }
+      if (!res.ok || !data.ok) {
+        setState(data.error === "blocked" ? "blocked" : "error");
+        return;
+      }
+      if (data.status === "pending") {
+        router.push("/pending");
       } else {
-        setSent(true);
+        setState("email-sent");
       }
     } catch {
-      setError(true);
-    } finally {
-      setLoading(false);
+      setState("error");
     }
   }
 
-  if (sent) {
+  if (state === "email-sent") {
     return (
       <div className="flex flex-col items-center gap-3 py-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
         <div className="rounded-full bg-green-500/10 p-3">
@@ -64,6 +53,20 @@ export function MagicLinkForm() {
         <div className="text-center space-y-0.5">
           <p className="text-sm font-medium">{t("linkSent")}</p>
           <p className="text-xs text-muted-foreground">{email}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (state === "pending") {
+    return (
+      <div className="flex flex-col items-center gap-3 py-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+        <div className="rounded-full bg-muted p-3">
+          <Clock className="h-6 w-6 text-muted-foreground" />
+        </div>
+        <div className="text-center space-y-0.5">
+          <p className="text-sm font-medium">{t("awaitingApproval")}</p>
+          <p className="text-xs text-muted-foreground">{t("redirecting")}</p>
         </div>
       </div>
     );
@@ -78,11 +81,19 @@ export function MagicLinkForm() {
         onChange={(e) => setEmail(e.target.value)}
         required
         autoComplete="email"
-        disabled={loading}
+        disabled={state === "loading"}
       />
-      {error && <p className="text-xs text-destructive text-center">{t("error")}</p>}
-      <Button type="submit" className="w-full" disabled={loading || !email}>
-        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : t("magicLink")}
+      {state === "error" && (
+        <p className="text-xs text-destructive text-center">{t("error")}</p>
+      )}
+      {state === "blocked" && (
+        <p className="text-xs text-destructive text-center">{t("blocked")}</p>
+      )}
+      {state === "rate-limited" && (
+        <p className="text-xs text-destructive text-center">{t("rateLimited")}</p>
+      )}
+      <Button type="submit" className="w-full" disabled={state === "loading" || !email}>
+        {state === "loading" ? <Loader2 className="h-4 w-4 animate-spin" /> : t("magicLink")}
       </Button>
     </form>
   );
