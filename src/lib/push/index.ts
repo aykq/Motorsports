@@ -18,13 +18,14 @@ export interface PushPayload {
 
 export async function sendPushToSubscribers(
   seriesSlug: string,
-  sessionType: string,
+  sessionType: string | null,
   payload: PushPayload
 ): Promise<{ sent: number; failed: number }> {
   const subs = await db.query.pushSubscriptions.findMany();
 
   const targets = subs.filter((s) => {
     if (!s.seriesEnabled.includes(seriesSlug)) return false;
+    if (sessionType === null) return true; // bypass filter for manual sends
     const prefs = (s.sessionPreferences as Record<string, string[]> | null) ?? {};
     const allowed = prefs[seriesSlug] ?? DEFAULT_SESSION_TYPES;
     return allowed.includes(sessionType);

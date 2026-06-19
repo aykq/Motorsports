@@ -53,7 +53,7 @@ export async function sendTestNotifAction(
 ): Promise<{ ok: boolean; message: string }> {
   await checkAdmin();
   try {
-    await sendPushToSubscribers(slug, { title, body, url: `/${slug}` });
+    await sendPushToSubscribers(slug, null, { title, body, url: `/${slug}` });
     return { ok: true, message: `Notification sent to ${slug} subscribers` };
   } catch (err) {
     return { ok: false, message: String(err) };

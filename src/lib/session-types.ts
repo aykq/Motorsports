@@ -26,6 +26,7 @@ export const SESSION_TYPES_BY_SERIES: Record<string, SessionTypeId[]> = {
   moto2:        ["practice1", "practice2", "qualifying", "race"],
   moto3:        ["practice1", "practice2", "qualifying", "race"],
   gt3:          ["practice1", "qualifying", "race"],
+  gt4:          ["practice1", "qualifying", "sprint", "race"],
   "carrera-cup":["practice1", "qualifying", "race"],
 };
 

@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   if (!parsed.success) return NextResponse.json({ error: "Invalid body" }, { status: 400 });
 
   const { seriesSlug, title, body, url } = parsed.data;
-  const result = await sendPushToSubscribers(seriesSlug, { title, body, url });
+  const result = await sendPushToSubscribers(seriesSlug, null, { title, body, url });
 
   return NextResponse.json(result);
 }
