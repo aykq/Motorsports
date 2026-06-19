@@ -295,31 +295,99 @@ export async function scrapeGT4TeamStandings(): Promise<Standing[]> {
   return [];
 }
 
-// ─── Driver list ──────────────────────────────────────────────────────────────
+// ─── Driver list (scraped from team pages) ────────────────────────────────────
+
+function parseGT4TeamPage(
+  $: cheerio.CheerioAPI,
+  teamName: string,
+  teamId: string,
+): Driver[] {
+  const drivers: Driver[] = [];
+  let currentCarNo = 0;
+
+  $(".team-members__car-container").each((_, container) => {
+    const $c = $(container);
+    const carNoText = $c.find(".team-members__car-number").first().text().trim();
+    currentCarNo = parseInt(carNoText, 10) || 0;
+
+    $c.find("a.team-members__list-link").each((_, link) => {
+      const $link = $(link);
+      const name  = $link.find("h3.team-members__name").text().trim();
+      if (!name) return;
+
+      const href       = $link.attr("href") ?? "";
+      const id         = href.split("/").filter(Boolean).pop() ?? toSlug(name);
+      const imgSrc     = $link.find("img.team-members__image").attr("src") ?? "";
+      const photoMatch = imgSrc.match(/photo_(\d+)\./);
+      const image      = photoMatch
+        ? `${BASE_URL}/images/drivers/photo_${photoMatch[1]}.png`
+        : undefined;
+
+      const [firstName = "", ...rest] = name.split(" ");
+      const lastName = rest.join(" ");
+      if (!lastName) return;
+
+      drivers.push({
+        id,
+        firstName,
+        lastName,
+        nationality: "",
+        number: currentCarNo,
+        team:   teamName,
+        teamId,
+        ...(image ? { image } : {}),
+      });
+    });
+  });
+
+  return drivers;
+}
 
 export async function scrapeGT4DriverList(): Promise<Driver[]> {
-  try {
-    const html = await fetchGT4Page(`${BASE_URL}/standings?filter_standing_type=0_0_drivers`);
-    const $    = cheerio.load(html);
-    const drivers: Driver[] = [];
-    const seen = new Set<string>();
+  // Collect team hrefs from team standings
+  const html = await fetchGT4Page(`${BASE_URL}/standings?filter_standing_type=0_0_teams`);
+  const $ts  = cheerio.load(html);
 
-    $("table.standing tbody tr").each((_, row) => {
-      const cells = $(row).find("td");
-      if (cells.length < 3) return;
-      const link = $(cells[1]).find("a[href*='/driver/']").first();
-      if (!link.length) return;
-      const name = link.text().trim();
-      if (!name) return;
-      const id = link.attr("href")?.split("/").filter(Boolean).pop() ?? toSlug(name);
-      if (seen.has(id)) return;
-      seen.add(id);
-      const [firstName = "", ...rest] = name.split(" ");
-      drivers.push({ id, firstName, lastName: rest.join(" "), nationality: "" });
-    });
+  const teamRefs: Array<{ name: string; href: string }> = [];
+  const hrefSeen = new Set<string>();
 
-    return drivers;
-  } catch {
-    return [];
+  $ts("a[href*='/team/']").each((_, link) => {
+    const href = $ts(link).attr("href")?.trim() ?? "";
+    const name = $ts(link).text().trim();
+    if (href && name && !hrefSeen.has(href)) {
+      hrefSeen.add(href);
+      teamRefs.push({ name, href });
+    }
+  });
+
+  if (teamRefs.length === 0) return [];
+
+  // Fetch team pages in parallel batches of 5
+  const toFetch = teamRefs.slice(0, 30);
+  const BATCH   = 5;
+  const allDrivers: Driver[] = [];
+  const driverSeen = new Set<string>();
+
+  for (let i = 0; i < toFetch.length; i += BATCH) {
+    const batch   = toFetch.slice(i, i + BATCH);
+    const results = await Promise.allSettled(
+      batch.map(async ({ name, href }) => {
+        const teamId = href.split("/").filter(Boolean).pop() ?? toSlug(name);
+        const page   = await fetchGT4Page(`${BASE_URL}${href}`);
+        const $      = cheerio.load(page);
+        return parseGT4TeamPage($, name, teamId);
+      })
+    );
+    for (const r of results) {
+      if (r.status !== "fulfilled") continue;
+      for (const d of r.value) {
+        if (!driverSeen.has(d.id)) {
+          driverSeen.add(d.id);
+          allDrivers.push(d);
+        }
+      }
+    }
   }
+
+  return allDrivers;
 }
