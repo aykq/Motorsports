@@ -57,6 +57,7 @@ export interface Driver {
   teamId?: string;
   image?: string;
   standingsPosition?: number;
+  category?: string;
 }
 
 export interface Team {
