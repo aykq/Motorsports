@@ -121,6 +121,7 @@ export default async function DriversListPage({ params, searchParams }: Props) {
             <Link
               key={c}
               href={`/${slug}/drivers?cls=${encodeURIComponent(c)}`}
+              replace
               className={cn(
                 "flex-1 text-center text-xs font-semibold py-1.5 rounded-lg transition-colors",
                 activeClass === c
