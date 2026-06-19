@@ -203,22 +203,20 @@ function parseTeamRoster(
   const drivers: Driver[] = [];
   let currentCarNo = 0;
 
-  // Walk h3 (car markers) and .driver elements in document order
-  $("h3, .driver").each((_, el) => {
-    const tag  = (el as { tagName?: string }).tagName?.toLowerCase() ?? "";
-    const $el  = $(el);
+  // Walk car-number spans and driver links in DOM order (SRO CMS structure)
+  $("span.team-members__car-number, a.team-members__list-link[href*='/driver/']").each((_, el) => {
+    const tag = (el as { tagName?: string }).tagName?.toLowerCase() ?? "";
+    const $el = $(el);
 
-    if (tag === "h3") {
-      const text = $el.text().trim();
-      const carMatch = text.match(/^Car\s*(\d+)$/i);
-      if (carMatch) currentCarNo = parseInt(carMatch[1], 10);
+    if (tag === "span") {
+      currentCarNo = parseInt($el.text().trim(), 10) || currentCarNo;
     } else {
-      if (currentCarNo === 0) return;
+      const href = $el.attr("href") ?? "";
+      const name = $el.find("h3.team-members__name").text().trim();
+      if (!name) return;
 
-      const name = $el.find("h3").first().text().trim();
-      if (!name || /Car\s*\d+|GT World|Challenge|Cup|Sprint|Endurance|Season/i.test(name)) return;
-
-      const imgSrc     = $el.find("img").attr("src") ?? "";
+      const id         = href.split("/").filter(Boolean).pop() ?? toSlug(name);
+      const imgSrc     = $el.find("img.team-members__image").attr("src") ?? "";
       const photoMatch = imgSrc.match(/photo_(\d+)\./);
       const image      = photoMatch
         ? `${BASE_URL}/images/drivers/photo_${photoMatch[1]}.png`
@@ -226,10 +224,10 @@ function parseTeamRoster(
 
       const [firstName = "", ...rest] = name.split(" ");
       const lastName = rest.join(" ");
-      if (!lastName) return; // skip single-word entries
+      if (!lastName) return;
 
       drivers.push({
-        id:          toSlug(name),
+        id,
         firstName,
         lastName,
         nationality: "",

@@ -305,19 +305,20 @@ function parseGT4TeamPage(
   const drivers: Driver[] = [];
   let currentCarNo = 0;
 
-  $(".team-members__car-container").each((_, container) => {
-    const $c = $(container);
-    const carNoText = $c.find(".team-members__car-number").first().text().trim();
-    currentCarNo = parseInt(carNoText, 10) || 0;
+  // Walk car-number spans and driver links in DOM order (SRO CMS structure)
+  $("span.team-members__car-number, a.team-members__list-link[href*='/driver/']").each((_, el) => {
+    const tag = (el as { tagName?: string }).tagName?.toLowerCase() ?? "";
+    const $el = $(el);
 
-    $c.find("a.team-members__list-link").each((_, link) => {
-      const $link = $(link);
-      const name  = $link.find("h3.team-members__name").text().trim();
+    if (tag === "span") {
+      currentCarNo = parseInt($el.text().trim(), 10) || currentCarNo;
+    } else {
+      const href = $el.attr("href") ?? "";
+      const name = $el.find("h3.team-members__name").text().trim();
       if (!name) return;
 
-      const href       = $link.attr("href") ?? "";
       const id         = href.split("/").filter(Boolean).pop() ?? toSlug(name);
-      const imgSrc     = $link.find("img.team-members__image").attr("src") ?? "";
+      const imgSrc     = $el.find("img.team-members__image").attr("src") ?? "";
       const photoMatch = imgSrc.match(/photo_(\d+)\./);
       const image      = photoMatch
         ? `${BASE_URL}/images/drivers/photo_${photoMatch[1]}.png`
@@ -337,7 +338,7 @@ function parseGT4TeamPage(
         teamId,
         ...(image ? { image } : {}),
       });
-    });
+    }
   });
 
   return drivers;
