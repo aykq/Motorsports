@@ -2,6 +2,7 @@ import webpush from "web-push";
 import { db } from "@/db";
 import { pushSubscriptions } from "@/db/schema";
 import { inArray } from "drizzle-orm";
+import { DEFAULT_SESSION_TYPES } from "@/lib/session-types";
 
 webpush.setVapidDetails(
   process.env.VAPID_EMAIL!,
@@ -17,10 +18,17 @@ export interface PushPayload {
 
 export async function sendPushToSubscribers(
   seriesSlug: string,
+  sessionType: string,
   payload: PushPayload
 ): Promise<{ sent: number; failed: number }> {
   const subs = await db.query.pushSubscriptions.findMany();
-  const targets = subs.filter((s) => s.seriesEnabled.includes(seriesSlug));
+
+  const targets = subs.filter((s) => {
+    if (!s.seriesEnabled.includes(seriesSlug)) return false;
+    const prefs = (s.sessionPreferences as Record<string, string[]> | null) ?? {};
+    const allowed = prefs[seriesSlug] ?? DEFAULT_SESSION_TYPES;
+    return allowed.includes(sessionType);
+  });
 
   let sent = 0;
   let failed = 0;

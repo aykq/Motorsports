@@ -2,6 +2,11 @@
 
 import { useNotifications } from "@/hooks/use-notifications";
 import { SERIES_LIST } from "@/lib/series-config";
+import {
+  getSessionTypesForSeries,
+  getSessionTypeConfig,
+  DEFAULT_SESSION_TYPES,
+} from "@/lib/session-types";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Bell, BellOff, BellRing } from "lucide-react";
@@ -16,10 +21,12 @@ export function NotificationSettings() {
     isSecureContext,
     isSubscribed,
     enabledSeries,
+    sessionPreferences,
     requestPermission,
     subscribe,
     unsubscribe,
     toggleSeries,
+    toggleSessionType,
   } = useNotifications();
 
   if (!isSupported) {
@@ -43,7 +50,7 @@ export function NotificationSettings() {
     await subscribe();
   };
 
-  const availableSeries = SERIES_LIST.filter((s) => s.available);
+  const availableSeries = SERIES_LIST.filter((s) => s.available && !s.hidden);
 
   return (
     <section className="rounded-xl bg-card border border-border p-4 space-y-4">
@@ -72,23 +79,58 @@ export function NotificationSettings() {
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">{t("seriesQuestion")}</p>
 
-          <div className="space-y-3">
-            {availableSeries.map((series) => (
-              <div key={series.slug} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-2.5 h-2.5 rounded-full"
-                    style={{ backgroundColor: series.color }}
-                  />
-                  <span className="text-sm font-medium">{series.name}</span>
+          <div className="space-y-2">
+            {availableSeries.map((series) => {
+              const isSeriesEnabled = enabledSeries.includes(series.slug);
+              const sessionTypes = getSessionTypesForSeries(series.slug);
+              const enabledTypes = sessionPreferences[series.slug] ?? [...DEFAULT_SESSION_TYPES];
+
+              return (
+                <div key={series.slug} className="rounded-lg border border-border overflow-hidden">
+                  {/* Seri başlığı ve toggle */}
+                  <div className="flex items-center justify-between px-3 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-2.5 h-2.5 rounded-full shrink-0"
+                        style={{ backgroundColor: series.color }}
+                      />
+                      <span className="text-sm font-medium">{series.name}</span>
+                    </div>
+                    <Switch
+                      checked={isSeriesEnabled}
+                      onCheckedChange={() => toggleSeries(series.slug)}
+                      className="cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Seans tipi toggle'ları — sadece seri aktifken görünür */}
+                  {isSeriesEnabled && (
+                    <div className="border-t border-border bg-muted/30 px-3 py-2 space-y-1.5">
+                      {sessionTypes.map((typeId) => {
+                        const config = getSessionTypeConfig(typeId);
+                        if (!config) return null;
+                        return (
+                          <div
+                            key={typeId}
+                            className="flex items-center justify-between py-0.5"
+                          >
+                            <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+                              <span>{config.icon}</span>
+                              <span>{config.labelTr}</span>
+                            </span>
+                            <Switch
+                              checked={enabledTypes.includes(typeId)}
+                              onCheckedChange={() => toggleSessionType(series.slug, typeId)}
+                              className={cn("cursor-pointer scale-75 origin-right")}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-                <Switch
-                  checked={enabledSeries.includes(series.slug)}
-                  onCheckedChange={() => toggleSeries(series.slug)}
-                  className={cn("cursor-pointer")}
-                />
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <Button

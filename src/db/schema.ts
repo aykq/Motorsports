@@ -89,6 +89,10 @@ export const pushSubscriptions = pgTable("push_subscription", {
   endpoint: text("endpoint").notNull().unique(),
   keys: jsonb("keys").notNull(), // { p256dh, auth }
   seriesEnabled: text("series_enabled").array().default([]).notNull(),
+  sessionPreferences: jsonb("session_preferences")
+    .$type<Record<string, string[]>>()
+    .default({})
+    .notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

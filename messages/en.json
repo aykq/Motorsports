@@ -48,7 +48,8 @@
       "description": "Get notified 1 hour before, 15 minutes before, and at the start of practice, qualifying, sprint and race sessions.",
       "enable": "Enable Notifications",
       "disable": "Disable Notifications",
-      "seriesQuestion": "Which series do you want notifications for?"
+      "seriesQuestion": "Which series do you want notifications for?",
+      "sessionTypesLabel": "Session preferences"
     },
     "appearance": {
       "title": "Appearance",

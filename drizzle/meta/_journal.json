@@ -22,6 +22,13 @@
       "when": 1781031510396,
       "tag": "0002_legal_thanos",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1781866162860,
+      "tag": "0003_optimal_scarlet_witch",
+      "breakpoints": true
     }
   ]
 }
