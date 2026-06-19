@@ -127,7 +127,7 @@ export default async function TeamDetailPage({ params }: Props) {
                           alt={driver.lastName}
                           width={56}
                           height={56}
-                          className={`w-14 h-14 rounded-full object-cover object-[center_15%] bg-muted${config.driverImageBlend ? " mix-blend-multiply" : ""}`}
+                          className="w-14 h-14 rounded-full object-cover object-[center_15%] bg-muted"
                         />
                       ) : (
                         <div
