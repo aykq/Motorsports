@@ -126,6 +126,76 @@ export function SessionResultsSkeleton({ rows = 8 }: { rows?: number }) {
   );
 }
 
+export function DriverHeroSkeleton() {
+  return (
+    <div className="px-6 py-6 space-y-0">
+      <div className="flex items-center gap-4">
+        <Skeleton className="w-20 h-20 rounded-full shrink-0" />
+        <div className="space-y-2">
+          <Skeleton className="h-7 w-44" />
+          <div className="flex gap-2">
+            <Skeleton className="h-5 w-12 rounded" />
+            <Skeleton className="h-5 w-10" />
+            <Skeleton className="h-5 w-20" />
+          </div>
+          <Skeleton className="h-4 w-32" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function StatCardsSkeleton({ cols = 3 }: { cols?: number }) {
+  return (
+    <div className={`grid grid-cols-${cols} gap-3`}>
+      {Array.from({ length: cols }).map((_, i) => (
+        <div key={i} className="rounded-lg bg-card border border-border p-3 text-center space-y-1.5">
+          <Skeleton className="h-7 w-10 mx-auto" />
+          <Skeleton className="h-2.5 w-14 mx-auto" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function CrewCardSkeleton() {
+  return (
+    <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="flex items-center gap-3 px-4 py-2.5 border-b border-border/60">
+        <Skeleton className="w-10 h-6" />
+        <Skeleton className="h-5 w-5 rounded-sm" />
+        <Skeleton className="h-3 w-32" />
+      </div>
+      <div className="flex divide-x divide-border/50">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="flex-1 flex flex-col items-center gap-2 px-3 py-3">
+            <Skeleton className="w-14 h-14 rounded-full" />
+            <div className="space-y-1 w-full flex flex-col items-center">
+              <Skeleton className="h-3 w-16" />
+              <Skeleton className="h-2.5 w-12" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function TeamListItemSkeleton() {
+  return (
+    <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="flex items-center gap-3 px-3 py-3">
+        <Skeleton className="w-10 h-10 rounded-full shrink-0" />
+        <div className="flex-1 space-y-1.5">
+          <Skeleton className="h-4 w-36" />
+          <Skeleton className="h-3 w-24" />
+        </div>
+        <Skeleton className="w-12 h-4 shrink-0" />
+      </div>
+    </div>
+  );
+}
+
 export function WeatherSkeleton() {
   return (
     <div className="space-y-2">
