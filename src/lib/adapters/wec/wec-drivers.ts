@@ -199,17 +199,19 @@ function toId(firstName: string, lastName: string): string {
 
 export function getWECDrivers(season: number): Driver[] {
   if (season !== 2026) return [];
-  const entries = [...HYPERCAR_2026, ...LMGT3_2026];
-  return entries.flatMap((entry) =>
-    entry.drivers.map((d) => ({
-      id: toId(d.firstName, d.lastName),
-      firstName: d.firstName,
-      lastName: d.lastName,
-      nationality: d.nationality,
-      team: entry.team,
-      teamId: entry.teamId,
-      number: entry.carNo,
-      image: d.image,
-    }))
-  );
+  const mapEntries = (entries: WECEntry[], category: string) =>
+    entries.flatMap((entry) =>
+      entry.drivers.map((d) => ({
+        id: toId(d.firstName, d.lastName),
+        firstName: d.firstName,
+        lastName: d.lastName,
+        nationality: d.nationality,
+        team: entry.team,
+        teamId: entry.teamId,
+        number: entry.carNo,
+        image: d.image,
+        category,
+      }))
+    );
+  return [...mapEntries(HYPERCAR_2026, "Hypercar"), ...mapEntries(LMGT3_2026, "LMGT3")];
 }
