@@ -127,7 +127,8 @@ export default async function TeamDetailPage({ params }: Props) {
                           alt={driver.lastName}
                           width={56}
                           height={56}
-                          className="w-14 h-14 rounded-full object-cover object-[center_15%] bg-muted"
+                          className="w-14 h-14 rounded-full object-cover bg-muted"
+                          style={{ objectPosition: config.imageObjectPosition ?? "center 15%" }}
                         />
                       ) : (
                         <div
