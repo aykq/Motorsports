@@ -5,6 +5,7 @@ import { TeamLogo } from "@/components/series/TeamLogo";
 import { notFound } from "next/navigation";
 import { BackButton } from "@/components/layout/BackButton";
 import Link from "next/link";
+import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
 
@@ -121,10 +122,11 @@ export default async function TeamDetailPage({ params }: Props) {
                   <Link key={driver.id} href={`/${slug}/drivers/${driver.id}`}>
                     <div className="rounded-lg bg-card border border-border p-3 hover:bg-accent/50 transition-colors space-y-2">
                       {driver.image ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
+                        <Image
                           src={driver.image}
                           alt={driver.lastName}
+                          width={56}
+                          height={56}
                           className="w-14 h-14 rounded-full object-cover object-[center_-5%] bg-muted"
                         />
                       ) : (

@@ -319,9 +319,9 @@ function parseGT4TeamPage(
 
       const id         = href.split("/").filter(Boolean).pop() ?? toSlug(name);
       const imgSrc     = $el.find("img.team-members__image").attr("src") ?? "";
-      const photoMatch = imgSrc.match(/photo_(\d+)\./);
+      const photoMatch = imgSrc.match(/photo_(\d+)\.(png|jpg|jpeg|webp)/i);
       const image      = photoMatch
-        ? `${BASE_URL}/images/drivers/photo_${photoMatch[1]}.png`
+        ? `${BASE_URL}/images/drivers/photo_${photoMatch[1]}.${photoMatch[2]}`
         : undefined;
 
       const [firstName = "", ...rest] = name.split(" ");
