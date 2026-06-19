@@ -8,6 +8,7 @@ import { WeatherChip } from "@/components/race/WeatherChip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { getTranslations, getLocale } from "next-intl/server";
 import type { Metadata } from "next";
@@ -192,11 +193,13 @@ export default async function SeriesPage({ params }: Props) {
                   >
                     <div className="h-28 relative overflow-hidden" style={{ backgroundColor: `${teamColor}18` }}>
                       {driver.image ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
+                        <Image
                           src={driver.image}
                           alt={driver.lastName}
-                          className="w-full h-full object-cover opacity-80"
+                          fill
+                          sizes="144px"
+                          priority={i < 4}
+                          className="object-cover opacity-80"
                           style={{ objectPosition: config.imageObjectPosition ?? "center -35%" }}
                         />
                       ) : (

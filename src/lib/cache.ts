@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { db } from "@/db";
 import { cachedRaces, cachedStandings, cachedDrivers, cachedRaceDetails } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
@@ -84,10 +85,10 @@ function recomputeRaceStatus(race: Race, seriesSlug?: string): Race {
 
 // ─── Schedule ─────────────────────────────────────────────────────────────────
 
-export async function getCachedSchedule(
+export const getCachedSchedule = cache(async (
   slug: string,
   season: number
-): Promise<{ races: Race[]; fresh: boolean }> {
+): Promise<{ races: Race[]; fresh: boolean }> => {
   const rows = await db.query.cachedRaces.findMany({
     where: and(eq(cachedRaces.seriesSlug, slug), eq(cachedRaces.season, season)),
     orderBy: (t, { asc }) => [asc(t.round)],
@@ -95,7 +96,7 @@ export async function getCachedSchedule(
   if (!rows.length) return { races: [], fresh: false };
   const fresh = isFresh(rows[rows.length - 1].fetchedAt);
   return { races: rows.map((r) => recomputeRaceStatus(r.data as Race, r.seriesSlug)), fresh };
-}
+});
 
 export async function setCachedSchedule(
   slug: string,
@@ -124,11 +125,11 @@ export async function setCachedSchedule(
 
 // ─── Standings ────────────────────────────────────────────────────────────────
 
-export async function getCachedStandings(
+export const getCachedStandings = cache(async (
   slug: string,
   season: number,
   type: StandingType
-): Promise<{ standings: Standing[]; fresh: boolean }> {
+): Promise<{ standings: Standing[]; fresh: boolean }> => {
   const row = await db.query.cachedStandings.findFirst({
     where: and(
       eq(cachedStandings.seriesSlug, slug),
@@ -141,7 +142,7 @@ export async function getCachedStandings(
     standings: row.data as Standing[],
     fresh: isFresh(row.fetchedAt),
   };
-}
+});
 
 export async function setCachedStandings(
   slug: string,
@@ -168,9 +169,9 @@ export async function setCachedStandings(
 
 // ─── Drivers ──────────────────────────────────────────────────────────────────
 
-export async function getCachedDrivers(
+export const getCachedDrivers = cache(async (
   slug: string
-): Promise<{ drivers: Driver[]; fresh: boolean }> {
+): Promise<{ drivers: Driver[]; fresh: boolean }> => {
   const rows = await db.query.cachedDrivers.findMany({
     where: eq(cachedDrivers.seriesSlug, slug),
   });
@@ -183,7 +184,7 @@ export async function getCachedDrivers(
     })
     .sort((a, b) => (a.standingsPosition ?? 999) - (b.standingsPosition ?? 999));
   return { drivers, fresh };
-}
+});
 
 export async function setCachedDrivers(
   slug: string,
