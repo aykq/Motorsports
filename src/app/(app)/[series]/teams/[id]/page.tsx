@@ -78,9 +78,9 @@ export default async function TeamDetailPage({ params }: Props) {
         <div className="relative flex items-center gap-5">
           <TeamLogo
             src={f1Team?.logo}
-            alt={standing.team?.name ?? ""}
+            alt={standing?.team?.name ?? teamName}
             fallbackColor={teamColor}
-            fallbackText={f1Team?.short ?? standing.team?.name?.[0] ?? "?"}
+            fallbackText={f1Team?.short ?? standing?.team?.name?.[0] ?? teamName[0] ?? "?"}
             className="w-16 h-16 shrink-0"
             fallbackClassName="w-16 h-16 rounded-xl text-lg shrink-0"
           />
