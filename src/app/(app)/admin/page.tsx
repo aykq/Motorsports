@@ -1,11 +1,10 @@
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/admin-guard";
 import { db } from "@/db";
-import { cachedRaces, users, accounts } from "@/db/schema";
-import { max } from "drizzle-orm";
+import { cachedRaces, users, accounts, sessions, pushSubscriptions, favorites } from "@/db/schema";
+import { max, count, countDistinct, gt, sql } from "drizzle-orm";
 import { AdminPanel } from "./AdminPanel";
-import { UsersTable } from "./UsersTable";
-import { ShieldAlert, Users } from "lucide-react";
+import { ShieldAlert } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -34,31 +33,55 @@ async function getInitialUsers() {
   }));
 }
 
+async function getAdminStats() {
+  const [userRows, subRows, sessionRows] = await Promise.all([
+    db.select({
+      total: count(),
+      pending: sql<number>`cast(count(*) filter (where status = 'pending') as int)`,
+    }).from(users),
+    db.select({
+      seriesEnabled: pushSubscriptions.seriesEnabled,
+    }).from(pushSubscriptions),
+    db.select({ total: countDistinct(sessions.userId) })
+      .from(sessions)
+      .where(gt(sessions.expires, new Date())),
+  ]);
+
+  const userStats = userRows[0] ?? { total: 0, pending: 0 };
+
+  const subscriptionsBySeries: Record<string, number> = {};
+  for (const sub of subRows) {
+    for (const slug of sub.seriesEnabled) {
+      subscriptionsBySeries[slug] = (subscriptionsBySeries[slug] ?? 0) + 1;
+    }
+  }
+
+  return {
+    totalUsers: userStats.total,
+    pendingUsers: Number(userStats.pending),
+    activeSubscriptions: subRows.length,
+    activeSessions: sessionRows[0]?.total ?? 0,
+    subscriptionsBySeries,
+  };
+}
+
 export default async function AdminPage() {
   const adminId = await requireAdmin();
   if (!adminId) redirect("/");
 
-  const [lastSyncTimes, initialUsers] = await Promise.all([
+  const [lastSyncTimes, initialUsers, stats] = await Promise.all([
     getLastSyncTimes(),
     getInitialUsers(),
+    getAdminStats(),
   ]);
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+    <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
       <div className="flex items-center gap-2">
         <ShieldAlert className="w-5 h-5 text-muted-foreground" />
         <h1 className="text-xl font-bold">Yönetim</h1>
       </div>
-
-      <AdminPanel lastSyncTimes={lastSyncTimes} />
-
-      <section className="space-y-3">
-        <div className="flex items-center gap-2">
-          <Users className="w-4 h-4 text-muted-foreground" />
-          <h2 className="text-sm font-semibold">Kullanıcılar</h2>
-        </div>
-        <UsersTable initialUsers={initialUsers} />
-      </section>
+      <AdminPanel stats={stats} lastSyncTimes={lastSyncTimes} initialUsers={initialUsers} />
     </div>
   );
 }
