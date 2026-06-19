@@ -128,7 +128,7 @@ export default async function TeamDetailPage({ params }: Props) {
                           width={56}
                           height={56}
                           className="w-14 h-14 rounded-full object-cover bg-muted"
-                          style={{ objectPosition: config.imageObjectPosition ?? "center 15%" }}
+                          style={{ objectPosition: config.imageObjectPosition ?? "center -35%" }}
                         />
                       ) : (
                         <div

@@ -197,7 +197,7 @@ export default async function SeriesPage({ params }: Props) {
                           src={driver.image}
                           alt={driver.lastName}
                           className="w-full h-full object-cover opacity-80"
-                          style={{ objectPosition: config.imageObjectPosition ?? "center 15%" }}
+                          style={{ objectPosition: config.imageObjectPosition ?? "center -35%" }}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
