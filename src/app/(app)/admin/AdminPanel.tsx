@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { RefreshCw, Trash2, Bell, CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { syncSeriesAction, clearRaceDetailAction, sendTestNotifAction } from "./actions";
 
-const ALL_SERIES = ["f1", "wec", "motogp", "moto2", "moto3", "gt3", "carrera-cup"] as const;
+const ALL_SERIES = ["f1", "wec", "motogp", "moto2", "moto3", "gt3", "gt4", "carrera-cup"] as const;
 
 interface Toast {
   id: number;
