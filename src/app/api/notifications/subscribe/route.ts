@@ -22,15 +22,20 @@ export async function GET(request: Request) {
   });
 
   if (!sub) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json({ seriesEnabled: sub.seriesEnabled });
+  return NextResponse.json({
+    seriesEnabled: sub.seriesEnabled,
+    sessionPreferences: sub.sessionPreferences ?? {},
+  });
 }
 
 const knownSlug = z.string().refine((s) => !!getAdapter(s), { message: "Unknown series" });
+const sessionPreferencesSchema = z.record(z.string(), z.array(z.string())).optional();
 
 const subscribeSchema = z.object({
   endpoint: z.string().url(),
   keys: z.object({ p256dh: z.string(), auth: z.string() }),
   seriesEnabled: z.array(knownSlug).default([]),
+  sessionPreferences: sessionPreferencesSchema,
 });
 
 export async function POST(request: Request) {
@@ -40,7 +45,7 @@ export async function POST(request: Request) {
   const parsed = subscribeSchema.safeParse(await request.json());
   if (!parsed.success) return NextResponse.json({ error: "Invalid body" }, { status: 400 });
 
-  const { endpoint, keys, seriesEnabled } = parsed.data;
+  const { endpoint, keys, seriesEnabled, sessionPreferences } = parsed.data;
 
   const existing = await db.query.pushSubscriptions.findFirst({
     where: eq(pushSubscriptions.endpoint, endpoint),
@@ -51,10 +56,16 @@ export async function POST(request: Request) {
 
   await db
     .insert(pushSubscriptions)
-    .values({ userId: session.user.id, endpoint, keys, seriesEnabled })
+    .values({
+      userId: session.user.id,
+      endpoint,
+      keys,
+      seriesEnabled,
+      sessionPreferences: sessionPreferences ?? {},
+    })
     .onConflictDoUpdate({
       target: pushSubscriptions.endpoint,
-      set: { keys, seriesEnabled },
+      set: { keys, seriesEnabled, sessionPreferences: sessionPreferences ?? {} },
     });
 
   return NextResponse.json({ ok: true });
@@ -81,7 +92,8 @@ export async function DELETE(request: Request) {
 
 const updateSchema = z.object({
   endpoint: z.string().url(),
-  seriesEnabled: z.array(knownSlug),
+  seriesEnabled: z.array(knownSlug).optional(),
+  sessionPreferences: sessionPreferencesSchema,
 });
 
 export async function PATCH(request: Request) {
@@ -91,13 +103,19 @@ export async function PATCH(request: Request) {
   const parsed = updateSchema.safeParse(await request.json());
   if (!parsed.success) return NextResponse.json({ error: "Invalid body" }, { status: 400 });
 
+  const { endpoint, seriesEnabled, sessionPreferences } = parsed.data;
+
+  const updateData: Record<string, unknown> = {};
+  if (seriesEnabled !== undefined) updateData.seriesEnabled = seriesEnabled;
+  if (sessionPreferences !== undefined) updateData.sessionPreferences = sessionPreferences;
+
   await db
     .update(pushSubscriptions)
-    .set({ seriesEnabled: parsed.data.seriesEnabled })
+    .set(updateData)
     .where(
       and(
         eq(pushSubscriptions.userId, session.user.id),
-        eq(pushSubscriptions.endpoint, parsed.data.endpoint)
+        eq(pushSubscriptions.endpoint, endpoint)
       )
     );
 

@@ -76,9 +76,6 @@ export async function notifySessions(): Promise<NotifySessionsResult> {
     start:   { start: now -  2 * 60 * 1000, end: now +  3 * 60 * 1000 },
   };
 
-  const isPractice = (type: string) =>
-    type === "practice1" || type === "practice2" || type === "practice3";
-
   const allRaces = await db.query.cachedRaces.findMany();
 
   for (const row of allRaces) {
@@ -90,29 +87,27 @@ export async function notifySessions(): Promise<NotifySessionsResult> {
       const icon  = SESSION_ICONS[session.type] ?? "🏎️";
       const tag   = `[${row.seriesSlug} R${race.round} ${session.type}]`;
 
-      // Pre-race notifications (no practice alerts)
-      if (!isPractice(session.type)) {
-        for (const [notifType, window] of Object.entries(preWindows)) {
-          if (sessionTime < window.start || sessionTime > window.end) continue;
+      // Pre-session notifications — kullanıcı tercihleri push fonksiyonunda filtrelenir
+      for (const [notifType, window] of Object.entries(preWindows)) {
+        if (sessionTime < window.start || sessionTime > window.end) continue;
 
-          try {
-            if (await isNotifSent(row.seriesSlug, row.season, race.round, session.type, notifType)) continue;
+        try {
+          if (await isNotifSent(row.seriesSlug, row.season, race.round, session.type, notifType)) continue;
 
-            const title =
-              notifType === "pre_1h"  ? `${icon} ${label} 1 saat sonra başlıyor` :
-              notifType === "pre_15m" ? `${icon} ${label} 15 dakika sonra başlıyor` :
-                                        `${icon} ${label} başladı!`;
+          const title =
+            notifType === "pre_1h"  ? `${icon} ${label} 1 saat sonra başlıyor` :
+            notifType === "pre_15m" ? `${icon} ${label} 15 dakika sonra başlıyor` :
+                                      `${icon} ${label} başladı!`;
 
-            await sendPushToSubscribers(row.seriesSlug, {
-              title,
-              body: `${race.name} — ${race.circuitName}`,
-              url: `/${row.seriesSlug}`,
-            });
-            await markNotifSent(row.seriesSlug, row.season, race.round, session.type, notifType);
-            sent.push(`${tag} ${notifType}`);
-          } catch (err) {
-            errors.push(`${tag} ${notifType}: ${err}`);
-          }
+          await sendPushToSubscribers(row.seriesSlug, session.type, {
+            title,
+            body: `${race.name} — ${race.circuitName}`,
+            url: `/${row.seriesSlug}`,
+          });
+          await markNotifSent(row.seriesSlug, row.season, race.round, session.type, notifType);
+          sent.push(`${tag} ${notifType}`);
+        } catch (err) {
+          errors.push(`${tag} ${notifType}: ${err}`);
         }
       }
 
@@ -159,7 +154,7 @@ export async function notifySessions(): Promise<NotifySessionsResult> {
 
         if (!resultsReady) continue;
 
-        await sendPushToSubscribers(row.seriesSlug, {
+        await sendPushToSubscribers(row.seriesSlug, session.type, {
           title: `${icon} ${label} Sonuçları Açıklandı`,
           body: `${race.name} — ${race.circuitName}`,
           url: `/${row.seriesSlug}/races/${race.round}`,

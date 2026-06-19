@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { DEFAULT_SESSION_TYPES } from "@/lib/session-types";
 
 export type NotificationPermission = "default" | "granted" | "denied";
 
@@ -11,14 +12,17 @@ interface UseNotificationsReturn {
   isSubscribed: boolean;
   subscription: PushSubscription | null;
   enabledSeries: string[];
+  sessionPreferences: Record<string, string[]>;
   requestPermission: () => Promise<boolean>;
   subscribe: () => Promise<boolean>;
   unsubscribe: () => Promise<boolean>;
   toggleSeries: (seriesSlug: string) => Promise<void>;
+  toggleSessionType: (seriesSlug: string, sessionType: string) => Promise<void>;
 }
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
 const STORAGE_KEY = "motorsports:notification_series";
+const PREFS_STORAGE_KEY = "motorsports:notification_session_prefs";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -42,20 +46,43 @@ function writeStorage(series: string[]) {
   } catch {}
 }
 
+function readPrefsStorage(): Record<string, string[]> {
+  try {
+    const raw = localStorage.getItem(PREFS_STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as Record<string, string[]>) : {};
+  } catch {
+    return {};
+  }
+}
+
+function writePrefsStorage(prefs: Record<string, string[]>) {
+  try {
+    localStorage.setItem(PREFS_STORAGE_KEY, JSON.stringify(prefs));
+  } catch {}
+}
+
 export function useNotifications(): UseNotificationsReturn {
   const [permission, setPermission] = useState<NotificationPermission>("default");
   const [isSupported, setIsSupported] = useState(false);
   const [isSecureContext, setIsSecureContext] = useState(true);
   const [subscription, setSubscription] = useState<PushSubscription | null>(null);
-  // localStorage'dan anında oku — sekme değişince sıfırlanmaz
   const [enabledSeries, setEnabledSeriesRaw] = useState<string[]>(() => {
     if (typeof window === "undefined") return [];
     return readStorage();
+  });
+  const [sessionPreferences, setSessionPreferencesRaw] = useState<Record<string, string[]>>(() => {
+    if (typeof window === "undefined") return {};
+    return readPrefsStorage();
   });
 
   const setEnabledSeries = useCallback((series: string[]) => {
     setEnabledSeriesRaw(series);
     writeStorage(series);
+  }, []);
+
+  const setSessionPreferences = useCallback((prefs: Record<string, string[]>) => {
+    setSessionPreferencesRaw(prefs);
+    writePrefsStorage(prefs);
   }, []);
 
   useEffect(() => {
@@ -81,14 +108,16 @@ export function useNotifications(): UseNotificationsReturn {
           );
 
           if (res.ok) {
-            // DB'de kayıtlı — DB değeri localStorage'ın üzerine yaz (çok cihaz senkronizasyonu)
-            const data = (await res.json()) as { seriesEnabled: string[] };
+            const data = (await res.json()) as {
+              seriesEnabled: string[];
+              sessionPreferences: Record<string, string[]>;
+            };
             setEnabledSeries(data.seriesEnabled ?? []);
+            setSessionPreferences(data.sessionPreferences ?? {});
           } else if (res.status === 404) {
-            // Tarayıcıda subscription var ama DB'de yok (eski kayıt / auth sorunu)
-            // localStorage değerini koruyarak DB'ye yeniden kayıt et
             const json = sub.toJSON();
             const currentSeries = readStorage();
+            const currentPrefs = readPrefsStorage();
             await fetch("/api/notifications/subscribe", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -96,14 +125,14 @@ export function useNotifications(): UseNotificationsReturn {
                 endpoint: sub.endpoint,
                 keys: json.keys,
                 seriesEnabled: currentSeries,
+                sessionPreferences: currentPrefs,
               }),
             });
-            // localStorage zaten doğru değerde, state de doğru — ek bir set gerekmez
           }
         } catch {}
       });
     });
-  }, [setEnabledSeries]);
+  }, [setEnabledSeries, setSessionPreferences]);
 
   const requestPermission = useCallback(async (): Promise<boolean> => {
     if (!isSupported) return false;
@@ -128,6 +157,7 @@ export function useNotifications(): UseNotificationsReturn {
           endpoint: sub.endpoint,
           keys: json.keys,
           seriesEnabled: enabledSeries,
+          sessionPreferences,
         }),
       });
       setSubscription(sub);
@@ -135,7 +165,7 @@ export function useNotifications(): UseNotificationsReturn {
     } catch {
       return false;
     }
-  }, [isSupported, permission, enabledSeries]);
+  }, [isSupported, permission, enabledSeries, sessionPreferences]);
 
   const unsubscribe = useCallback(async (): Promise<boolean> => {
     if (!subscription) return false;
@@ -148,11 +178,12 @@ export function useNotifications(): UseNotificationsReturn {
       await subscription.unsubscribe();
       setSubscription(null);
       setEnabledSeries([]);
+      setSessionPreferences({});
       return true;
     } catch {
       return false;
     }
-  }, [subscription, setEnabledSeries]);
+  }, [subscription, setEnabledSeries, setSessionPreferences]);
 
   const toggleSeries = useCallback(
     async (seriesSlug: string): Promise<void> => {
@@ -161,7 +192,7 @@ export function useNotifications(): UseNotificationsReturn {
         ? enabledSeries.filter((s) => s !== seriesSlug)
         : [...enabledSeries, seriesSlug];
 
-      setEnabledSeries(next); // localStorage + state aynı anda güncellenir
+      setEnabledSeries(next);
       await fetch("/api/notifications/subscribe", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -171,6 +202,26 @@ export function useNotifications(): UseNotificationsReturn {
     [subscription, enabledSeries, setEnabledSeries]
   );
 
+  const toggleSessionType = useCallback(
+    async (seriesSlug: string, sessionType: string): Promise<void> => {
+      if (!subscription) return;
+
+      const current = sessionPreferences[seriesSlug] ?? [...DEFAULT_SESSION_TYPES];
+      const next = current.includes(sessionType)
+        ? current.filter((t) => t !== sessionType)
+        : [...current, sessionType];
+
+      const nextPrefs = { ...sessionPreferences, [seriesSlug]: next };
+      setSessionPreferences(nextPrefs);
+      await fetch("/api/notifications/subscribe", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ endpoint: subscription.endpoint, sessionPreferences: nextPrefs }),
+      });
+    },
+    [subscription, sessionPreferences, setSessionPreferences]
+  );
+
   return {
     permission,
     isSupported,
@@ -178,9 +229,11 @@ export function useNotifications(): UseNotificationsReturn {
     isSubscribed: subscription !== null,
     subscription,
     enabledSeries,
+    sessionPreferences,
     requestPermission,
     subscribe,
     unsubscribe,
     toggleSeries,
+    toggleSessionType,
   };
 }

@@ -48,7 +48,8 @@
       "description": "Antrenman, sıralama, sprint ve yarış seansları için 1 saat önce, 15 dakika önce ve seans başında bildirim alın.",
       "enable": "Bildirimleri Etkinleştir",
       "disable": "Bildirimleri Kapat",
-      "seriesQuestion": "Hangi seriler için bildirim almak istiyorsun?"
+      "seriesQuestion": "Hangi seriler için bildirim almak istiyorsun?",
+      "sessionTypesLabel": "Seans tercihleri"
     },
     "appearance": {
       "title": "Görünüm",
