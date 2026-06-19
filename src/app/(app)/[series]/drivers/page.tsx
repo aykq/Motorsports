@@ -121,7 +121,7 @@ export default async function DriversListPage({ params, searchParams }: Props) {
                             width={40}
                             height={40}
                             className="w-10 h-10 rounded-full object-cover bg-muted shrink-0"
-                            style={{ objectPosition: config.imageObjectPosition ?? "center 15%" }}
+                            style={{ objectPosition: config.imageObjectPosition ?? "center -35%" }}
                           />
                         ) : (
                           <div
