@@ -6,6 +6,7 @@ import { moto2Adapter } from "./moto2";
 import { moto3Adapter } from "./moto3";
 import { gt3Adapter } from "./gt3";
 import { carreraCupAdapter } from "./carrera-cup";
+import { gt4Adapter } from "./gt4";
 
 export const adapters: Record<string, SeriesAdapter> = {
   f1: f1Adapter,
@@ -15,6 +16,7 @@ export const adapters: Record<string, SeriesAdapter> = {
   moto3: moto3Adapter,
   gt3: gt3Adapter,
   "carrera-cup": carreraCupAdapter,
+  gt4: gt4Adapter,
 };
 
 export function getAdapter(slug: string): SeriesAdapter | undefined {
