@@ -246,19 +246,19 @@ async function scrapeDriverProfile(driverSlug: string, team: TeamInfo): Promise<
     const html = await fetchCarreraPage(`${RACING_BASE}/drivers/${driverSlug}`);
     const $ = cheerio.load(html);
 
-    // Cloudinary image
+    // Driver headshot: Cloudinary URL with /v{n}/{number}_{Name}_ pattern
+    // (distinct from banner images which use g_center and non-numeric names)
     let image: string | undefined;
+    let number: number | undefined;
     $("img").each((_, el) => {
       const src = $(el).attr("src") ?? "";
-      if (!image && src.includes("res.cloudinary.com")) image = src;
+      if (!src.includes("res.cloudinary.com")) return;
+      const m = src.match(/\/v\d+\/(\d+)_/);
+      if (m && !image) {
+        image = src;
+        number = parseInt(m[1], 10);
+      }
     });
-
-    // Number from image URL: /v1/57_FirstName_...
-    let number: number | undefined;
-    if (image) {
-      const m = image.match(/\/v\d+\/(\d+)_/);
-      if (m) number = parseInt(m[1], 10);
-    }
 
     // Name from h1
     const fullName = $("h1").first().text().trim();
