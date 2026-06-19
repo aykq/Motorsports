@@ -210,8 +210,116 @@ export async function fetchCarreraStandings(
   return [];
 }
 
+// ─── Driver scraper ───────────────────────────────────────────────────────────
+
+const RACING_BASE = "https://racing.porsche.com";
+
+async function scrapeTeamSlugs(): Promise<string[]> {
+  const html = await fetchCarreraPage(`${RACING_BASE}/series/carrera-cup-deutschland`);
+  const $ = cheerio.load(html);
+  const slugs = new Set<string>();
+  $("a[href]").each((_, el) => {
+    const href = $(el).attr("href") ?? "";
+    const m = href.match(/^\/teams\/(pccd-[^/?#]+)/);
+    if (m) slugs.add(m[1]);
+  });
+  return Array.from(slugs);
+}
+
+interface TeamInfo { slug: string; name: string; driverSlugs: string[] }
+
+async function scrapeTeam(teamSlug: string): Promise<TeamInfo> {
+  const html = await fetchCarreraPage(`${RACING_BASE}/teams/${teamSlug}`);
+  const $ = cheerio.load(html);
+  const name = $("h1").first().text().trim() || teamSlug;
+  const driverSlugs = new Set<string>();
+  $("a[href]").each((_, el) => {
+    const href = $(el).attr("href") ?? "";
+    const m = href.match(/^\/drivers\/(pccd-[^/?#]+)/);
+    if (m) driverSlugs.add(m[1]);
+  });
+  return { slug: teamSlug, name, driverSlugs: Array.from(driverSlugs) };
+}
+
+async function scrapeDriverProfile(driverSlug: string, team: TeamInfo): Promise<Driver | null> {
+  try {
+    const html = await fetchCarreraPage(`${RACING_BASE}/drivers/${driverSlug}`);
+    const $ = cheerio.load(html);
+
+    // Cloudinary image
+    let image: string | undefined;
+    $("img").each((_, el) => {
+      const src = $(el).attr("src") ?? "";
+      if (!image && src.includes("res.cloudinary.com")) image = src;
+    });
+
+    // Number from image URL: /v1/57_FirstName_...
+    let number: number | undefined;
+    if (image) {
+      const m = image.match(/\/v\d+\/(\d+)_/);
+      if (m) number = parseInt(m[1], 10);
+    }
+
+    // Name from h1
+    const fullName = $("h1").first().text().trim();
+    if (!fullName) return null;
+    const parts = fullName.trim().split(/\s+/);
+    const firstName = parts.length > 1 ? parts.slice(0, -1).join(" ") : parts[0];
+    const lastName = parts.length > 1 ? parts[parts.length - 1] : "";
+
+    // Nationality from dt/dd or labeled elements
+    let nationality = "";
+    $("dt, th").each((_, el) => {
+      const label = $(el).text().trim().toLowerCase();
+      if ((label === "nationality" || label === "country" || label === "nation") && !nationality) {
+        const val = $(el).next().text().trim();
+        if (val && val.length < 60) nationality = val;
+      }
+    });
+
+    return {
+      id: driverSlug,
+      firstName,
+      lastName,
+      nationality,
+      team: team.name,
+      teamId: team.slug,
+      number: number || undefined,
+      image,
+    };
+  } catch (err) {
+    console.warn(`[CarreraCup] driver scrape failed: ${driverSlug}`, err);
+    return null;
+  }
+}
+
 export async function fetchCarreraDrivers(_season: number): Promise<Driver[]> {
-  return [];
+  try {
+    const teamSlugs = await scrapeTeamSlugs();
+    if (teamSlugs.length === 0) return [];
+
+    const teams = await Promise.all(teamSlugs.map(scrapeTeam));
+
+    // Collect unique driver slugs with their team info
+    const tasks: { driverSlug: string; team: TeamInfo }[] = [];
+    const seen = new Set<string>();
+    for (const team of teams) {
+      for (const driverSlug of team.driverSlugs) {
+        if (!seen.has(driverSlug)) {
+          seen.add(driverSlug);
+          tasks.push({ driverSlug, team });
+        }
+      }
+    }
+
+    const results = await Promise.all(
+      tasks.map(({ driverSlug, team }) => scrapeDriverProfile(driverSlug, team))
+    );
+    return results.filter((d): d is Driver => d !== null);
+  } catch (err) {
+    console.error("[CarreraCup] fetchCarreraDrivers error:", err);
+    return [];
+  }
 }
 
 export async function fetchCarreraCircuits(season: number): Promise<Circuit[]> {
