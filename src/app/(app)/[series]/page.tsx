@@ -196,7 +196,7 @@ export default async function SeriesPage({ params }: Props) {
                         <img
                           src={driver.image}
                           alt={driver.lastName}
-                          className="w-full h-full object-cover object-[center_-5%] opacity-80"
+                          className={`w-full h-full object-cover object-[center_15%] opacity-80${config.driverImageBlend ? " mix-blend-multiply" : ""}`}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">

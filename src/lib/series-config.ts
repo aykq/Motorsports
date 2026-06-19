@@ -8,6 +8,7 @@ export interface SeriesConfig {
   hidden?: boolean;
   subSeries?: string[];
   category?: string;
+  driverImageBlend?: boolean;
 }
 
 export const SERIES_LIST: SeriesConfig[] = [
@@ -17,7 +18,7 @@ export const SERIES_LIST: SeriesConfig[] = [
   { slug: "moto2", name: "Moto2", shortName: "Moto2", color: "#fb923c", available: true, logo: "/series/moto2.svg", hidden: true },
   { slug: "moto3", name: "Moto3", shortName: "Moto3", color: "#fbbf24", available: true, logo: "/series/moto3.svg", hidden: true },
   { slug: "gt3", name: "GT World Challenge Europe", shortName: "GT3", color: "#22c55e", available: true, logo: "/series/gt3.svg", category: "GT3" },
-  { slug: "gt4", name: "GT4 European Series", shortName: "GT4", color: "#eab308", available: true, logo: "/series/gt4.svg", category: "GT4" },
+  { slug: "gt4", name: "GT4 European Series", shortName: "GT4", color: "#eab308", available: true, logo: "/series/gt4.svg", category: "GT4", driverImageBlend: true },
   { slug: "carrera-cup", name: "Porsche Carrera Cup", shortName: "Carrera", color: "#a855f7", available: true, logo: "/series/carrera-cup.svg" },
 ];
 
