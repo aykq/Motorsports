@@ -114,6 +114,14 @@ function SeriesRow({
             style={{ backgroundColor: series.color }}
           />
           <span className="font-medium truncate">{series.name}</span>
+          {series.category && (
+            <span
+              className="text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0"
+              style={{ backgroundColor: `${series.color}25`, color: series.color }}
+            >
+              {series.category}
+            </span>
+          )}
           <ChevronRight className="w-4 h-4 text-muted-foreground ml-auto flex-shrink-0" />
         </Link>
         <Button

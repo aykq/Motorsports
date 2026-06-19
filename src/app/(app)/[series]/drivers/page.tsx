@@ -5,6 +5,7 @@ import { getF1Team, getF1TeamByName } from "@/lib/f1-teams";
 import { TeamLogo } from "@/components/series/TeamLogo";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
@@ -114,10 +115,11 @@ export default async function DriversListPage({ params, searchParams }: Props) {
                     <Link key={driver.id} href={`/${slug}/drivers/${driver.id}`}>
                       <div className="flex items-center gap-3 px-3 py-3 hover:bg-accent/50 transition-colors">
                         {driver.image ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
+                          <Image
                             src={driver.image}
                             alt={driver.lastName}
+                            width={40}
+                            height={40}
                             className="w-10 h-10 rounded-full object-cover object-[center_-5%] bg-muted shrink-0"
                           />
                         ) : (

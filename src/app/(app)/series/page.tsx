@@ -32,7 +32,17 @@ export default async function SeriesListPage() {
                     style={{ backgroundColor: `${series.color}30`, border: `2px solid ${series.color}60` }}
                   />
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm">{series.name}</p>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <p className="font-semibold text-sm">{series.name}</p>
+                      {series.category && (
+                        <span
+                          className="text-[10px] font-bold px-1.5 py-0.5 rounded"
+                          style={{ backgroundColor: `${series.color}25`, color: series.color }}
+                        >
+                          {series.category}
+                        </span>
+                      )}
+                    </div>
                     {series.subSeries && series.subSeries.length > 0 && (
                       <div className="flex gap-1 mt-1 flex-wrap">
                         {series.subSeries.map((sub) => {

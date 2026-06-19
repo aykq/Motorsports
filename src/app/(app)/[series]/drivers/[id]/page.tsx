@@ -4,6 +4,7 @@ import { getF1Team, getF1TeamByName } from "@/lib/f1-teams";
 import { notFound } from "next/navigation";
 import { BackButton } from "@/components/layout/BackButton";
 import Link from "next/link";
+import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
 
@@ -107,10 +108,11 @@ export default async function DriverDetailPage({ params }: Props) {
         )}
         <div className="relative flex items-center gap-4">
           {driver.image ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={driver.image}
               alt={driver.lastName}
+              width={80}
+              height={80}
               className="w-20 h-20 rounded-full object-cover object-[center_-5%] bg-muted shrink-0 ring-2 ring-border"
             />
           ) : (
