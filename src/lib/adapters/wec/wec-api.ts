@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { Race, Standing, Driver, Circuit, StandingType, RaceStatus } from "@/types/series";
 import { lookupCircuitCoords } from "@/lib/circuit-coords";
 import { getWECDrivers } from "./wec-drivers";
+import { scrapeWECDriverStandings, scrapeWECTeamStandings } from "./wec-standings-scraper";
 
 const THESPORTSDB_WEC_ID = "4413";
 const TIMEOUT_MS = 15_000;
@@ -232,12 +233,18 @@ export async function fetchWECSchedule(season: number): Promise<Race[]> {
   }
 }
 
-// WEC standings are not available in TheSportsDB free tier — returns empty
 export async function fetchWECStandings(
-  _season: number,
-  _type: StandingType
+  season: number,
+  type: StandingType
 ): Promise<Standing[]> {
-  return [];
+  try {
+    if (type === "driver") return await scrapeWECDriverStandings(season);
+    if (type === "team") return await scrapeWECTeamStandings(season);
+    return [];
+  } catch (err) {
+    console.error("[WEC] fetchStandings error:", err);
+    return [];
+  }
 }
 
 export async function fetchWECDrivers(season: number): Promise<Driver[]> {

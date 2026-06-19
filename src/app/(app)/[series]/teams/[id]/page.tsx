@@ -47,11 +47,12 @@ export default async function TeamDetailPage({ params }: Props) {
     ]);
 
   const standing = teamStandings.find((s) => s.team?.id === id);
-  if (!standing) notFound();
+  const teamDrivers = drivers.filter((d) => d.teamId === id);
+  if (!standing && teamDrivers.length === 0) notFound();
 
+  const teamName = standing?.team?.name ?? teamDrivers[0]?.team ?? id;
   const f1Team = slug === "f1" ? getF1Team(id) : undefined;
   const teamColor = f1Team?.color ?? config.color;
-  const teamDrivers = drivers.filter((d) => d.teamId === id);
 
   const completedRaces = races
     .filter((r) => r.status === "completed")
@@ -84,9 +85,9 @@ export default async function TeamDetailPage({ params }: Props) {
             fallbackClassName="w-16 h-16 rounded-xl text-lg shrink-0"
           />
           <div>
-            <h1 className="text-2xl font-black">{standing.team?.name}</h1>
+            <h1 className="text-2xl font-black">{teamName}</h1>
             <p className="text-sm text-muted-foreground mt-0.5">
-              {year} · {standing.team?.nationality ?? ""}
+              {year} · {standing?.team?.nationality ?? ""}
             </p>
           </div>
         </div>
@@ -94,20 +95,22 @@ export default async function TeamDetailPage({ params }: Props) {
 
       <div className="px-4 space-y-6">
         {/* ── Stats ── */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className="rounded-lg bg-card border border-border p-3 text-center">
-            <p className="text-2xl font-black">{standing.position}</p>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">{t("ranking")}</p>
+        {standing && (
+          <div className="grid grid-cols-3 gap-3">
+            <div className="rounded-lg bg-card border border-border p-3 text-center">
+              <p className="text-2xl font-black">{standing.position}</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">{t("ranking")}</p>
+            </div>
+            <div className="rounded-lg bg-card border border-border p-3 text-center">
+              <p className="text-2xl font-black">{standing.points}</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">{t("points")}</p>
+            </div>
+            <div className="rounded-lg bg-card border border-border p-3 text-center">
+              <p className="text-2xl font-black">{standing.wins}</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">{t("wins")}</p>
+            </div>
           </div>
-          <div className="rounded-lg bg-card border border-border p-3 text-center">
-            <p className="text-2xl font-black">{standing.points}</p>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">{t("points")}</p>
-          </div>
-          <div className="rounded-lg bg-card border border-border p-3 text-center">
-            <p className="text-2xl font-black">{standing.wins}</p>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">{t("wins")}</p>
-          </div>
-        </div>
+        )}
 
         {/* ── Pilots ── */}
         {teamDrivers.length > 0 && (
