@@ -11,6 +11,7 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "www.gt-world-challenge-europe.com" },
       { protocol: "https", hostname: "www.gt4europeanseries.com" },
       { protocol: "https", hostname: "www.fiawec.com" },
+      { protocol: "https", hostname: "photos.motogp.com" },
     ],
   },
 };
