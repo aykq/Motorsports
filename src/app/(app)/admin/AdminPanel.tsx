@@ -41,12 +41,27 @@ export function AdminPanel({ lastSyncTimes }: Props) {
   const [notifBody, setNotifBody] = useState("Bu bir test bildirimidir.");
   const [notifPending, startNotifTransition] = useTransition();
   const [syncingSlug, setSyncingSlug] = useState<string | null>(null);
+  const [syncAllPending, setSyncAllPending] = useState(false);
   const [syncTimes, setSyncTimes] = useState(lastSyncTimes);
 
   function addToast(ok: boolean, message: string) {
     const id = ++toastId;
     setToasts((prev) => [...prev, { id, ok, message }]);
     setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 4000);
+  }
+
+  async function handleSyncAll() {
+    setSyncAllPending(true);
+    for (const slug of ALL_SERIES) {
+      setSyncingSlug(slug);
+      const result = await syncSeriesAction(slug);
+      if (result.ok) {
+        setSyncTimes((prev) => ({ ...prev, [slug]: new Date().toISOString() }));
+      }
+      addToast(result.ok, `${slug.toUpperCase()}: ${result.message}`);
+    }
+    setSyncingSlug(null);
+    setSyncAllPending(false);
   }
 
   function handleSync(slug: string) {
@@ -105,9 +120,22 @@ export function AdminPanel({ lastSyncTimes }: Props) {
           <RefreshCw className="w-4 h-4 text-muted-foreground" />
           <h2 className="text-sm font-semibold">Series Sync</h2>
         </div>
+        <button
+          onClick={handleSyncAll}
+          disabled={syncPending || syncAllPending}
+          className={cn(
+            "w-full flex items-center justify-center gap-2 rounded-lg border border-border bg-background px-4 py-2.5 text-sm font-semibold transition-colors",
+            "hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+          )}
+        >
+          {syncAllPending
+            ? <><Loader2 className="w-4 h-4 animate-spin" /> Syncing {syncingSlug?.toUpperCase()}…</>
+            : <><RefreshCw className="w-4 h-4" /> Sync All</>
+          }
+        </button>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {ALL_SERIES.map((slug) => {
-            const isLoading = syncPending && syncingSlug === slug;
+            const isLoading = (syncPending || syncAllPending) && syncingSlug === slug;
             return (
               <button
                 key={slug}
