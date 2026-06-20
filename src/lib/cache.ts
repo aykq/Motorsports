@@ -320,23 +320,35 @@ export const getCachedNews = cache(async (
   slug: string,
   limit = 10
 ): Promise<NewsItem[]> => {
-  return db.query.cachedNews.findMany({
-    where: eq(cachedNews.seriesSlug, slug),
-    orderBy: (t, { desc }) => [desc(t.publishedAt)],
-    limit,
-  });
+  try {
+    return await db.query.cachedNews.findMany({
+      where: eq(cachedNews.seriesSlug, slug),
+      orderBy: (t, { desc }) => [desc(t.publishedAt)],
+      limit,
+    });
+  } catch {
+    return [];
+  }
 });
 
 export const getAllCachedNews = cache(async (limit = 30): Promise<NewsItem[]> => {
-  return db.query.cachedNews.findMany({
-    orderBy: (t, { desc }) => [desc(t.publishedAt)],
-    limit,
-  });
+  try {
+    return await db.query.cachedNews.findMany({
+      orderBy: (t, { desc }) => [desc(t.publishedAt)],
+      limit,
+    });
+  } catch {
+    return [];
+  }
 });
 
 export async function getCachedNewsById(id: string): Promise<NewsItem | null> {
-  const row = await db.query.cachedNews.findFirst({
-    where: eq(cachedNews.id, id),
-  });
-  return row ?? null;
+  try {
+    const row = await db.query.cachedNews.findFirst({
+      where: eq(cachedNews.id, id),
+    });
+    return row ?? null;
+  } catch {
+    return null;
+  }
 }
