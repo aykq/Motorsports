@@ -3,7 +3,17 @@
     "calendar": "Takvim",
     "series": "Seriler",
     "favorites": "Favoriler",
+    "news": "Haberler",
     "settings": "Ayarlar"
+  },
+  "newsPage": {
+    "title": "Haberler",
+    "allSeries": "Tüm Seriler",
+    "noNews": "Henüz haber yok. Admin panelden sync edin.",
+    "readMore": "Devamını Oku",
+    "by": "Yazar:",
+    "source": "Kaynağa Git",
+    "back": "Haberler"
   },
   "calendar": {
     "title": "Takvim",

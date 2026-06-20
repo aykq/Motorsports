@@ -13,6 +13,13 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "www.fiawec.com" },
       { protocol: "https", hostname: "photos.motogp.com" },
       { protocol: "https", hostname: "res.cloudinary.com" },
+      { protocol: "https", hostname: "cdn-8.motorsport.com" },
+      { protocol: "https", hostname: "cdn-4.motorsport.com" },
+      { protocol: "https", hostname: "cdn-1.motorsport.com" },
+      { protocol: "https", hostname: "cdn-2.motorsport.com" },
+      { protocol: "https", hostname: "cdn-3.motorsport.com" },
+      { protocol: "https", hostname: "cdn-5.motorsport.com" },
+      { protocol: "https", hostname: "cdn-7.motorsport.com" },
     ],
   },
 };
