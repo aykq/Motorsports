@@ -1,10 +1,13 @@
 import * as cheerio from "cheerio";
 import { db } from "@/db";
 import { cachedNews } from "@/db/schema";
-import { eq } from "drizzle-orm";
 
 const BASE = "https://tr.motorsport.com";
 const TIMEOUT_MS = 15_000;
+
+export type ContentBlock =
+  | { type: "p"; text: string }
+  | { type: "img"; src: string; caption: string | null };
 
 function decodeEntities(str: string): string {
   return str
@@ -15,6 +18,14 @@ function decodeEntities(str: string): string {
     .replace(/&#39;/g, "'")
     .replace(/&apos;/g, "'")
     .replace(/&nbsp;/g, " ");
+}
+
+function fixUrl(url: string | undefined): string | null {
+  if (!url) return null;
+  const trimmed = url.trim();
+  if (trimmed.startsWith("//")) return `https:${trimmed}`;
+  if (trimmed.startsWith("http")) return trimmed;
+  return null;
 }
 
 const SHARE_PATTERN =
@@ -78,6 +89,63 @@ interface ArticleData {
   publishedAt: Date | null;
 }
 
+function extractBlocks($: cheerio.CheerioAPI): ContentBlock[] {
+  const BODY_SELECTORS = [
+    ".ms-article__body",
+    '[class*="article-body"]',
+    '[class*="article-content"]',
+    '[class*="article-text"]',
+    '[data-component="ArticleBody"]',
+    "article",
+    "main",
+  ];
+
+  let bodyEl: cheerio.Cheerio<cheerio.Element> | null = null;
+  for (const sel of BODY_SELECTORS) {
+    const el = $(sel).first();
+    if (el.length) { bodyEl = el; break; }
+  }
+  if (!bodyEl) return [];
+
+  // Collect paragraphs and images with their source position for ordering
+  const items: Array<{ idx: number; block: ContentBlock }> = [];
+
+  bodyEl.find("p").each((_, el) => {
+    const text = $(el).text().trim();
+    if (text.length > 30 && !SHARE_PATTERN.test(text)) {
+      items.push({
+        idx: (el as cheerio.AnyNode & { startIndex?: number }).startIndex ?? 0,
+        block: { type: "p", text },
+      });
+    }
+  });
+
+  // Collect images, skipping lazy-load placeholders (width="10")
+  bodyEl.find("img").each((_, el) => {
+    const $el = $(el);
+    const w = $el.attr("width");
+    if (w && parseInt(w) <= 10) return;
+
+    const src = fixUrl($el.attr("src"));
+    if (!src) return;
+
+    // Get caption from parent figure's figcaption
+    const $figure = $el.closest("figure");
+    const caption =
+      $figure.find("figcaption").first().text().trim() ||
+      $el.closest('[class*="caption"]').text().trim() ||
+      null;
+
+    items.push({
+      idx: (el as cheerio.AnyNode & { startIndex?: number }).startIndex ?? 0,
+      block: { type: "img", src, caption: caption || null },
+    });
+  });
+
+  items.sort((a, b) => a.idx - b.idx);
+  return items.map((i) => i.block);
+}
+
 async function scrapeArticle(url: string): Promise<ArticleData> {
   const html = await fetchPage(url);
   const $ = cheerio.load(html);
@@ -88,10 +156,11 @@ async function scrapeArticle(url: string): Promise<ArticleData> {
     ""
   );
 
+  // Hero image: og:image first, then article-specific selectors
   const imageUrl =
-    $('meta[property="og:image"]').attr("content")?.trim() ||
-    $("article img").first().attr("src")?.trim() ||
-    $('[class*="article"] img').first().attr("src")?.trim() ||
+    fixUrl($('meta[property="og:image"]').attr("content")?.trim()) ||
+    fixUrl($(".ms-article__main-img img, .ms-item__picture img").not('[width="10"]').first().attr("src")?.trim()) ||
+    fixUrl($("article img").not('[width="10"]').first().attr("src")?.trim()) ||
     null;
 
   const summary = decodeEntities(
@@ -115,26 +184,8 @@ async function scrapeArticle(url: string): Promise<ArticleData> {
     $('[class*="author"]').first().text().trim() ||
     null;
 
-  const contentSelectors = [
-    '[class*="article-body"] p',
-    '[class*="article-content"] p',
-    '[class*="article-text"] p',
-    '[data-component="ArticleBody"] p',
-    'article p',
-    'main p',
-  ];
-
-  let content: string | null = null;
-  for (const sel of contentSelectors) {
-    const paras = $(sel)
-      .map((_, el) => $(el).text().trim())
-      .get()
-      .filter((t) => t.length > 30 && !SHARE_PATTERN.test(t));
-    if (paras.length > 0) {
-      content = paras.join("\n\n");
-      break;
-    }
-  }
+  const blocks = extractBlocks($);
+  const content = blocks.length > 0 ? JSON.stringify(blocks) : null;
 
   return { title, imageUrl, summary, content, author, publishedAt };
 }
@@ -190,7 +241,6 @@ export async function fetchAndCacheNews(seriesSlug: string): Promise<SyncResult>
           },
         });
       result.inserted++;
-      // skipped field unused now but kept for interface compatibility
     } catch (err) {
       result.errors.push(`${url}: ${String(err)}`);
     }

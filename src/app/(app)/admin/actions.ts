@@ -2,7 +2,7 @@
 
 import { db } from "@/db";
 import { cachedRaceDetails, cachedRaces } from "@/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { syncSeries } from "@/lib/sync";
 import { sendPushToSubscribers } from "@/lib/push";
 import { requireAdmin } from "@/lib/admin-guard";
@@ -56,33 +56,6 @@ export async function sendTestNotifAction(
   try {
     await sendPushToSubscribers(slug, null, { title, body, url: `/${slug}` });
     return { ok: true, message: `Notification sent to ${slug} subscribers` };
-  } catch (err) {
-    return { ok: false, message: String(err) };
-  }
-}
-
-export async function createNewsTableAction(): Promise<{ ok: boolean; message: string }> {
-  await checkAdmin();
-  try {
-    await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS "cached_news" (
-        "id" text PRIMARY KEY NOT NULL,
-        "series_slug" text NOT NULL,
-        "title" text NOT NULL,
-        "url" text NOT NULL,
-        "image_url" text,
-        "summary" text,
-        "content" text,
-        "author" text,
-        "published_at" timestamp,
-        "scraped_at" timestamp DEFAULT now() NOT NULL
-      )
-    `);
-    await db.execute(sql`
-      CREATE UNIQUE INDEX IF NOT EXISTS "cached_news_url_idx"
-      ON "cached_news" USING btree ("url")
-    `);
-    return { ok: true, message: "cached_news tablosu hazır" };
   } catch (err) {
     return { ok: false, message: String(err) };
   }

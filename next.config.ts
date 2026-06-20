@@ -19,7 +19,9 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "cdn-2.motorsport.com" },
       { protocol: "https", hostname: "cdn-3.motorsport.com" },
       { protocol: "https", hostname: "cdn-5.motorsport.com" },
+      { protocol: "https", hostname: "cdn-6.motorsport.com" },
       { protocol: "https", hostname: "cdn-7.motorsport.com" },
+      { protocol: "https", hostname: "cdn.motorsport.com" },
     ],
   },
 };
