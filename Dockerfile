@@ -12,6 +12,11 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
 
+FROM base AS migrator
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
 FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
