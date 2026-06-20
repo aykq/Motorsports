@@ -3,7 +3,17 @@
     "calendar": "Calendar",
     "series": "Series",
     "favorites": "Favorites",
+    "news": "News",
     "settings": "Settings"
+  },
+  "newsPage": {
+    "title": "News",
+    "allSeries": "All Series",
+    "noNews": "No news yet. Sync from the admin panel.",
+    "readMore": "Read More",
+    "by": "By",
+    "source": "View Source",
+    "back": "News"
   },
   "calendar": {
     "title": "Calendar",
