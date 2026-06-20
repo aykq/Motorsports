@@ -108,7 +108,8 @@
     "teams": "Teams",
     "standings": "Standings",
     "viewAll": "View All",
-    "noData": "No data yet."
+    "noData": "No data yet.",
+    "latestNews": "Latest News"
   },
   "schedulePage": {
     "title": "Schedule",

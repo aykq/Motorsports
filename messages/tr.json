@@ -108,7 +108,8 @@
     "teams": "Takımlar",
     "standings": "Puan Tablosu",
     "viewAll": "Tümünü Gör",
-    "noData": "Henüz veri yok."
+    "noData": "Henüz veri yok.",
+    "latestNews": "Son Haberler"
   },
   "schedulePage": {
     "title": "Takvim",
