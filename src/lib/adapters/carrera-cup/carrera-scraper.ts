@@ -256,8 +256,8 @@ async function scrapeDriverProfile(driverSlug: string, team: TeamInfo): Promise<
       if (!src.includes("res.cloudinary.com")) return;
       const m = src.match(driverImgPattern);
       if (m && !image) {
-        // Force portrait crop (3:4) so face is visible; keep g_auto for smart gravity
-        image = src.replace(/c_thumb,[^/]+/, "c_thumb,w_400,ar_3:4,g_auto");
+        // Square crop with face-detection gravity — optimal for circular avatar display
+        image = src.replace(/c_thumb,[^/]+/, "c_thumb,w_400,h_400,g_face");
         number = parseInt(m[1], 10);
       }
     });
