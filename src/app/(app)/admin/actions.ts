@@ -6,6 +6,7 @@ import { eq, and } from "drizzle-orm";
 import { syncSeries } from "@/lib/sync";
 import { sendPushToSubscribers } from "@/lib/push";
 import { requireAdmin } from "@/lib/admin-guard";
+import { fetchAndCacheNews } from "@/lib/scrapers/motorsportNews";
 
 async function checkAdmin() {
   const adminId = await requireAdmin();
@@ -55,6 +56,17 @@ export async function sendTestNotifAction(
   try {
     await sendPushToSubscribers(slug, null, { title, body, url: `/${slug}` });
     return { ok: true, message: `Notification sent to ${slug} subscribers` };
+  } catch (err) {
+    return { ok: false, message: String(err) };
+  }
+}
+
+export async function syncNewsAction(): Promise<{ ok: boolean; message: string }> {
+  await checkAdmin();
+  const slugs = ["f1", "motogp", "moto2", "wec"] as const;
+  try {
+    await Promise.allSettled(slugs.map(fetchAndCacheNews));
+    return { ok: true, message: "Haberler sync edildi" };
   } catch (err) {
     return { ok: false, message: String(err) };
   }

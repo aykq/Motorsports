@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { db } from "@/db";
-import { cachedRaces, cachedStandings, cachedDrivers, cachedRaceDetails } from "@/db/schema";
+import { cachedRaces, cachedStandings, cachedDrivers, cachedRaceDetails, cachedNews } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import type { Race, Standing, Driver, StandingType, RaceDetail } from "@/types/series";
 import { getF1DriverImage } from "@/lib/adapters/f1/driver-images";
@@ -310,4 +310,33 @@ export async function setCachedRaceDetail(
   } catch {
     // non-fatal — page still works without caching
   }
+}
+
+// ─── News ─────────────────────────────────────────────────────────────────────
+
+export type NewsItem = typeof cachedNews.$inferSelect;
+
+export const getCachedNews = cache(async (
+  slug: string,
+  limit = 10
+): Promise<NewsItem[]> => {
+  return db.query.cachedNews.findMany({
+    where: eq(cachedNews.seriesSlug, slug),
+    orderBy: (t, { desc }) => [desc(t.publishedAt)],
+    limit,
+  });
+});
+
+export const getAllCachedNews = cache(async (limit = 30): Promise<NewsItem[]> => {
+  return db.query.cachedNews.findMany({
+    orderBy: (t, { desc }) => [desc(t.publishedAt)],
+    limit,
+  });
+});
+
+export async function getCachedNewsById(id: string): Promise<NewsItem | null> {
+  const row = await db.query.cachedNews.findFirst({
+    where: eq(cachedNews.id, id),
+  });
+  return row ?? null;
 }
