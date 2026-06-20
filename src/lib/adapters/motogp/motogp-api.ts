@@ -4,6 +4,12 @@ import { lookupCircuitCoords } from "@/lib/circuit-coords";
 
 const BASE_URL = "https://api.motogp.pulselive.com/motogp/v1";
 
+// MotoGP API returns inconsistent UUIDs for the same team across endpoints.
+// Normalize to a stable slug so driver.teamId always matches team standing id.
+function teamSlug(name: string): string {
+  return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
 const TITLE_CASE_SKIP = new Set(["of", "de", "la", "le", "du", "des", "the", "and", "at", "in", "on"]);
 function toTitleCase(str: string): string {
   return str
@@ -291,15 +297,14 @@ export function createMotoGPFetchers(
       const entries = parsed.data.classification;
 
       if (type === "team") {
-        // MotoGP API doesn't have a separate team standings endpoint — aggregate from rider data
-        // Key by name (not id) — same team can appear under different IDs in the API
+        // MotoGP API returns inconsistent UUIDs for same team — aggregate by name, use slug as id
         const teamMap = new Map<string, { id: string; name: string; points: number }>();
         for (const entry of entries) {
           if (!entry.team) continue;
-          const key = entry.team.name.trim();
-          const existing = teamMap.get(key);
+          const id = teamSlug(entry.team.name);
+          const existing = teamMap.get(id);
           if (!existing) {
-            teamMap.set(key, { id: entry.team.id, name: entry.team.name, points: entry.points });
+            teamMap.set(id, { id, name: entry.team.name, points: entry.points });
           } else {
             existing.points += entry.points;
           }
@@ -324,7 +329,7 @@ export function createMotoGPFetchers(
             lastName: entry.rider.full_name?.split(" ").slice(1).join(" ") ?? "",
             nationality: entry.rider.country?.name ?? "",
             team: entry.team?.name,
-            teamId: entry.team?.id,
+            teamId: entry.team ? teamSlug(entry.team.name) : undefined,
             number: entry.rider.number,
           },
         } : {}),
@@ -365,7 +370,7 @@ export function createMotoGPFetchers(
           lastName: r.surname,
           nationality: r.country?.name ?? "",
           team: r.current_career_step?.team?.name,
-          teamId: r.current_career_step?.team?.id,
+          teamId: r.current_career_step?.team ? teamSlug(r.current_career_step.team.name) : undefined,
           number: r.current_career_step?.number,
           code: r.current_career_step?.short_nickname ?? undefined,
           image: r.pictures?.profile?.main ?? undefined,

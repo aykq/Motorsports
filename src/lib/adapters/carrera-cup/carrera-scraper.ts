@@ -256,7 +256,8 @@ async function scrapeDriverProfile(driverSlug: string, team: TeamInfo): Promise<
       if (!src.includes("res.cloudinary.com")) return;
       const m = src.match(driverImgPattern);
       if (m && !image) {
-        image = src;
+        // Force portrait crop (3:4) so face is visible; keep g_auto for smart gravity
+        image = src.replace(/c_thumb,[^/]+/, "c_thumb,w_400,ar_3:4,g_auto");
         number = parseInt(m[1], 10);
       }
     });
