@@ -1,4 +1,4 @@
-import { getCachedSchedule, getCachedStandings, getCachedDrivers } from "@/lib/cache";
+import { getCachedSchedule, getCachedStandings, getCachedDrivers, getCachedNews } from "@/lib/cache";
 import { getSeriesConfig } from "@/lib/series-config";
 import { getF1CircuitCoords, getF1CircuitPhotoUrl } from "@/lib/circuit-data";
 import { getF1Team, getF1TeamByName } from "@/lib/f1-teams";
@@ -51,11 +51,12 @@ export default async function SeriesPage({ params }: Props) {
   const locale = await getLocale();
 
   const year = new Date().getFullYear();
-  const [{ races }, { standings: driverStandings }, { standings: teamStandings }, { drivers }] = await Promise.all([
+  const [{ races }, { standings: driverStandings }, { standings: teamStandings }, { drivers }, news] = await Promise.all([
     getCachedSchedule(slug, year),
     getCachedStandings(slug, year, "driver"),
     getCachedStandings(slug, year, "team"),
     getCachedDrivers(slug),
+    getCachedNews(slug, 5),
   ]);
 
   const nextRace = races
@@ -289,6 +290,37 @@ export default async function SeriesPage({ params }: Props) {
           <div className="text-center py-16 text-muted-foreground">
             <p className="text-sm">{t("noData")}</p>
           </div>
+        )}
+
+        {/* Latest news strip */}
+        {news.length > 0 && (
+          <section className="mb-2">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">{t("latestNews")}</h3>
+              <Link href="/news" className="text-xs hover:opacity-70 transition-opacity" style={{ color: config.color }}>
+                {t("viewAll")}
+              </Link>
+            </div>
+            <div className="flex flex-col gap-2">
+              {news.map((item) => (
+                <Link
+                  key={item.id}
+                  href={`/news/${item.id}`}
+                  className="flex items-center gap-3 bg-card border border-border rounded-xl overflow-hidden hover:bg-accent/30 transition-colors"
+                >
+                  <div className="w-1 self-stretch shrink-0" style={{ backgroundColor: config.color }} />
+                  <div className="flex-1 min-w-0 py-2.5 pr-3 flex gap-3 items-center">
+                    <p className="flex-1 text-sm font-medium leading-snug line-clamp-2">{item.title}</p>
+                    {item.imageUrl && (
+                      <div className="shrink-0 w-14 h-10 rounded-md overflow-hidden bg-muted relative">
+                        <Image src={item.imageUrl} alt="" fill sizes="56px" className="object-cover" />
+                      </div>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
         )}
 
       </div>
