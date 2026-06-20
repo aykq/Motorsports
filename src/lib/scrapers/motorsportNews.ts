@@ -120,16 +120,25 @@ async function scrapeArticle(url: string): Promise<ArticleData> {
   return { title, imageUrl, summary, content, author, publishedAt };
 }
 
-export async function fetchAndCacheNews(seriesSlug: string): Promise<void> {
+export interface SyncResult {
+  urlsFound: number;
+  inserted: number;
+  skipped: number;
+  errors: string[];
+}
+
+export async function fetchAndCacheNews(seriesSlug: string): Promise<SyncResult> {
+  const result: SyncResult = { urlsFound: 0, inserted: 0, skipped: 0, errors: [] };
   const listUrl = SERIES_URLS[seriesSlug];
-  if (!listUrl) return;
+  if (!listUrl) return result;
 
   let articleUrls: string[];
   try {
     articleUrls = await scrapeArticleUrls(listUrl);
+    result.urlsFound = articleUrls.length;
   } catch (err) {
-    console.error(`[news] list scrape failed for ${seriesSlug}:`, err);
-    return;
+    result.errors.push(`list: ${String(err)}`);
+    return result;
   }
 
   for (const url of articleUrls) {
@@ -138,12 +147,12 @@ export async function fetchAndCacheNews(seriesSlug: string): Promise<void> {
         where: eq(cachedNews.url, url),
         columns: { id: true },
       });
-      if (existing) continue;
+      if (existing) { result.skipped++; continue; }
 
       await delay(500);
 
       const data = await scrapeArticle(url);
-      if (!data.title) continue;
+      if (!data.title) { result.errors.push(`no title: ${url}`); continue; }
 
       await db
         .insert(cachedNews)
@@ -158,8 +167,10 @@ export async function fetchAndCacheNews(seriesSlug: string): Promise<void> {
           publishedAt: data.publishedAt,
         })
         .onConflictDoNothing();
+      result.inserted++;
     } catch (err) {
-      console.warn(`[news] article scrape failed: ${url}`, err);
+      result.errors.push(`${url}: ${String(err)}`);
     }
   }
+  return result;
 }
