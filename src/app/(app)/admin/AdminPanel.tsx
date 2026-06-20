@@ -7,7 +7,7 @@ import {
   RefreshCw, Trash2, Bell, Settings, CheckCircle, XCircle,
   Loader2, Users, ShieldCheck,
 } from "lucide-react";
-import { syncSeriesAction, clearRaceDetailAction, sendTestNotifAction } from "./actions";
+import { syncSeriesAction, clearRaceDetailAction, sendTestNotifAction, syncNewsAction } from "./actions";
 import { UsersTable } from "./UsersTable";
 
 const ALL_SERIES = ["f1", "wec", "motogp", "moto2", "moto3", "gt3", "gt4", "carrera-cup"] as const;
@@ -71,6 +71,7 @@ function StatCard({ value, label, accent }: { value: number; label: string; acce
 export function AdminPanel({ stats, lastSyncTimes, initialUsers }: Props) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [syncPending, startSyncTransition] = useTransition();
+  const [newsSyncPending, startNewsSyncTransition] = useTransition();
   const [syncingSlug, setSyncingSlug] = useState<string | null>(null);
   const [syncAllPending, setSyncAllPending] = useState(false);
   const [syncTimes, setSyncTimes] = useState(lastSyncTimes);
@@ -117,6 +118,13 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers }: Props) {
       const result = await clearRaceDetailAction(clearSlug, round);
       addToast(result.ok, result.message);
       if (result.ok) { setClearSlug(""); setClearRound(""); }
+    });
+  }
+
+  function handleNewsSync() {
+    startNewsSyncTransition(async () => {
+      const result = await syncNewsAction();
+      addToast(result.ok, result.message);
     });
   }
 
@@ -271,6 +279,21 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers }: Props) {
                 </button>
               </div>
             </div>
+          </section>
+
+          {/* News sync */}
+          <section className="rounded-xl bg-card border border-border p-4 space-y-3">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Haberler</p>
+            <button
+              onClick={handleNewsSync}
+              disabled={newsSyncPending}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-background border border-border text-sm hover:bg-white/5 disabled:opacity-50 transition-colors"
+            >
+              {newsSyncPending
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : <RefreshCw className="w-4 h-4" />}
+              Haberleri Sync Et
+            </button>
           </section>
         </TabsContent>
 
