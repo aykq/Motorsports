@@ -155,6 +155,25 @@ export const cachedRaceDetails = pgTable(
   (t) => [uniqueIndex("cached_race_detail_idx").on(t.seriesSlug, t.season, t.round)]
 );
 
+export const cachedNews = pgTable(
+  "cached_news",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    seriesSlug: text("series_slug").notNull(),
+    title: text("title").notNull(),
+    url: text("url").notNull(),
+    imageUrl: text("image_url"),
+    summary: text("summary"),
+    content: text("content"),
+    author: text("author"),
+    publishedAt: timestamp("published_at"),
+    scrapedAt: timestamp("scraped_at").defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex("cached_news_url_idx").on(t.url)]
+);
+
 export const sentNotifications = pgTable(
   "sent_notification",
   {
