@@ -6,6 +6,20 @@ import { eq } from "drizzle-orm";
 const BASE = "https://tr.motorsport.com";
 const TIMEOUT_MS = 15_000;
 
+function decodeEntities(str: string): string {
+  return str
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&nbsp;/g, " ");
+}
+
+const SHARE_PATTERN =
+  /paylaş|kopyala|tweetle|pinterest|viber|linkedin|facebook|whatsapp|tercih edilen kaynak/i;
+
 const SERIES_URLS: Record<string, string> = {
   f1:     `${BASE}/f1/news/`,
   motogp: `${BASE}/motogp/news/`,
@@ -68,16 +82,21 @@ async function scrapeArticle(url: string): Promise<ArticleData> {
   const html = await fetchPage(url);
   const $ = cheerio.load(html);
 
-  const title =
+  const title = decodeEntities(
     $('meta[property="og:title"]').attr("content")?.trim() ||
     $("h1").first().text().trim() ||
-    "";
+    ""
+  );
 
   const imageUrl =
-    $('meta[property="og:image"]').attr("content")?.trim() || null;
+    $('meta[property="og:image"]').attr("content")?.trim() ||
+    $("article img").first().attr("src")?.trim() ||
+    $('[class*="article"] img').first().attr("src")?.trim() ||
+    null;
 
-  const summary =
-    $('meta[property="og:description"]').attr("content")?.trim() || null;
+  const summary = decodeEntities(
+    $('meta[property="og:description"]').attr("content")?.trim() || ""
+  ) || null;
 
   let publishedAt: Date | null = null;
   const dateStr =
@@ -110,7 +129,7 @@ async function scrapeArticle(url: string): Promise<ArticleData> {
     const paras = $(sel)
       .map((_, el) => $(el).text().trim())
       .get()
-      .filter((t) => t.length > 30);
+      .filter((t) => t.length > 30 && !SHARE_PATTERN.test(t));
     if (paras.length > 0) {
       content = paras.join("\n\n");
       break;
@@ -145,9 +164,10 @@ export async function fetchAndCacheNews(seriesSlug: string): Promise<SyncResult>
     try {
       const existing = await db.query.cachedNews.findFirst({
         where: eq(cachedNews.url, url),
-        columns: { id: true },
+        columns: { id: true, imageUrl: true },
       });
-      if (existing) { result.skipped++; continue; }
+      // Skip only if already has image and content
+      if (existing?.imageUrl) { result.skipped++; continue; }
 
       await delay(500);
 
@@ -166,7 +186,16 @@ export async function fetchAndCacheNews(seriesSlug: string): Promise<SyncResult>
           author: data.author,
           publishedAt: data.publishedAt,
         })
-        .onConflictDoNothing();
+        .onConflictDoUpdate({
+          target: cachedNews.url,
+          set: {
+            title: data.title,
+            imageUrl: data.imageUrl,
+            summary: data.summary,
+            content: data.content,
+            author: data.author,
+          },
+        });
       result.inserted++;
     } catch (err) {
       result.errors.push(`${url}: ${String(err)}`);

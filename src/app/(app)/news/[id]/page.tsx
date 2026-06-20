@@ -2,7 +2,7 @@ import { getCachedNewsById } from "@/lib/cache";
 import { getSeriesConfig } from "@/lib/series-config";
 import { BackButton } from "@/components/layout/BackButton";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
@@ -18,9 +18,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return { title: item?.title ?? "Haber" };
 }
 
-function formatDate(date: Date | null): string {
+function formatDate(date: Date | null, locale: string): string {
   if (!date) return "";
-  return date.toLocaleDateString("tr-TR", {
+  return date.toLocaleDateString(locale === "tr" ? "tr-TR" : "en-US", {
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -31,9 +31,10 @@ function formatDate(date: Date | null): string {
 
 export default async function NewsDetailPage({ params }: Props) {
   const { id } = await params;
-  const [item, t] = await Promise.all([
+  const [item, t, locale] = await Promise.all([
     getCachedNewsById(id),
     getTranslations("newsPage"),
+    getLocale(),
   ]);
 
   if (!item) notFound();
@@ -101,7 +102,7 @@ export default async function NewsDetailPage({ params }: Props) {
               <span>·</span>
             </>
           )}
-          <span>{formatDate(item.publishedAt)}</span>
+          <span>{formatDate(item.publishedAt, locale)}</span>
         </div>
 
         {/* Summary / lead */}
