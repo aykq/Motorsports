@@ -46,6 +46,22 @@ services:
     networks:
       - internal
 
+  cron:
+    image: alpine:3.19
+    restart: unless-stopped
+    environment:
+      CRON_SECRET: ${CRON_SECRET}
+      APP_URL: http://app:3000
+    depends_on:
+      - app
+    networks:
+      - internal
+    command: >
+      sh -c "
+        echo '0 */3 * * * wget -qO- --header=\"x-cron-secret: $$CRON_SECRET\" --post-data=\"\" $$APP_URL/api/cron/news' | crontab - &&
+        crond -f -l 6
+      "
+
   db:
     image: postgres:16-alpine
     restart: unless-stopped
