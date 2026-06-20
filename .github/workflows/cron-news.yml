@@ -1,0 +1,17 @@
+name: News Sync Cron
+
+on:
+  schedule:
+    - cron: "0 */3 * * *"  # her 3 saatte bir
+  workflow_dispatch:        # elle tetiklemek için
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger news sync
+        run: |
+          curl -s -X POST "${{ secrets.NEXT_PUBLIC_APP_URL }}/api/cron/news" \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            --fail-with-body
