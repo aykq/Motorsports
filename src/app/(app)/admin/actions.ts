@@ -64,12 +64,18 @@ export async function sendTestNotifAction(
 export async function syncNewsAction(): Promise<{ ok: boolean; message: string }> {
   await checkAdmin();
   const slugs = ["f1", "motogp", "moto2", "wec"] as const;
-  try {
-    await Promise.allSettled(slugs.map(fetchAndCacheNews));
-    return { ok: true, message: "Haberler sync edildi" };
-  } catch (err) {
-    return { ok: false, message: String(err) };
-  }
+  const results = await Promise.allSettled(slugs.map(fetchAndCacheNews));
+  const lines: string[] = [];
+  results.forEach((r, i) => {
+    const slug = slugs[i];
+    if (r.status === "fulfilled") {
+      const { urlsFound, inserted, skipped, errors } = r.value;
+      lines.push(`${slug}: ${urlsFound} URL, +${inserted} kayıt, ${skipped} mevcut${errors.length ? `, hata: ${errors[0]}` : ""}`);
+    } else {
+      lines.push(`${slug}: HATA — ${r.reason}`);
+    }
+  });
+  return { ok: true, message: lines.join("\n") };
 }
 
 export async function getLastSyncTimesAction(): Promise<Record<string, string | null>> {
