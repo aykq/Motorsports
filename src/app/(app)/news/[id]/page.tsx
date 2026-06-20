@@ -7,6 +7,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { ExternalLink } from "lucide-react";
+import type { ContentBlock } from "@/lib/scrapers/motorsportNews";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -29,6 +30,21 @@ function formatDate(date: Date | null, locale: string): string {
   });
 }
 
+function parseContent(raw: string | null): ContentBlock[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed as ContentBlock[];
+  } catch {
+    // Legacy plain-text format
+    return raw
+      .split("\n\n")
+      .filter((t) => t.trim().length > 0)
+      .map((text) => ({ type: "p" as const, text }));
+  }
+  return [];
+}
+
 export default async function NewsDetailPage({ params }: Props) {
   const { id } = await params;
   const [item, t, locale] = await Promise.all([
@@ -43,9 +59,7 @@ export default async function NewsDetailPage({ params }: Props) {
   const seriesColor = config?.color ?? "#6b7280";
   const seriesName = config?.shortName ?? item.seriesSlug.toUpperCase();
 
-  const paragraphs = item.content
-    ? item.content.split("\n\n").filter((p) => p.trim().length > 0)
-    : [];
+  const blocks = parseContent(item.content);
 
   return (
     <div className="max-w-2xl mx-auto pb-24">
@@ -116,13 +130,36 @@ export default async function NewsDetailPage({ params }: Props) {
         )}
 
         {/* Article body */}
-        {paragraphs.length > 0 ? (
+        {blocks.length > 0 ? (
           <div className="flex flex-col gap-4">
-            {paragraphs.map((para, i) => (
-              <p key={i} className="text-sm leading-relaxed text-foreground/80">
-                {para}
-              </p>
-            ))}
+            {blocks.map((block, i) => {
+              if (block.type === "p") {
+                return (
+                  <p key={i} className="text-sm leading-relaxed text-foreground/80">
+                    {block.text}
+                  </p>
+                );
+              }
+              if (block.type === "img") {
+                return (
+                  <figure key={i} className="m-0">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={block.src}
+                      alt={block.caption ?? ""}
+                      className="w-full rounded-lg"
+                      loading="lazy"
+                    />
+                    {block.caption && (
+                      <figcaption className="text-[11px] text-muted-foreground mt-1.5 leading-snug">
+                        {block.caption}
+                      </figcaption>
+                    )}
+                  </figure>
+                );
+              }
+              return null;
+            })}
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">İçerik yüklenemedi.</p>
