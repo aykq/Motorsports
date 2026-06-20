@@ -19,5 +19,7 @@ jobs:
           script: |
             cd /opt/motorsports
             git pull origin main
-            docker compose up --build -d
+            docker compose build
+            docker compose run --rm migrate
+            docker compose up -d
             docker image prune -f
