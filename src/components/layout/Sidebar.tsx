@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, Grid2X2, Heart, Settings, Users } from "lucide-react";
+import { CalendarDays, Grid2X2, Heart, Newspaper, Settings, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useTranslations } from "next-intl";
@@ -26,6 +26,7 @@ export function Sidebar({ user, isAdmin }: SidebarProps) {
     { href: "/", label: t("calendar"), icon: CalendarDays },
     { href: "/series", label: t("series"), icon: Grid2X2 },
     { href: "/favorites", label: t("favorites"), icon: Heart },
+    { href: "/news", label: t("news"), icon: Newspaper },
     { href: "/settings", label: t("settings"), icon: Settings },
   ];
 

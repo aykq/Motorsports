@@ -162,14 +162,7 @@ export async function fetchAndCacheNews(seriesSlug: string): Promise<SyncResult>
 
   for (const url of articleUrls) {
     try {
-      const existing = await db.query.cachedNews.findFirst({
-        where: eq(cachedNews.url, url),
-        columns: { id: true, imageUrl: true },
-      });
-      // Skip only if already has image and content
-      if (existing?.imageUrl) { result.skipped++; continue; }
-
-      await delay(500);
+      await delay(300);
 
       const data = await scrapeArticle(url);
       if (!data.title) { result.errors.push(`no title: ${url}`); continue; }
@@ -197,6 +190,7 @@ export async function fetchAndCacheNews(seriesSlug: string): Promise<SyncResult>
           },
         });
       result.inserted++;
+      // skipped field unused now but kept for interface compatibility
     } catch (err) {
       result.errors.push(`${url}: ${String(err)}`);
     }
