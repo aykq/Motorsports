@@ -2,6 +2,9 @@ const { Pool } = require("pg");
 const fs = require("fs");
 const path = require("path");
 
+// PostgreSQL error codes that mean "object already exists" — safe to ignore
+const ALREADY_EXISTS = new Set(["42P07", "42701", "42P11", "42P06"]);
+
 async function main() {
   if (!process.env.DATABASE_URL) {
     console.error("DATABASE_URL is not set");
@@ -11,7 +14,6 @@ async function main() {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
   try {
-    // Create migration tracking table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS "__drizzle_migrations" (
         id SERIAL PRIMARY KEY,
@@ -31,33 +33,6 @@ async function main() {
       .filter((f) => f.endsWith(".sql"))
       .sort();
 
-    // If tracking table is empty, check if DB was bootstrapped via db:push.
-    // If so, mark all existing migrations as already applied to avoid
-    // re-running CREATE TABLE statements on tables that already exist.
-    if (appliedSet.size === 0) {
-      const { rows } = await pool.query(`
-        SELECT 1 FROM information_schema.tables
-        WHERE table_schema = 'public' AND table_name = 'cached_races'
-        LIMIT 1
-      `);
-      if (rows.length > 0) {
-        console.log(
-          "Existing installation detected — marking all migrations as applied"
-        );
-        for (const file of files) {
-          const name = path.basename(file, ".sql");
-          await pool.query(
-            'INSERT INTO "__drizzle_migrations" (hash, created_at) VALUES ($1, $2) ON CONFLICT DO NOTHING',
-            [name, Date.now()]
-          );
-          console.log(`  marked: ${file}`);
-        }
-        console.log("Migrations complete (bootstrapped)");
-        return;
-      }
-    }
-
-    // Normal path: apply only pending migrations
     for (const file of files) {
       const name = path.basename(file, ".sql");
       if (appliedSet.has(name)) {
@@ -71,15 +46,28 @@ async function main() {
         .map((s) => s.trim())
         .filter(Boolean);
 
+      let ok = true;
       for (const stmt of statements) {
-        await pool.query(stmt);
+        try {
+          await pool.query(stmt);
+        } catch (err) {
+          if (ALREADY_EXISTS.has(err.code)) {
+            console.log(`  [${err.code}] already exists, continuing`);
+          } else {
+            console.error(`  [${err.code}] unexpected error in ${file}:`, err.message);
+            ok = false;
+            break;
+          }
+        }
       }
 
-      await pool.query(
-        'INSERT INTO "__drizzle_migrations" (hash, created_at) VALUES ($1, $2)',
-        [name, Date.now()]
-      );
-      console.log(`  applied: ${file}`);
+      if (ok) {
+        await pool.query(
+          'INSERT INTO "__drizzle_migrations" (hash, created_at) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+          [name, Date.now()]
+        );
+        console.log(`  applied: ${file}`);
+      }
     }
 
     console.log("Migrations complete");
