@@ -279,6 +279,7 @@ export default async function RaceDetailPage({ params }: Props) {
       {slug === "wec" && (isCompleted || isLive) && allResults.length > 0 && (
         <WECRaceResultsSection
           results={allResults}
+          slug={slug}
           driverStandingsAfter={driverStandingsAfter}
           teamStandingsAfter={teamStandingsAfter}
           labels={{
