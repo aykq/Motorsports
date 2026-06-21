@@ -31,6 +31,7 @@ export interface RaceResult {
   laps?: number;
   coDrivers?: string[];
   carClass?: string;
+  teamId?: string;
 }
 
 export interface Race {

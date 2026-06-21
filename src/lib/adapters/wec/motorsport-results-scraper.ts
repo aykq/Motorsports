@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 import type { RaceResult } from "@/types/series";
+import { getWECTeamIdByCarNo } from "./wec-drivers";
 
 const BASE = "https://tr.motorsport.com";
 const TIMEOUT_MS = 15_000;
@@ -205,12 +206,14 @@ async function scrapeRaceResultsPage(url: string): Promise<RawWECResult[]> {
 
 function toRaceResult(r: RawWECResult): RaceResult {
   const [primary, ...rest] = r.drivers;
+  const carNo = parseInt(r.carNumber) || undefined;
   return {
     position: r.position,
     driverId: `wec-car-${r.carNumber}`,
     driverName: primary ?? r.team,
-    driverNumber: parseInt(r.carNumber) || undefined,
+    driverNumber: carNo,
     team: r.team,
+    teamId: carNo ? getWECTeamIdByCarNo(carNo) : undefined,
     time: r.position === 1 ? r.time : undefined,
     gap: r.gap ?? undefined,
     points: r.points,

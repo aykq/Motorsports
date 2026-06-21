@@ -197,6 +197,11 @@ function toId(firstName: string, lastName: string): string {
     .replace(/^-|-$/g, "");
 }
 
+export function getWECTeamIdByCarNo(carNo: number): string | undefined {
+  const all = [...HYPERCAR_2026, ...LMGT3_2026];
+  return all.find((e) => e.carNo === carNo)?.teamId;
+}
+
 export function getWECDrivers(season: number): Driver[] {
   if (season !== 2026) return [];
   const mapEntries = (entries: WECEntry[], category: string) =>
