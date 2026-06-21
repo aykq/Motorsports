@@ -76,15 +76,17 @@ function delay(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-async function scrapeArticleUrls(listUrl: string): Promise<string[]> {
+async function scrapeArticleUrls(listUrl: string, series: string): Promise<string[]> {
   const html = await fetchPage(listUrl);
   const $ = cheerio.load(html);
   const seen = new Set<string>();
   const urls: string[] = [];
+  // Only accept URLs belonging to the expected series to avoid sidebar cross-links
+  const seriesRe = new RegExp(`^\\/${series}\\/news\\/[^/]+\\/\\d+\\/?$`);
   $("a[href]").each((_, el) => {
     const href = $(el).attr("href") ?? "";
     const path = href.split("?")[0].split("#")[0];
-    if (ARTICLE_URL_RE.test(path) && !seen.has(path)) {
+    if (seriesRe.test(path) && !seen.has(path)) {
       seen.add(path);
       urls.push(`${BASE}${path}`);
     }
@@ -207,7 +209,7 @@ export async function fetchAndCacheNews(seriesSlug: string): Promise<SyncResult>
 
   let articleUrls: string[];
   try {
-    articleUrls = await scrapeArticleUrls(listUrl);
+    articleUrls = await scrapeArticleUrls(listUrl, seriesSlug);
     result.urlsFound = articleUrls.length;
   } catch (err) {
     result.errors.push(`list: ${String(err)}`);
@@ -236,6 +238,7 @@ export async function fetchAndCacheNews(seriesSlug: string): Promise<SyncResult>
         .onConflictDoUpdate({
           target: cachedNews.url,
           set: {
+            seriesSlug,
             title: data.title,
             imageUrl: data.imageUrl,
             summary: data.summary,
