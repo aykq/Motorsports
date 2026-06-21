@@ -3,6 +3,7 @@
 import { db } from "@/db";
 import { cachedRaceDetails, cachedRaces } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { revalidateTag } from "next/cache";
 import { syncSeries } from "@/lib/sync";
 import { sendPushToSubscribers } from "@/lib/push";
 import { requireAdmin } from "@/lib/admin-guard";
@@ -75,6 +76,7 @@ export async function syncNewsAction(): Promise<{ ok: boolean; message: string }
       lines.push(`${slug}: HATA — ${r.reason}`);
     }
   });
+  revalidateTag("news", {});
   return { ok: true, message: lines.join("\n") };
 }
 

@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import { db } from "@/db";
 import { cachedRaces, cachedStandings, cachedDrivers, cachedRaceDetails, cachedNews } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
@@ -316,39 +317,67 @@ export async function setCachedRaceDetail(
 
 export type NewsItem = typeof cachedNews.$inferSelect;
 
-export const getCachedNews = cache(async (
-  slug: string,
-  limit = 10
-): Promise<NewsItem[]> => {
-  try {
-    return await db.query.cachedNews.findMany({
-      where: eq(cachedNews.seriesSlug, slug),
-      orderBy: (t, { desc }) => [desc(t.publishedAt)],
-      limit,
-    });
-  } catch {
-    return [];
-  }
-});
+// unstable_cache serializes Date → string; rehydrate before returning to callers
+function rehydrateNewsItem(raw: NewsItem): NewsItem {
+  return {
+    ...raw,
+    publishedAt: raw.publishedAt ? new Date(raw.publishedAt as unknown as string) : null,
+    scrapedAt: new Date(raw.scrapedAt as unknown as string),
+  };
+}
 
-export const getAllCachedNews = cache(async (limit = 30): Promise<NewsItem[]> => {
-  try {
-    return await db.query.cachedNews.findMany({
-      orderBy: (t, { desc }) => [desc(t.publishedAt)],
-      limit,
-    });
-  } catch {
-    return [];
-  }
-});
+const _getCachedNews = unstable_cache(
+  async (slug: string, limit: number): Promise<NewsItem[]> => {
+    try {
+      return await db.query.cachedNews.findMany({
+        where: eq(cachedNews.seriesSlug, slug),
+        orderBy: (t, { desc }) => [desc(t.publishedAt)],
+        limit,
+      });
+    } catch {
+      return [];
+    }
+  },
+  ["news-by-series"],
+  { revalidate: 1800, tags: ["news"] }
+);
+
+export async function getCachedNews(slug: string, limit = 10): Promise<NewsItem[]> {
+  return (await _getCachedNews(slug, limit)).map(rehydrateNewsItem);
+}
+
+const _getAllCachedNews = unstable_cache(
+  async (limit: number): Promise<NewsItem[]> => {
+    try {
+      return await db.query.cachedNews.findMany({
+        orderBy: (t, { desc }) => [desc(t.publishedAt)],
+        limit,
+      });
+    } catch {
+      return [];
+    }
+  },
+  ["news-all"],
+  { revalidate: 1800, tags: ["news"] }
+);
+
+export async function getAllCachedNews(limit = 30): Promise<NewsItem[]> {
+  return (await _getAllCachedNews(limit)).map(rehydrateNewsItem);
+}
+
+const _getCachedNewsById = unstable_cache(
+  async (id: string): Promise<NewsItem | null> => {
+    try {
+      return (await db.query.cachedNews.findFirst({ where: eq(cachedNews.id, id) })) ?? null;
+    } catch {
+      return null;
+    }
+  },
+  ["news-item"],
+  { revalidate: 3600, tags: ["news"] }
+);
 
 export async function getCachedNewsById(id: string): Promise<NewsItem | null> {
-  try {
-    const row = await db.query.cachedNews.findFirst({
-      where: eq(cachedNews.id, id),
-    });
-    return row ?? null;
-  } catch {
-    return null;
-  }
+  const row = await _getCachedNewsById(id);
+  return row ? rehydrateNewsItem(row) : null;
 }
