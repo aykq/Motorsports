@@ -1,5 +1,6 @@
 import { getCachedRaceByRound, getCachedSchedule, setCachedSchedule } from "@/lib/cache";
 import { jolpicaFetchRaceResults } from "@/lib/adapters/f1/jolpica";
+import { fetchWECRaceResults } from "@/lib/adapters/wec/motorsport-results-scraper";
 import { getSeriesConfig } from "@/lib/series-config";
 import { getRaceDetail } from "@/lib/race-detail";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +10,7 @@ import { MapPin, Calendar, Clock, Sparkles, Timer } from "lucide-react";
 import { BackButton } from "@/components/layout/BackButton";
 import { RaceWeatherSection } from "@/components/race/RaceWeatherSection";
 import { SessionTabs, type SessionTab } from "@/components/race/SessionTabs";
+import { WECRaceResultsSection } from "@/components/race/WECRaceResultsSection";
 import { CircuitHeroPhoto } from "@/components/race/CircuitHeroPhoto";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -58,12 +60,20 @@ export default async function RaceDetailPage({ params }: Props) {
   }
   if (!race) notFound();
 
-  // Tamamlanmış yarış ama sonuç yok → Jolpica'dan tek round fetch et + cache güncelle
-  if (race.status === "completed" && !race.results?.length && slug === "f1") {
-    const freshResults = await jolpicaFetchRaceResults(year, round);
-    if (freshResults.length) {
-      race = { ...race, results: freshResults };
-      void setCachedSchedule(slug, year, [race]);
+  // Tamamlanmış yarış ama sonuç yok → ilgili kaynaktan çek + cache'e yaz
+  if (race.status === "completed" && !race.results?.length) {
+    if (slug === "f1") {
+      const freshResults = await jolpicaFetchRaceResults(year, round);
+      if (freshResults.length) {
+        race = { ...race, results: freshResults };
+        void setCachedSchedule(slug, year, [race]);
+      }
+    } else if (slug === "wec") {
+      const wecResults = await fetchWECRaceResults(year, race.name, race.circuitName);
+      if (wecResults.length) {
+        race = { ...race, results: wecResults };
+        void setCachedSchedule(slug, year, [race]);
+      }
     }
   }
 
@@ -262,6 +272,21 @@ export default async function RaceDetailPage({ params }: Props) {
           status={race.status}
           accentColor={config.color}
           enableOpenF1={slug === "f1"}
+        />
+      )}
+
+      {/* ── WEC Race Results ── */}
+      {slug === "wec" && (isCompleted || isLive) && allResults.length > 0 && (
+        <WECRaceResultsSection
+          results={allResults}
+          driverStandingsAfter={driverStandingsAfter}
+          teamStandingsAfter={teamStandingsAfter}
+          labels={{
+            results: t("results"),
+            championship: t("championship"),
+            driverChampionship: t("driverChampionship"),
+            teamChampionship: t("teamChampionship"),
+          }}
         />
       )}
 
