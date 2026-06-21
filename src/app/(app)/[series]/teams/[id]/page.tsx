@@ -54,6 +54,20 @@ export default async function TeamDetailPage({ params }: Props) {
   const f1Team = slug === "f1" ? getF1Team(id) : undefined;
   const teamColor = f1Team?.color ?? config.color;
 
+  const isCarBased = slug === "gt3" || slug === "gt4";
+
+  // Group drivers by car number (for GT3/GT4 multi-driver entries)
+  const carEntries = (() => {
+    if (!isCarBased) return null;
+    const map = new Map<number, typeof teamDrivers>();
+    for (const d of teamDrivers) {
+      const key = d.number ?? 0;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(d);
+    }
+    return [...map.entries()].sort(([a], [b]) => a - b);
+  })();
+
   const completedRaces = races
     .filter((r) => r.status === "completed")
     .sort((a, b) => a.round - b.round);
@@ -112,59 +126,130 @@ export default async function TeamDetailPage({ params }: Props) {
           </div>
         )}
 
-        {/* ── Pilots ── */}
+        {/* ── Pilots (GT3/GT4: grouped by car entry) ── */}
         {teamDrivers.length > 0 && (
           <section className="space-y-2">
             <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
               {t("pilots")}
             </h2>
-            <div className="grid grid-cols-2 gap-3">
-              {teamDrivers.map((driver) => {
-                const ds = driverStandings.find((s) => s.driver?.id === driver.id);
-                return (
-                  <Link key={driver.id} href={`/${slug}/drivers/${driver.id}`}>
-                    <div className="rounded-lg bg-card border border-border p-3 hover:bg-accent/50 transition-colors space-y-2">
-                      {driver.image ? (
-                        <Image
-                          src={driver.image}
-                          alt={driver.lastName}
-                          width={56}
-                          height={56}
-                          className="w-14 h-14 rounded-full object-cover bg-muted"
-                          style={{ objectPosition: config.imageObjectPosition ?? "center -35%" }}
-                        />
-                      ) : (
-                        <div
-                          className="w-14 h-14 rounded-full flex items-center justify-center text-sm font-black text-white"
-                          style={{ backgroundColor: teamColor }}
+
+            {isCarBased && carEntries ? (
+              <div className="space-y-4">
+                {carEntries.map(([carNo, entryDrivers]) => {
+                  const carModel = entryDrivers[0]?.carModel;
+                  return (
+                    <div key={carNo} className="rounded-lg border border-border overflow-hidden">
+                      {/* Car header */}
+                      <div
+                        className="flex items-center gap-3 px-4 py-2.5"
+                        style={{ background: `${teamColor}18` }}
+                      >
+                        <span
+                          className="text-lg font-black tabular-nums leading-none"
+                          style={{ color: teamColor }}
                         >
-                          {driver.code ?? driver.lastName[0]}
-                        </div>
-                      )}
-                      <div>
-                        <p className="font-semibold text-sm leading-tight">
-                          {driver.firstName} {driver.lastName}
-                        </p>
-                        {driver.number && (
-                          <p
-                            className="text-xs font-black mt-0.5"
-                            style={{ color: teamColor }}
-                          >
-                            #{driver.number}
-                          </p>
+                          #{carNo}
+                        </span>
+                        {carModel && (
+                          <span className="text-sm font-semibold text-foreground truncate">
+                            {carModel}
+                          </span>
                         )}
                       </div>
-                      {ds && (
-                        <div className="flex items-center justify-between text-xs pt-1 border-t border-border">
-                          <span className="text-muted-foreground">P{ds.position}</span>
-                          <span className="font-bold">{ds.points} {t("points").toLowerCase()}</span>
-                        </div>
-                      )}
+
+                      {/* Drivers in this car */}
+                      <div className="grid grid-cols-2 gap-0 divide-x divide-border border-t border-border">
+                        {entryDrivers.map((driver) => {
+                          const ds = driverStandings.find((s) => s.driver?.id === driver.id);
+                          return (
+                            <Link key={driver.id} href={`/${slug}/drivers/${driver.id}`}>
+                              <div className="p-3 hover:bg-accent/50 transition-colors space-y-2 h-full">
+                                {driver.image ? (
+                                  <Image
+                                    src={driver.image}
+                                    alt={driver.lastName}
+                                    width={56}
+                                    height={56}
+                                    className="w-14 h-14 rounded-full object-cover bg-muted"
+                                    style={{ objectPosition: config.imageObjectPosition ?? "center -35%" }}
+                                  />
+                                ) : (
+                                  <div
+                                    className="w-14 h-14 rounded-full flex items-center justify-center text-sm font-black text-white"
+                                    style={{ backgroundColor: teamColor }}
+                                  >
+                                    {driver.code ?? driver.lastName[0]}
+                                  </div>
+                                )}
+                                <div>
+                                  <p className="font-semibold text-sm leading-tight">
+                                    {driver.firstName} {driver.lastName}
+                                  </p>
+                                </div>
+                                {ds && (
+                                  <div className="flex items-center justify-between text-xs pt-1 border-t border-border">
+                                    <span className="text-muted-foreground">P{ds.position}</span>
+                                    <span className="font-bold">{ds.points} {t("points").toLowerCase()}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </Link>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </Link>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {teamDrivers.map((driver) => {
+                  const ds = driverStandings.find((s) => s.driver?.id === driver.id);
+                  return (
+                    <Link key={driver.id} href={`/${slug}/drivers/${driver.id}`}>
+                      <div className="rounded-lg bg-card border border-border p-3 hover:bg-accent/50 transition-colors space-y-2">
+                        {driver.image ? (
+                          <Image
+                            src={driver.image}
+                            alt={driver.lastName}
+                            width={56}
+                            height={56}
+                            className="w-14 h-14 rounded-full object-cover bg-muted"
+                            style={{ objectPosition: config.imageObjectPosition ?? "center -35%" }}
+                          />
+                        ) : (
+                          <div
+                            className="w-14 h-14 rounded-full flex items-center justify-center text-sm font-black text-white"
+                            style={{ backgroundColor: teamColor }}
+                          >
+                            {driver.code ?? driver.lastName[0]}
+                          </div>
+                        )}
+                        <div>
+                          <p className="font-semibold text-sm leading-tight">
+                            {driver.firstName} {driver.lastName}
+                          </p>
+                          {driver.number && (
+                            <p
+                              className="text-xs font-black mt-0.5"
+                              style={{ color: teamColor }}
+                            >
+                              #{driver.number}
+                            </p>
+                          )}
+                        </div>
+                        {ds && (
+                          <div className="flex items-center justify-between text-xs pt-1 border-t border-border">
+                            <span className="text-muted-foreground">P{ds.position}</span>
+                            <span className="font-bold">{ds.points} {t("points").toLowerCase()}</span>
+                          </div>
+                        )}
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
           </section>
         )}
 
