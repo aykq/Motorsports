@@ -61,6 +61,7 @@ export interface Driver {
   image?: string;
   standingsPosition?: number;
   category?: string;
+  carModel?: string;
 }
 
 export interface Team {

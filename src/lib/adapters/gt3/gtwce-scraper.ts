@@ -202,15 +202,28 @@ function parseTeamRoster(
 ): Driver[] {
   const drivers: Driver[] = [];
   let currentCarNo = 0;
+  let currentCarModel: string | undefined;
 
-  // Walk car-number spans and driver links in DOM order (SRO CMS structure)
-  $("span.team-members__car-number, a.team-members__list-link[href*='/driver/']").each((_, el) => {
+  const selector = [
+    "span.team-members__car-number",
+    "[class*='team-members__car-model']",
+    "[class*='team-members__car-brand']",
+    "[class*='team-members__car-name']",
+    "a.team-members__list-link[href*='/driver/']",
+  ].join(", ");
+
+  $(selector).each((_, el) => {
     const tag = (el as { tagName?: string }).tagName?.toLowerCase() ?? "";
+    const cls = (el as { attribs?: Record<string, string> }).attribs?.class ?? "";
     const $el = $(el);
 
-    if (tag === "span") {
-      currentCarNo = parseInt($el.text().trim(), 10) || currentCarNo;
-    } else {
+    if (cls.includes("car-number")) {
+      const n = parseInt($el.text().trim(), 10);
+      if (!isNaN(n)) { currentCarNo = n; currentCarModel = undefined; }
+    } else if (tag !== "a" && (cls.includes("car-model") || cls.includes("car-brand") || cls.includes("car-name"))) {
+      const text = $el.text().trim();
+      if (text) currentCarModel = text;
+    } else if (tag === "a") {
       const href = $el.attr("href") ?? "";
       const name = $el.find("h3.team-members__name").text().trim();
       if (!name) return;
@@ -235,6 +248,7 @@ function parseTeamRoster(
         team:        teamName,
         teamId,
         ...(image ? { image } : {}),
+        ...(currentCarModel ? { carModel: currentCarModel } : {}),
       });
     }
   });
