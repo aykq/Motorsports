@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { verifyCronSecret } from "@/lib/cron-auth";
 import { fetchAndCacheNews } from "@/lib/scrapers/motorsportNews";
 
@@ -21,5 +22,6 @@ export async function POST(request: Request) {
     })
   );
 
+  revalidateTag("news", {});
   return NextResponse.json({ ok: true, results });
 }
