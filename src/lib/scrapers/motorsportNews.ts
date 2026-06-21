@@ -89,6 +89,8 @@ interface ArticleData {
   publishedAt: Date | null;
 }
 
+type NodeWithIndex = { startIndex?: number | null };
+
 function extractBlocks($: cheerio.CheerioAPI): ContentBlock[] {
   const BODY_SELECTORS = [
     ".ms-article__body",
@@ -100,7 +102,7 @@ function extractBlocks($: cheerio.CheerioAPI): ContentBlock[] {
     "main",
   ];
 
-  let bodyEl: cheerio.Cheerio<cheerio.Element> | null = null;
+  let bodyEl: ReturnType<typeof $> | null = null;
   for (const sel of BODY_SELECTORS) {
     const el = $(sel).first();
     if (el.length) { bodyEl = el; break; }
@@ -114,7 +116,7 @@ function extractBlocks($: cheerio.CheerioAPI): ContentBlock[] {
     const text = $(el).text().trim();
     if (text.length > 30 && !SHARE_PATTERN.test(text)) {
       items.push({
-        idx: (el as cheerio.AnyNode & { startIndex?: number }).startIndex ?? 0,
+        idx: (el as NodeWithIndex).startIndex ?? 0,
         block: { type: "p", text },
       });
     }
@@ -137,7 +139,7 @@ function extractBlocks($: cheerio.CheerioAPI): ContentBlock[] {
       null;
 
     items.push({
-      idx: (el as cheerio.AnyNode & { startIndex?: number }).startIndex ?? 0,
+      idx: (el as NodeWithIndex).startIndex ?? 0,
       block: { type: "img", src, caption: caption || null },
     });
   });
