@@ -6,7 +6,7 @@ import { getTranslations, getLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, User, CalendarDays } from "lucide-react";
 import type { ContentBlock } from "@/lib/scrapers/motorsportNews";
 
 interface Props {
@@ -109,14 +109,19 @@ export default async function NewsDetailPage({ params }: Props) {
         )}
 
         {/* Meta: author + date */}
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
           {item.author && (
-            <>
-              <span>{item.author}</span>
-              <span>·</span>
-            </>
+            <span className="flex items-center gap-1.5">
+              <User className="w-3.5 h-3.5 shrink-0" />
+              {item.author}
+            </span>
           )}
-          <span>{formatDate(item.publishedAt, locale)}</span>
+          {item.publishedAt && (
+            <span className="flex items-center gap-1.5">
+              <CalendarDays className="w-3.5 h-3.5 shrink-0" />
+              {formatDate(item.publishedAt, locale)}
+            </span>
+          )}
         </div>
 
         {/* Summary / lead */}

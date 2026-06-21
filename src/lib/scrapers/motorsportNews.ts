@@ -31,6 +31,18 @@ function fixUrl(url: string | undefined): string | null {
 const SHARE_PATTERN =
   /paylaş|kopyala|tweetle|pinterest|viber|linkedin|facebook|whatsapp|tercih edilen kaynak/i;
 
+// Author names are short; anything containing these is a bloated container, not a name
+const AUTHOR_GARBAGE =
+  /yayın tarihi|linki kopyala|paylaş|tweetle|pinterest|viber|linkedin|facebook|whatsapp|tercih edilen/i;
+
+function cleanAuthor(raw: string): string | null {
+  // The fallback selector often grabs author + date + share buttons as one text blob.
+  // Split at the first tab/newline or before "Yayın tarihi" and take the first segment.
+  const first = raw.split(/[\t\n\r]|(?=Yayın tarihi)/i)[0].replace(/\s+/g, " ").trim();
+  if (!first || first.length > 80 || AUTHOR_GARBAGE.test(first)) return null;
+  return first;
+}
+
 const SERIES_URLS: Record<string, string> = {
   f1:     `${BASE}/f1/news/`,
   motogp: `${BASE}/motogp/news/`,
@@ -167,11 +179,13 @@ async function scrapeArticle(url: string): Promise<ArticleData> {
     if (!isNaN(d.getTime())) publishedAt = d;
   }
 
-  const author =
+  const rawAuthor =
     $('[itemprop="author"] [itemprop="name"]').first().text().trim() ||
     $('[rel="author"]').first().text().trim() ||
+    $(".ms-author__name, .ms-article-author__name").first().text().trim() ||
     $('[class*="author"]').first().text().trim() ||
-    null;
+    "";
+  const author = rawAuthor ? cleanAuthor(rawAuthor) : null;
 
   const blocks = extractBlocks($);
   const content = blocks.length > 0 ? JSON.stringify(blocks) : null;
