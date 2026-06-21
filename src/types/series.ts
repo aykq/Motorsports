@@ -29,6 +29,8 @@ export interface RaceResult {
   fastestLapTime?: string;
   gridPosition?: number;
   laps?: number;
+  coDrivers?: string[];
+  carClass?: string;
 }
 
 export interface Race {
