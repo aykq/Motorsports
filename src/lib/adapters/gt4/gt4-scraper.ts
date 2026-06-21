@@ -321,7 +321,7 @@ function parseGT4TeamPage(
       const n = parseInt($el.text().trim(), 10);
       if (!isNaN(n)) { currentCarNo = n; currentCarModel = undefined; }
     } else if (href.includes("/car/")) {
-      const text = $el.text().trim();
+      const text = $el.text().trim() || $el.find("img").first().attr("alt")?.trim() || "";
       if (text) currentCarModel = text;
     } else if (href.includes("/driver/")) {
       const name = $el.find("h3.team-members__name").text().trim();

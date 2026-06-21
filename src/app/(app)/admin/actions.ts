@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { cachedRaceDetails, cachedRaces } from "@/db/schema";
+import { cachedRaceDetails, cachedRaces, cachedDrivers } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { revalidateTag } from "next/cache";
 import { syncSeries } from "@/lib/sync";
@@ -57,6 +57,20 @@ export async function sendTestNotifAction(
   try {
     await sendPushToSubscribers(slug, null, { title, body, url: `/${slug}` });
     return { ok: true, message: `Notification sent to ${slug} subscribers` };
+  } catch (err) {
+    return { ok: false, message: String(err) };
+  }
+}
+
+export async function clearDriverCacheAction(
+  slug: string
+): Promise<{ ok: boolean; message: string }> {
+  await checkAdmin();
+  try {
+    const result = await db
+      .delete(cachedDrivers)
+      .where(eq(cachedDrivers.seriesSlug, slug));
+    return { ok: true, message: `${slug.toUpperCase()} driver cache temizlendi (${result.rowCount ?? 0} kayıt)` };
   } catch (err) {
     return { ok: false, message: String(err) };
   }

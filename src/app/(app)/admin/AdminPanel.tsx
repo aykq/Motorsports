@@ -7,7 +7,7 @@ import {
   RefreshCw, Trash2, Bell, Settings, CheckCircle, XCircle,
   Loader2, Users, ShieldCheck,
 } from "lucide-react";
-import { syncSeriesAction, clearRaceDetailAction, sendTestNotifAction, syncNewsAction } from "./actions";
+import { syncSeriesAction, clearRaceDetailAction, sendTestNotifAction, syncNewsAction, clearDriverCacheAction } from "./actions";
 import { UsersTable } from "./UsersTable";
 
 const ALL_SERIES = ["f1", "wec", "motogp", "moto2", "moto3", "gt3", "gt4", "carrera-cup"] as const;
@@ -78,6 +78,8 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers }: Props) {
   const [clearSlug, setClearSlug] = useState("");
   const [clearRound, setClearRound] = useState("");
   const [clearPending, startClearTransition] = useTransition();
+  const [clearDriverSlug, setClearDriverSlug] = useState("");
+  const [clearDriverPending, startClearDriverTransition] = useTransition();
   const [notifSlug, setNotifSlug] = useState("f1");
   const [notifTitle, setNotifTitle] = useState("");
   const [notifBody, setNotifBody] = useState("");
@@ -118,6 +120,15 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers }: Props) {
       const result = await clearRaceDetailAction(clearSlug, round);
       addToast(result.ok, result.message);
       if (result.ok) { setClearSlug(""); setClearRound(""); }
+    });
+  }
+
+  function handleClearDrivers() {
+    if (!clearDriverSlug) return;
+    startClearDriverTransition(async () => {
+      const result = await clearDriverCacheAction(clearDriverSlug);
+      addToast(result.ok, result.message);
+      if (result.ok) setClearDriverSlug("");
     });
   }
 
@@ -279,6 +290,31 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers }: Props) {
                 </button>
               </div>
             </div>
+          </section>
+
+          <section className="rounded-xl bg-card border border-border p-4 space-y-3">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Driver cache temizle</p>
+            <div className="flex gap-2">
+              <select
+                value={clearDriverSlug}
+                onChange={(e) => setClearDriverSlug(e.target.value)}
+                className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="">Seri seç</option>
+                {ALL_SERIES.map((s) => <option key={s} value={s}>{s.toUpperCase()}</option>)}
+              </select>
+              <button
+                onClick={handleClearDrivers}
+                disabled={clearDriverPending || !clearDriverSlug}
+                className={cn(
+                  "flex items-center justify-center rounded-md bg-destructive px-3 py-2 text-destructive-foreground",
+                  "hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                )}
+              >
+                {clearDriverPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+              </button>
+            </div>
+            <p className="text-[11px] text-muted-foreground">Cache temizledikten sonra ilgili seriyi sync et.</p>
           </section>
 
           {/* News sync */}
