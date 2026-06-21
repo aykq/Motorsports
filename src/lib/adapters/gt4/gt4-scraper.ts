@@ -308,25 +308,22 @@ function parseGT4TeamPage(
 
   const selector = [
     "span.team-members__car-number",
-    "[class*='team-members__car-model']",
-    "[class*='team-members__car-brand']",
-    "[class*='team-members__car-name']",
+    "a[href*='/car/']",
     "a.team-members__list-link[href*='/driver/']",
   ].join(", ");
 
   $(selector).each((_, el) => {
-    const tag = (el as { tagName?: string }).tagName?.toLowerCase() ?? "";
-    const cls = (el as { attribs?: Record<string, string> }).attribs?.class ?? "";
-    const $el = $(el);
+    const $el  = $(el);
+    const href = $el.attr("href") ?? "";
+    const cls  = (el as { attribs?: Record<string, string> }).attribs?.class ?? "";
 
     if (cls.includes("car-number")) {
       const n = parseInt($el.text().trim(), 10);
       if (!isNaN(n)) { currentCarNo = n; currentCarModel = undefined; }
-    } else if (tag !== "a" && (cls.includes("car-model") || cls.includes("car-brand") || cls.includes("car-name"))) {
+    } else if (href.includes("/car/")) {
       const text = $el.text().trim();
       if (text) currentCarModel = text;
-    } else if (tag === "a") {
-      const href = $el.attr("href") ?? "";
+    } else if (href.includes("/driver/")) {
       const name = $el.find("h3.team-members__name").text().trim();
       if (!name) return;
 
