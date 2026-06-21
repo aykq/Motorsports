@@ -89,8 +89,6 @@ interface ArticleData {
   publishedAt: Date | null;
 }
 
-type NodeWithIndex = { startIndex?: number | null };
-
 function extractBlocks($: cheerio.CheerioAPI): ContentBlock[] {
   const BODY_SELECTORS = [
     ".ms-article__body",
@@ -109,43 +107,32 @@ function extractBlocks($: cheerio.CheerioAPI): ContentBlock[] {
   }
   if (!bodyEl) return [];
 
-  // Collect paragraphs and images with their source position for ordering
-  const items: Array<{ idx: number; block: ContentBlock }> = [];
+  const blocks: ContentBlock[] = [];
 
-  bodyEl.find("p").each((_, el) => {
-    const text = $(el).text().trim();
-    if (text.length > 30 && !SHARE_PATTERN.test(text)) {
-      items.push({
-        idx: (el as NodeWithIndex).startIndex ?? 0,
-        block: { type: "p", text },
-      });
+  // cheerio's .find("p, img") returns elements in document (DOM) order
+  bodyEl.find("p, img").each((_, el) => {
+    const $el = $(el);
+
+    if ($el.is("p")) {
+      const text = $el.text().trim();
+      if (text.length > 30 && !SHARE_PATTERN.test(text)) {
+        blocks.push({ type: "p", text });
+      }
+    } else if ($el.is("img")) {
+      const w = $el.attr("width");
+      if (w && parseInt(w) <= 10) return;
+      const src = fixUrl($el.attr("src"));
+      if (!src) return;
+      const $figure = $el.closest("figure");
+      const caption =
+        $figure.find("figcaption").first().text().trim() ||
+        $el.closest('[class*="caption"]').text().trim() ||
+        null;
+      blocks.push({ type: "img", src, caption: caption || null });
     }
   });
 
-  // Collect images, skipping lazy-load placeholders (width="10")
-  bodyEl.find("img").each((_, el) => {
-    const $el = $(el);
-    const w = $el.attr("width");
-    if (w && parseInt(w) <= 10) return;
-
-    const src = fixUrl($el.attr("src"));
-    if (!src) return;
-
-    // Get caption from parent figure's figcaption
-    const $figure = $el.closest("figure");
-    const caption =
-      $figure.find("figcaption").first().text().trim() ||
-      $el.closest('[class*="caption"]').text().trim() ||
-      null;
-
-    items.push({
-      idx: (el as NodeWithIndex).startIndex ?? 0,
-      block: { type: "img", src, caption: caption || null },
-    });
-  });
-
-  items.sort((a, b) => a.idx - b.idx);
-  return items.map((i) => i.block);
+  return blocks;
 }
 
 async function scrapeArticle(url: string): Promise<ArticleData> {
