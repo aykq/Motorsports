@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Trophy, ChevronDown } from "lucide-react";
+import { Trophy, ChevronDown, ChevronsDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { RaceResult, Standing } from "@/types/series";
 
@@ -17,6 +17,7 @@ interface Props {
     driverChampionship: string;
     teamChampionship: string;
     loadMore?: string;
+    viewAll?: string;
   };
 }
 
@@ -86,7 +87,7 @@ function StandingRow({ standing, rank }: { standing: Standing; rank: number }) {
       >
         {rank}
       </span>
-      <div className="flex-1 min-w-0 text-center">
+      <div className="flex-1 min-w-0">
         <p className="font-medium truncate">{name}</p>
         {sub && <p className="text-muted-foreground truncate">{sub}</p>}
       </div>
@@ -101,45 +102,52 @@ function ClassResultGroup({
   slug,
   hasClasses,
   loadMoreLabel,
+  viewAllLabel,
 }: {
   cls: string;
   classResults: RaceResult[];
   slug: string;
   hasClasses: boolean;
   loadMoreLabel: string;
+  viewAllLabel: string;
 }) {
-  const [expanded, setExpanded] = useState(false);
-  const visible = expanded ? classResults : classResults.slice(0, PAGE_SIZE);
-  const remaining = classResults.length - PAGE_SIZE;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const visible = classResults.slice(0, visibleCount);
+  const remaining = classResults.length - visibleCount;
+  const hasMore = remaining > 0;
 
   return (
     <div>
       {hasClasses && cls && <ClassDivider label={cls} />}
 
       <div className="divide-y divide-border">
-        {visible.map((result) => {
+        {visible.map((result, i) => {
           const allDrivers = [result.driverName, ...(result.coDrivers ?? [])];
           const isDNF = result.status === "DNF";
           const isFirst = result.position === 1;
           const displayTime = isFirst
             ? (result.time ?? `${result.laps} laps`)
             : (result.gap ?? (isDNF ? "DNF" : result.status));
-          const teamSlug = slugify(result.team);
+          const teamHref = result.teamId
+            ? `/${slug}/teams/${result.teamId}`
+            : `/${slug}/teams/${slugify(result.team)}`;
 
           return (
             <Link
               key={result.position}
-              href={`/${slug}/teams/${teamSlug}`}
+              href={teamHref}
               className={cn(
                 "flex items-center gap-2.5 px-3 py-2.5 hover:bg-accent/40 transition-colors cursor-pointer",
+                "animate-in fade-in slide-in-from-bottom-1 duration-200",
                 isDNF && "opacity-60"
               )}
+              style={{ animationDelay: `${i * 30}ms`, animationFillMode: "both" }}
             >
               <PositionBadge pos={result.position} />
               <CarNumber num={result.driverNumber} />
 
-              {/* Team + Drivers — centered */}
-              <div className="flex-1 min-w-0 text-center">
+              {/* Team + Drivers */}
+              <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold leading-snug truncate">
                   {result.team}
                 </p>
@@ -172,14 +180,23 @@ function ClassResultGroup({
         })}
       </div>
 
-      {!expanded && remaining > 0 && (
-        <button
-          onClick={() => setExpanded(true)}
-          className="w-full flex items-center justify-center gap-1.5 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-accent/30 transition-colors border-t border-border"
-        >
-          <ChevronDown className="w-3.5 h-3.5" />
-          {loadMoreLabel} ({remaining})
-        </button>
+      {hasMore && (
+        <div className="flex border-t border-border">
+          <button
+            onClick={() => setVisibleCount((c) => Math.min(c + PAGE_SIZE, classResults.length))}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-accent/30 transition-colors border-r border-border"
+          >
+            <ChevronDown className="w-3.5 h-3.5" />
+            {loadMoreLabel} ({Math.min(remaining, PAGE_SIZE)})
+          </button>
+          <button
+            onClick={() => setVisibleCount(classResults.length)}
+            className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-accent/30 transition-colors"
+          >
+            <ChevronsDown className="w-3.5 h-3.5" />
+            {viewAllLabel}
+          </button>
+        </div>
       )}
     </div>
   );
@@ -203,7 +220,8 @@ export function WECRaceResultsSection({
 
   const hasClasses = grouped.size > 1 || (grouped.size === 1 && [...grouped.keys()][0] !== "");
   const sortedClasses = [...grouped.keys()].sort((a, b) => classOrder(a) - classOrder(b));
-  const loadMoreLabel = labels.loadMore ?? "Daha fazla göster";
+  const loadMoreLabel = labels.loadMore ?? "5 daha göster";
+  const viewAllLabel = labels.viewAll ?? "Tümünü gör";
 
   return (
     <div className="space-y-6">
@@ -221,6 +239,7 @@ export function WECRaceResultsSection({
               slug={slug}
               hasClasses={hasClasses}
               loadMoreLabel={loadMoreLabel}
+              viewAllLabel={viewAllLabel}
             />
           ))}
         </div>
