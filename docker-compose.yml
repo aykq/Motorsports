@@ -58,8 +58,7 @@ services:
       - internal
     command: >
       sh -c "
-        (echo '0 */3 * * * wget -qO- --header=\"x-cron-secret: $$CRON_SECRET\" --post-data=\"\" $$APP_URL/api/cron/news';
-         echo '*/5 * * * * wget -qO- --header=\"x-cron-secret: $$CRON_SECRET\" --post-data=\"\" $$APP_URL/api/cron/notify') | crontab - &&
+        echo '0 */3 * * * wget -qO- --header=\"x-cron-secret: $$CRON_SECRET\" --post-data=\"\" $$APP_URL/api/cron/news' | crontab - &&
         crond -f -l 6
       "
 

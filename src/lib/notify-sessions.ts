@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { sentNotifications } from "@/db/schema";
 import { sendPushToSubscribers } from "@/lib/push";
 import { jolpicaFetchQualifyingResults, jolpicaFetchSprintResults } from "@/lib/adapters/f1/jolpica";
+import { getSeriesConfig } from "@/lib/series-config";
 import type { Race } from "@/types/series";
 
 const STATUS_DRIVEN_SERIES = new Set(["motogp", "moto2", "moto3", "wec"]);
@@ -73,7 +74,7 @@ export async function notifySessions(): Promise<NotifySessionsResult> {
   const preWindows = {
     pre_1h:  { start: now + 55 * 60 * 1000, end: now + 65 * 60 * 1000 },
     pre_15m: { start: now + 10 * 60 * 1000, end: now + 20 * 60 * 1000 },
-    start:   { start: now -  2 * 60 * 1000, end: now +  3 * 60 * 1000 },
+    start:   { start: now -  4 * 60 * 1000, end: now +  6 * 60 * 1000 },
   };
 
   const allRaces = await db.query.cachedRaces.findMany();
@@ -86,6 +87,7 @@ export async function notifySessions(): Promise<NotifySessionsResult> {
       const label = SESSION_LABELS[session.type] ?? session.type;
       const icon  = SESSION_ICONS[session.type] ?? "🏎️";
       const tag   = `[${row.seriesSlug} R${race.round} ${session.type}]`;
+      const seriesName = getSeriesConfig(row.seriesSlug)?.shortName ?? row.seriesSlug.toUpperCase();
 
       // Pre-session notifications — kullanıcı tercihleri push fonksiyonunda filtrelenir
       for (const [notifType, window] of Object.entries(preWindows)) {
@@ -101,7 +103,7 @@ export async function notifySessions(): Promise<NotifySessionsResult> {
 
           await sendPushToSubscribers(row.seriesSlug, session.type, {
             title,
-            body: `${race.name} — ${race.circuitName}`,
+            body: `${seriesName} · ${race.name} — ${race.circuitName}`,
             url: `/${row.seriesSlug}`,
           });
           await markNotifSent(row.seriesSlug, row.season, race.round, session.type, notifType);
@@ -156,7 +158,7 @@ export async function notifySessions(): Promise<NotifySessionsResult> {
 
         await sendPushToSubscribers(row.seriesSlug, session.type, {
           title: `${icon} ${label} Sonuçları Açıklandı`,
-          body: `${race.name} — ${race.circuitName}`,
+          body: `${seriesName} · ${race.name} — ${race.circuitName}`,
           url: `/${row.seriesSlug}/races/${race.round}`,
         });
         await markNotifSent(row.seriesSlug, row.season, race.round, session.type, "results");
