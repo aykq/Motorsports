@@ -39,10 +39,6 @@ export function DriverPhoto({
 
   const objectPosition = config.imageObjectPosition ?? "center -35%";
   const zoom = config.imageZoom ?? 1;
-  // External CDN URLs (e.g. photos.motogp.com) are blocked by Cloudflare when
-  // fetched server-side via the /_next/image proxy. Bypass optimisation so the
-  // browser fetches the image directly from the CDN.
-  const isExternal = image.startsWith("http");
 
   return (
     <div
@@ -61,7 +57,6 @@ export function DriverPhoto({
             : { objectPosition }
         }
         priority={priority}
-        unoptimized={isExternal}
       />
     </div>
   );

@@ -29,6 +29,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 RUN mkdir -p /app/.next/cache/images && chown -R nextjs:nodejs /app/.next/cache
+RUN mkdir -p /app/public/motogp/drivers && chown -R nextjs:nodejs /app/public/motogp
 
 USER nextjs
 EXPOSE 3000
