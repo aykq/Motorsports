@@ -129,7 +129,7 @@ function extractBlocks($: cheerio.CheerioAPI): ContentBlock[] {
 
     if ($el.is("p")) {
       const text = $el.text().trim();
-      if (text.length > 30 && !SHARE_PATTERN.test(text)) {
+      if (text.length > 30 && !SHARE_PATTERN.test(text) && !/^İZLE:/i.test(text)) {
         blocks.push({ type: "p", text });
       }
     } else if ($el.is("img")) {
