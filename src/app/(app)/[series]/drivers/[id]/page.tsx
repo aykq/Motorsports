@@ -1,6 +1,7 @@
 import { getCachedDrivers, getCachedSchedule, getCachedStandings } from "@/lib/cache";
 import { getSeriesConfig } from "@/lib/series-config";
 import { getF1Team, getF1TeamByName } from "@/lib/f1-teams";
+import { getMotoGPTeam, getMotoGPTeamByName } from "@/lib/motogp-teams";
 import { notFound } from "next/navigation";
 import { BackButton } from "@/components/layout/BackButton";
 import { DriverPhoto } from "@/components/series/DriverPhoto";
@@ -82,8 +83,14 @@ export default async function DriverDetailPage({ params }: Props) {
   if (!driver) notFound();
 
   const standing = driverStandings.find((s) => s.driver?.id === id);
-  const f1Team = slug === "f1" ? (getF1Team(driver.teamId) ?? getF1TeamByName(driver.team)) : undefined;
-  const teamColor = f1Team?.color ?? config.color;
+  const isMotoSeries = ["motogp", "moto2", "moto3"].includes(slug);
+  const f1Team = slug === "f1"
+    ? (getF1Team(driver.teamId) ?? getF1TeamByName(driver.team))
+    : undefined;
+  const motoTeam = isMotoSeries
+    ? (getMotoGPTeam(driver.teamId ?? "") ?? getMotoGPTeamByName(driver.team ?? ""))
+    : undefined;
+  const teamColor = f1Team?.color ?? motoTeam?.color ?? config.color;
 
   const raceResults = races
     .filter((r) => r.status === "completed" && r.results?.some((res) => res.driverId === id))
@@ -149,7 +156,7 @@ export default async function DriverDetailPage({ params }: Props) {
                   href={`/${slug}/teams/${driver.teamId}`}
                   className="text-sm text-muted-foreground mt-1 truncate block hover:text-foreground transition-colors hover:underline"
                 >
-                  {f1Team?.fullName ?? driver.team}
+                  {f1Team?.fullName ?? motoTeam?.name ?? driver.team}
                 </Link>
               ) : (
                 <p className="text-sm text-muted-foreground mt-1 truncate">{driver.team}</p>

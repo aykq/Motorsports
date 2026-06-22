@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { getF1Team, getF1TeamByName } from "@/lib/f1-teams";
+import { getMotoGPTeam, getMotoGPTeamByName } from "@/lib/motogp-teams";
 import { getSeriesConfig } from "@/lib/series-config";
 import { TeamLogo } from "@/components/series/TeamLogo";
 import { DriverPhoto } from "@/components/series/DriverPhoto";
@@ -69,6 +70,13 @@ export function DriversContent({
 
   const drivers = driversByCategory[activeCat] ?? [];
   const catConfig = getSeriesConfig(activeCat) ?? config;
+  const isMotoSeries = ["motogp", "moto2", "moto3"].includes(activeCat);
+
+  function getTeam(teamId?: string, teamName?: string) {
+    return isMotoSeries
+      ? (getMotoGPTeam(teamId ?? "") ?? getMotoGPTeamByName(teamName ?? ""))
+      : (getF1Team(teamId) ?? getF1TeamByName(teamName));
+  }
 
   const allCategories = [...new Set(drivers.map((d) => d.category ?? "").filter(Boolean))];
   const hasCategories = allCategories.length > 0;
@@ -134,7 +142,7 @@ export function DriversContent({
         /* ── Car-crew table layout (WEC style) ── */
         <div className="space-y-3">
           {buildCarGroups(visibleDrivers).map(({ carNo, teamId, team, drivers: crewDrivers }) => {
-            const teamData = getF1Team(teamId) ?? getF1TeamByName(team);
+            const teamData = getTeam(teamId, team);
             const accentColor = teamData?.color ?? catConfig.color;
             return (
               <div
@@ -195,7 +203,7 @@ export function DriversContent({
         <div className="space-y-3">
           {Object.entries(groupByTeam(visibleDrivers)).map(([teamKey, teamDrivers]) => {
             const firstDriver = teamDrivers[0];
-            const team = getF1Team(firstDriver.teamId) ?? getF1TeamByName(firstDriver.team);
+            const team = getTeam(firstDriver.teamId, firstDriver.team);
             return (
               <div key={teamKey}>
                 <div className="flex items-center gap-2.5 px-1 mb-2">
