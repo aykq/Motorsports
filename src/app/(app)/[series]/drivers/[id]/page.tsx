@@ -3,8 +3,8 @@ import { getSeriesConfig } from "@/lib/series-config";
 import { getF1Team, getF1TeamByName } from "@/lib/f1-teams";
 import { notFound } from "next/navigation";
 import { BackButton } from "@/components/layout/BackButton";
+import { DriverPhoto } from "@/components/series/DriverPhoto";
 import Link from "next/link";
-import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
 
@@ -115,24 +115,16 @@ export default async function DriverDetailPage({ params }: Props) {
           </span>
         )}
         <div className="relative flex items-center gap-4">
-          {driver.image ? (
-            <Image
-              src={driver.image}
-              alt={driver.lastName}
-              width={80}
-              height={80}
-              priority
-              className="w-20 h-20 rounded-full object-cover bg-muted shrink-0 ring-2 ring-border"
-              style={{ objectPosition: config.imageObjectPosition ?? "center -35%" }}
-            />
-          ) : (
-            <div
-              className="w-20 h-20 rounded-full flex items-center justify-center text-xl font-black text-white shrink-0"
-              style={{ backgroundColor: teamColor }}
-            >
-              {driver.code ?? driver.lastName[0]}
-            </div>
-          )}
+          <DriverPhoto
+            image={driver.image}
+            alt={driver.lastName}
+            size={80}
+            config={config}
+            fallbackColor={teamColor}
+            fallbackLabel={driver.code ?? driver.lastName[0]}
+            className="ring-2 ring-border"
+            priority
+          />
           <div className="min-w-0">
             <h1 className="text-2xl font-black leading-tight">
               {driver.firstName} {driver.lastName}
