@@ -51,7 +51,7 @@ export function DriverPhoto({
           src={image}
           alt={alt}
           fill
-          sizes={`${size}px`}
+          sizes={`${size * 3}px`}
           className="object-cover"
           style={{
             objectPosition: "center top",
