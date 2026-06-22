@@ -28,6 +28,12 @@ self.addEventListener("fetch", (event) => {
   // API isteklerini cache'leme
   if (request.url.includes("/api/")) return;
 
+  // Cross-origin istekleri (CDN görseller vb.) — SW'ya bırakma, tarayıcı doğrudan yönetsin
+  if (!request.url.startsWith(self.location.origin)) return;
+
+  // Next.js dahili istekler — image optimizer, static chunk'lar
+  if (request.url.includes("/_next/")) return;
+
   event.respondWith(
     fetch(request)
       .then((response) => {
