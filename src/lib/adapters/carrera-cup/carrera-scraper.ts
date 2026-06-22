@@ -226,41 +226,68 @@ async function scrapeTeamSlugs(): Promise<string[]> {
   return Array.from(slugs);
 }
 
-interface TeamInfo { slug: string; name: string; driverSlugs: string[] }
+interface DriverTeamData { slug: string; image?: string; number?: number }
+interface TeamInfo { slug: string; name: string; drivers: DriverTeamData[] }
+
+// Driver headshot pattern: /v{n}/{carNo}_{FirstName}_{LastName}_{hash}
+// Numbers have a numeric prefix; car/series images have ALL_CAPS or model names → won't match
+const DRIVER_IMG_PATTERN = /\/v\d+\/(\d+)_([A-Za-z]+)_([A-Za-z]+)/;
 
 async function scrapeTeam(teamSlug: string): Promise<TeamInfo> {
   const html = await fetchCarreraPage(`${RACING_BASE}/teams/${teamSlug}`);
   const $ = cheerio.load(html);
   const name = $("h1").first().text().trim() || teamSlug;
-  const driverSlugs = new Set<string>();
+
+  // Build name-key → {image, number} map from Cloudinary driver photos on this page.
+  // Driver photos live on the team page (not the driver profile page).
+  const imageByNameKey = new Map<string, { image: string; number: number }>();
+  $("img").each((_, el) => {
+    const src = $(el).attr("src") ?? "";
+    if (!src.includes("res.cloudinary.com")) return;
+    const m = src.match(DRIVER_IMG_PATTERN);
+    if (!m) return;
+    const num = parseInt(m[1], 10);
+    if (isNaN(num)) return;
+    const key = `${m[2].toLowerCase()}-${m[3].toLowerCase()}`;
+    if (!imageByNameKey.has(key)) {
+      imageByNameKey.set(key, {
+        image: src.replace(/c_thumb,[^/]+/, "c_thumb,w_400,h_400,g_face"),
+        number: num,
+      });
+    }
+  });
+
+  // Collect driver slugs and match each to an image by name.
+  // Slug format: pccd-driver-{firstname}-{lastname} → extract name parts for lookup.
+  const seen = new Set<string>();
+  const drivers: DriverTeamData[] = [];
   $("a[href]").each((_, el) => {
     const href = $(el).attr("href") ?? "";
     const m = href.match(/^\/drivers\/(pccd-[^/?#]+)/);
-    if (m) driverSlugs.add(m[1]);
+    if (!m || seen.has(m[1])) return;
+    seen.add(m[1]);
+
+    const driverSlug = m[1];
+    const nameParts = driverSlug.replace(/^pccd-(?:driver-)?/, "").split("-");
+    let found: { image: string; number: number } | undefined;
+    if (nameParts.length >= 2) {
+      // Try first + last name; covers the majority of single-surname cases
+      found = imageByNameKey.get(`${nameParts[0]}-${nameParts[nameParts.length - 1]}`);
+    }
+    drivers.push({ slug: driverSlug, ...found });
   });
-  return { slug: teamSlug, name, driverSlugs: Array.from(driverSlugs) };
+
+  return { slug: teamSlug, name, drivers };
 }
 
-async function scrapeDriverProfile(driverSlug: string, team: TeamInfo): Promise<Driver | null> {
+async function scrapeDriverProfile(
+  driverSlug: string,
+  team: TeamInfo,
+  imageData?: { image?: string; number?: number },
+): Promise<Driver | null> {
   try {
     const html = await fetchCarreraPage(`${RACING_BASE}/drivers/${driverSlug}`);
     const $ = cheerio.load(html);
-
-    // Driver headshot: /v{n}/{number}_{ProperName}_{ProperName}_ pattern
-    // Car images (963_AEROUpdate, 911_GT3_R) have ALL_CAPS or model-name segments → excluded
-    let image: string | undefined;
-    let number: number | undefined;
-    const driverImgPattern = /\/v\d+\/(\d+)_([A-Z][a-z]+)_([A-Z][a-z])/;
-    $("img").each((_, el) => {
-      const src = $(el).attr("src") ?? "";
-      if (!src.includes("res.cloudinary.com")) return;
-      const m = src.match(driverImgPattern);
-      if (m && !image) {
-        // Square crop with face-detection gravity — optimal for circular avatar display
-        image = src.replace(/c_thumb,[^/]+/, "c_thumb,w_400,h_400,g_face");
-        number = parseInt(m[1], 10);
-      }
-    });
 
     // Name from h1
     const fullName = $("h1").first().text().trim();
@@ -286,8 +313,8 @@ async function scrapeDriverProfile(driverSlug: string, team: TeamInfo): Promise<
       nationality,
       team: team.name,
       teamId: team.slug,
-      number: number || undefined,
-      image,
+      ...(imageData?.number ? { number: imageData.number } : {}),
+      ...(imageData?.image ? { image: imageData.image } : {}),
     };
   } catch (err) {
     console.warn(`[CarreraCup] driver scrape failed: ${driverSlug}`, err);
@@ -302,20 +329,20 @@ export async function fetchCarreraDrivers(_season: number): Promise<Driver[]> {
 
     const teams = await Promise.all(teamSlugs.map(scrapeTeam));
 
-    // Collect unique driver slugs with their team info
-    const tasks: { driverSlug: string; team: TeamInfo }[] = [];
+    // Collect unique drivers with their team + image data
+    const tasks: { driverSlug: string; team: TeamInfo; imageData?: { image?: string; number?: number } }[] = [];
     const seen = new Set<string>();
     for (const team of teams) {
-      for (const driverSlug of team.driverSlugs) {
-        if (!seen.has(driverSlug)) {
-          seen.add(driverSlug);
-          tasks.push({ driverSlug, team });
+      for (const d of team.drivers) {
+        if (!seen.has(d.slug)) {
+          seen.add(d.slug);
+          tasks.push({ driverSlug: d.slug, team, imageData: { image: d.image, number: d.number } });
         }
       }
     }
 
     const results = await Promise.all(
-      tasks.map(({ driverSlug, team }) => scrapeDriverProfile(driverSlug, team))
+      tasks.map(({ driverSlug, team, imageData }) => scrapeDriverProfile(driverSlug, team, imageData))
     );
     return results.filter((d): d is Driver => d !== null);
   } catch (err) {
