@@ -39,40 +39,30 @@ export function DriverPhoto({
 
   const objectPosition = config.imageObjectPosition ?? "center -35%";
   const zoom = config.imageZoom ?? 1;
-
-  if (zoom > 1) {
-    // Wrap in overflow-hidden div so CSS scale transform is clipped to the circle
-    return (
-      <div
-        className={cn("relative rounded-full overflow-hidden bg-muted shrink-0", className)}
-        style={{ width: size, height: size }}
-      >
-        <Image
-          src={image}
-          alt={alt}
-          fill
-          sizes={`${size * 3}px`}
-          className="object-cover"
-          style={{
-            objectPosition: "center top",
-            transform: `scale(${zoom})`,
-            transformOrigin: "center top",
-          }}
-          priority={priority}
-        />
-      </div>
-    );
-  }
+  // External CDN URLs (e.g. photos.motogp.com) are blocked by Cloudflare when
+  // fetched server-side via the /_next/image proxy. Bypass optimisation so the
+  // browser fetches the image directly from the CDN.
+  const isExternal = image.startsWith("http");
 
   return (
-    <Image
-      src={image}
-      alt={alt}
-      width={size}
-      height={size}
-      className={cn("rounded-full object-cover bg-muted shrink-0", className)}
-      style={{ objectPosition }}
-      priority={priority}
-    />
+    <div
+      className={cn("relative rounded-full overflow-hidden bg-muted shrink-0", className)}
+      style={{ width: size, height: size }}
+    >
+      <Image
+        src={image}
+        alt={alt}
+        fill
+        sizes={`${zoom > 1 ? size * 3 : size}px`}
+        className="object-cover"
+        style={
+          zoom > 1
+            ? { objectPosition: "center top", transform: `scale(${zoom})`, transformOrigin: "center top" }
+            : { objectPosition }
+        }
+        priority={priority}
+        unoptimized={isExternal}
+      />
+    </div>
   );
 }
