@@ -62,14 +62,22 @@ export default async function DriverDetailPage({ params }: Props) {
 
   const t = await getTranslations("driversPage");
   const year = new Date().getFullYear();
-  const [{ drivers }, { standings: driverStandings }, { races }] = await Promise.all([
-    getCachedDrivers(slug),
-    getCachedStandings(slug, year, "driver"),
-    getCachedSchedule(slug, year),
-  ]);
+  const subSeries = config.subSeries ?? [];
+  const [{ drivers: mainDrivers }, subDriverResults, { standings: driverStandings }, { races }] =
+    await Promise.all([
+      getCachedDrivers(slug),
+      Promise.all(subSeries.map((s) => getCachedDrivers(s))),
+      getCachedStandings(slug, year, "driver"),
+      getCachedSchedule(slug, year),
+    ]);
+
+  const allDrivers = [
+    ...mainDrivers,
+    ...subDriverResults.flatMap((r) => r.drivers),
+  ];
 
   const driver =
-    drivers.find((d) => d.id === id) ??
+    allDrivers.find((d) => d.id === id) ??
     driverStandings.find((s) => s.driver?.id === id)?.driver;
   if (!driver) notFound();
 

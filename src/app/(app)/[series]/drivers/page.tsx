@@ -101,6 +101,7 @@ export default async function DriversListPage({ params, searchParams }: Props) {
             <Link
               key={catSlug}
               href={`/${slug}/drivers?cat=${catSlug}`}
+              replace
               className={cn(
                 "flex-1 text-center text-xs font-semibold py-1.5 rounded-lg transition-colors",
                 activeCat === catSlug
