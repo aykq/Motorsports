@@ -242,10 +242,7 @@ export function DriversContent({
                           </p>
                         </div>
                         {driver.number && (
-                          <span
-                            className="text-sm font-black shrink-0"
-                            style={{ color: team?.color ?? undefined }}
-                          >
+                          <span className="text-sm font-black shrink-0 text-muted-foreground">
                             #{driver.number}
                           </span>
                         )}
