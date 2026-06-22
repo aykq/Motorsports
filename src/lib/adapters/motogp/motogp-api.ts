@@ -101,6 +101,9 @@ const CareerStepSchema = z.object({
   team: TeamInfoSchema.optional(),
   short_nickname: z.string().nullable().optional(),
   category: z.object({ id: z.string(), name: z.string() }).optional(),
+  pictures: z.object({
+    profile: z.object({ main: z.string().nullable().optional() }).optional(),
+  }).optional(),
 });
 
 const RiderSchema = z.object({
@@ -373,7 +376,7 @@ export function createMotoGPFetchers(
           teamId: r.current_career_step?.team ? teamSlug(r.current_career_step.team.name) : undefined,
           number: r.current_career_step?.number,
           code: r.current_career_step?.short_nickname ?? undefined,
-          image: r.pictures?.profile?.main ?? undefined,
+          image: r.current_career_step?.pictures?.profile?.main ?? undefined,
         });
       }
 
