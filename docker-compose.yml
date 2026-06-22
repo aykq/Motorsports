@@ -42,6 +42,7 @@ services:
       ADMIN_SECRET: ${ADMIN_SECRET}
     volumes:
       - nextjs-image-cache:/app/.next/cache/images
+      - motogp-drivers:/app/public/motogp/drivers
     depends_on:
       db:
         condition: service_healthy
@@ -84,6 +85,7 @@ services:
 volumes:
   pgdata:
   nextjs-image-cache:
+  motogp-drivers:
 
 networks:
   internal:
