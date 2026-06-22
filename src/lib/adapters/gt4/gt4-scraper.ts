@@ -304,26 +304,26 @@ function parseGT4TeamPage(
 ): Driver[] {
   const drivers: Driver[] = [];
   let currentCarNo = 0;
-  let currentCarModel: string | undefined;
 
-  const selector = [
-    "span.team-members__car-number",
-    "a[href*='/car/']",
-    "a.team-members__list-link[href*='/driver/']",
-  ].join(", ");
+  // Car model link appears in the page header, outside the team-members section.
+  const carModel = $("a[href*='/car/']")
+    .filter((_, el) => {
+      const cls = (el as { attribs?: Record<string, string> }).attribs?.class ?? "";
+      return !cls.includes("sponsors");
+    })
+    .map((_, el) => $(el).text().trim() || $(el).find("img").first().attr("alt")?.trim() || "")
+    .get()
+    .find((t) => t.length > 0);
 
-  $(selector).each((_, el) => {
-    const $el  = $(el);
-    const href = $el.attr("href") ?? "";
-    const cls  = (el as { attribs?: Record<string, string> }).attribs?.class ?? "";
+  $("span.team-members__car-number, a.team-members__list-link[href*='/driver/']").each((_, el) => {
+    const $el = $(el);
+    const cls = (el as { attribs?: Record<string, string> }).attribs?.class ?? "";
 
     if (cls.includes("car-number")) {
       const n = parseInt($el.text().trim(), 10);
-      if (!isNaN(n)) { currentCarNo = n; currentCarModel = undefined; }
-    } else if (href.includes("/car/")) {
-      const text = $el.text().trim() || $el.find("img").first().attr("alt")?.trim() || "";
-      if (text) currentCarModel = text;
-    } else if (href.includes("/driver/")) {
+      if (!isNaN(n)) currentCarNo = n;
+    } else {
+      const href = $el.attr("href") ?? "";
       const name = $el.find("h3.team-members__name").text().trim();
       if (!name) return;
 
@@ -347,7 +347,7 @@ function parseGT4TeamPage(
         team:   teamName,
         teamId,
         ...(image ? { image } : {}),
-        ...(currentCarModel ? { carModel: currentCarModel } : {}),
+        ...(carModel ? { carModel } : {}),
       });
     }
   });
