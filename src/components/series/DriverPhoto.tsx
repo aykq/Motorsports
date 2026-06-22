@@ -39,6 +39,8 @@ export function DriverPhoto({
 
   const objectPosition = config.imageObjectPosition ?? "center -35%";
   const zoom = config.imageZoom ?? 1;
+  // Local motogp images are served as static files — skip /_next/image optimizer
+  const unoptimized = image.startsWith("/motogp/");
 
   return (
     <div
@@ -57,6 +59,7 @@ export function DriverPhoto({
             : { objectPosition }
         }
         priority={priority}
+        unoptimized={unoptimized}
       />
     </div>
   );
