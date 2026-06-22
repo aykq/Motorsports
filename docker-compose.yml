@@ -40,6 +40,8 @@ services:
       DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_SECRET: ${ADMIN_SECRET}
+    volumes:
+      - nextjs-image-cache:/app/.next/cache/images
     depends_on:
       db:
         condition: service_healthy
@@ -81,6 +83,7 @@ services:
 
 volumes:
   pgdata:
+  nextjs-image-cache:
 
 networks:
   internal:
