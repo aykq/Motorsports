@@ -15,6 +15,16 @@ const RESULTS_WINDOW: Record<string, number> = {
   race:        32 * 60 * 60 * 1000,
 };
 
+// For non-F1 series we can't query live results, so a non-race session's
+// results are only considered ready once it has plausibly finished — i.e. after
+// this much elapsed since its start. Without this, "results announced" fired the
+// instant the session started (together with the "started" notification).
+const NON_RACE_RESULTS_DELAY_MS: Record<string, number> = {
+  qualifying:  60 * 60 * 1000,
+  sprintQuali: 45 * 60 * 1000,
+  sprint:      75 * 60 * 1000,
+};
+
 const SESSION_LABELS: Record<string, string> = {
   practice1: "1. Antrenman",
   practice2: "2. Antrenman",
@@ -150,7 +160,10 @@ export async function notifySessions(): Promise<NotifySessionsResult> {
               resultsReady = elapsed > liveWindowMs;
             }
           } else {
-            resultsReady = true;
+            // Non-race sessions (sprint, qualifying, sprintQuali): ready only once
+            // the session has plausibly finished — never at its start.
+            const delay = NON_RACE_RESULTS_DELAY_MS[session.type] ?? 60 * 60 * 1000;
+            resultsReady = elapsed > delay;
           }
         }
 
