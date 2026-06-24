@@ -80,11 +80,14 @@ function OverviewCard({
   accent, label, value, children,
 }: { accent: string; label: string; value: number; children?: ReactNode }) {
   return (
-    <div className="relative rounded-xl bg-card border border-border p-4 overflow-hidden">
+    <div className="relative rounded-xl bg-card border border-border overflow-hidden p-4
+                    flex flex-row sm:flex-col items-center sm:items-stretch justify-between gap-3">
       <span className="absolute inset-x-0 top-0 h-0.5" style={{ backgroundColor: accent }} />
-      <p className="text-[10px] text-muted-foreground uppercase tracking-widest leading-none">{label}</p>
-      <p className="mt-2.5 text-3xl font-mono font-bold tabular-nums leading-none">{value}</p>
-      <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] leading-none min-h-[0.75rem]">
+      <div className="flex flex-col gap-1.5 shrink-0">
+        <span className="text-[10px] text-muted-foreground uppercase tracking-widest leading-none">{label}</span>
+        <span className="text-3xl font-mono font-bold tabular-nums leading-none">{value}</span>
+      </div>
+      <div className="flex flex-wrap items-center justify-end sm:justify-start gap-x-3 gap-y-1.5 text-[11px] leading-none">
         {children}
       </div>
     </div>
