@@ -63,7 +63,7 @@ function QualifyingRow({
     >
       <span
         className={cn(
-          "text-right font-bold shrink-0",
+          "text-right font-mono font-bold shrink-0",
           result.position === 1 && "text-yellow-500",
           result.position === 2 && "text-zinc-400",
           result.position === 3 && "text-amber-600",

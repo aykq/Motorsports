@@ -37,7 +37,7 @@ function PositionBadge({ pos }: { pos: number }) {
   return (
     <span
       className={cn(
-        "w-6 text-center font-bold tabular-nums shrink-0 text-base",
+        "w-6 text-center font-mono font-bold tabular-nums shrink-0 text-base",
         pos === 1 && "text-yellow-500",
         pos === 2 && "text-zinc-400",
         pos === 3 && "text-amber-600",
@@ -226,7 +226,7 @@ export function WECRaceResultsSection({
   return (
     <div className="space-y-6">
       <section className="space-y-2">
-        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest text-center">
+        <h2 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest text-center">
           {labels.results}
         </h2>
 
@@ -247,7 +247,7 @@ export function WECRaceResultsSection({
 
       {(driverStandingsAfter.length > 0 || teamStandingsAfter.length > 0) && (
         <section className="space-y-2">
-          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest text-center">
+          <h2 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest text-center">
             {labels.championship}
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

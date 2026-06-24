@@ -173,48 +173,56 @@ export default async function RaceDetailPage({ params }: Props) {
     : { date: "—", time: "—" };
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 space-y-6">
       <BackButton fallbackHref={`/${slug}/schedule`} label={t("schedule")} />
 
-      {/* ── Header ── */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-2 flex-wrap">
-          <Link href={`/${slug}`}>
-            <Badge
-              variant="secondary"
-              className="text-xs font-bold cursor-pointer hover:opacity-80 transition-opacity"
+      {/* ── Livery header ── */}
+      <div
+        className="relative overflow-hidden rounded-2xl border border-border p-5 space-y-2"
+        style={{ background: `linear-gradient(110deg, color-mix(in oklch, ${config.color} 20%, var(--card)), var(--card) 55%)` }}
+      >
+        <span
+          aria-hidden
+          className="absolute -right-10 -top-8 -bottom-8 w-40 skew-x-[-18deg] opacity-15"
+          style={{ background: `linear-gradient(180deg, ${config.color}, transparent)` }}
+        />
+        <div className="relative space-y-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Link
+              href={`/${slug}`}
+              className="font-display text-[11px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded cursor-pointer hover:opacity-80 transition-opacity"
               style={{ backgroundColor: config.color + "22", color: config.color }}
             >
               {config.shortName}
+            </Link>
+            <span className="font-mono text-xs text-muted-foreground">{t("round", { round: race.round })}</span>
+            <Badge
+              variant={isLive ? "destructive" : isCompleted ? "secondary" : "outline"}
+              className={cn("font-display uppercase tracking-wider text-[11px]", isLive && "animate-pulse")}
+            >
+              {tStatus(race.status as "upcoming" | "live" | "completed" | "cancelled") ?? race.status}
             </Badge>
-          </Link>
-          <span className="text-xs text-muted-foreground">{t("round", { round: race.round })}</span>
-          <Badge
-            variant={isLive ? "destructive" : isCompleted ? "secondary" : "outline"}
-            className={cn("text-xs", isLive && "animate-pulse")}
-          >
-            {tStatus(race.status as "upcoming" | "live" | "completed" | "cancelled") ?? race.status}
-          </Badge>
-        </div>
-        <h1 className="text-2xl font-bold leading-tight">{race.name}</h1>
-        <div className="flex items-center gap-1.5 text-sm text-muted-foreground flex-wrap">
-          <MapPin className="w-4 h-4 shrink-0" />
-          <Link
-            href={`/${slug}/circuits/${race.circuitId}`}
-            className="hover:text-foreground hover:underline transition-colors cursor-pointer"
-          >
-            {race.circuitName}
-          </Link>
-          <span className="text-muted-foreground/50">·</span>
-          <span>{race.location}, {race.country}</span>
-        </div>
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <Calendar className="w-3 h-3" />{raceDateStr}
-          </span>
-          <span className="flex items-center gap-1">
-            <Clock className="w-3 h-3" />{raceTimeStr} ({t("ist")})
-          </span>
+          </div>
+          <h1 className="font-display text-3xl font-bold uppercase tracking-tight leading-none">{race.name}</h1>
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground flex-wrap">
+            <MapPin className="w-4 h-4 shrink-0" />
+            <Link
+              href={`/${slug}/circuits/${race.circuitId}`}
+              className="hover:text-foreground hover:underline transition-colors cursor-pointer"
+            >
+              {race.circuitName}
+            </Link>
+            <span className="text-muted-foreground/50">·</span>
+            <span>{race.location}, {race.country}</span>
+          </div>
+          <div className="flex items-center gap-3 text-xs text-muted-foreground font-mono">
+            <span className="flex items-center gap-1">
+              <Calendar className="w-3 h-3" />{raceDateStr}
+            </span>
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3" />{raceTimeStr} ({t("ist")})
+            </span>
+          </div>
         </div>
       </div>
 
@@ -230,7 +238,7 @@ export default async function RaceDetailPage({ params }: Props) {
 
       {/* ── Program ── */}
       <section className="space-y-2">
-        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+        <h2 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">
           {t("schedule")}
         </h2>
         <div className="rounded-lg border border-border overflow-hidden">
@@ -249,7 +257,7 @@ export default async function RaceDetailPage({ params }: Props) {
                 <span className={cn("w-32 shrink-0 text-sm", isRaceSession ? "text-foreground" : "text-muted-foreground")}>
                   {tSessions.has(sessionKey) ? tSessions(sessionKey) : session.type}
                 </span>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground ml-auto">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground ml-auto font-mono">
                   <span className="hidden sm:block capitalize">{dayName}</span>
                   <Calendar className="w-3 h-3 shrink-0" />
                   <span>{date}</span>
@@ -318,7 +326,7 @@ export default async function RaceDetailPage({ params }: Props) {
 
       {/* ── Quotes Placeholder ── */}
       <section className="space-y-2">
-        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+        <h2 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">
           {t("quotes")}
         </h2>
         <div className="rounded-lg border border-border border-dashed p-6 flex flex-col items-center gap-2 text-center">
@@ -331,7 +339,7 @@ export default async function RaceDetailPage({ params }: Props) {
 
       {/* ── Analysis Placeholder ── */}
       <section className="space-y-2">
-        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+        <h2 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">
           {isCompleted ? t("analysis") : t("updates")}
         </h2>
         <div className="rounded-lg border border-border border-dashed p-6 flex flex-col items-center gap-2 text-center">
