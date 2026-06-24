@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition, useState, type ReactNode } from "react";
+import { useTransition, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -76,30 +76,13 @@ interface Props {
   initialNotifications: RecentNotification[];
 }
 
-function OverviewCard({
-  accent, label, value, children,
-}: { accent: string; label: string; value: number; children?: ReactNode }) {
+function StatCard({ accent, label, value }: { accent: string; label: string; value: number }) {
   return (
-    <div className="relative rounded-xl bg-card border border-border overflow-hidden p-4
-                    flex flex-row sm:flex-col items-center sm:items-stretch justify-between gap-3">
+    <div className="relative rounded-xl bg-card border border-border overflow-hidden p-4 flex flex-col gap-1.5">
       <span className="absolute inset-x-0 top-0 h-0.5" style={{ backgroundColor: accent }} />
-      <div className="flex flex-col gap-1.5 shrink-0">
-        <span className="text-[10px] text-muted-foreground uppercase tracking-widest leading-none">{label}</span>
-        <span className="text-3xl font-mono font-bold tabular-nums leading-none">{value}</span>
-      </div>
-      <div className="flex flex-wrap items-center justify-end sm:justify-start gap-x-3 gap-y-1.5 text-[11px] leading-none">
-        {children}
-      </div>
+      <span className="text-3xl font-mono font-bold tabular-nums leading-none">{value}</span>
+      <span className="text-[10px] text-muted-foreground uppercase tracking-widest leading-none">{label}</span>
     </div>
-  );
-}
-
-function StatPill({ color, children }: { color: string; children: ReactNode }) {
-  return (
-    <span className="inline-flex items-center gap-1 font-mono tabular-nums" style={{ color }}>
-      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
-      {children}
-    </span>
   );
 }
 
@@ -232,7 +215,6 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers, initialNotifica
   }
 
   const maxSubs = Math.max(...Object.values(stats.subscriptionsBySeries), 1);
-  const topSeries = Object.entries(stats.subscriptionsBySeries).sort((a, b) => b[1] - a[1])[0] ?? null;
 
   return (
     <div className="space-y-4">
@@ -255,32 +237,11 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers, initialNotifica
       </div>
 
       {/* Overview */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <OverviewCard accent="#22c55e" label={t("statUsers")} value={stats.totalUsers}>
-          <StatPill color="#22c55e">{stats.approvedUsers} {t("statusApproved")}</StatPill>
-          {stats.pendingUsers > 0 && (
-            <StatPill color="#f59e0b">{stats.pendingUsers} {t("statPending")}</StatPill>
-          )}
-          {stats.blockedUsers > 0 && (
-            <StatPill color="#ef4444">{stats.blockedUsers} {t("statusBlocked")}</StatPill>
-          )}
-        </OverviewCard>
-
-        <OverviewCard accent="#3b82f6" label={t("statSubscriptions")} value={stats.activeSubscriptions}>
-          {topSeries ? (
-            <StatPill color={SERIES_COLOR[topSeries[0]] ?? "#71717a"}>
-              {topSeries[0].toUpperCase()} · {topSeries[1]}
-            </StatPill>
-          ) : (
-            <span className="font-mono text-muted-foreground">{t("noSubsShort")}</span>
-          )}
-        </OverviewCard>
-
-        <OverviewCard accent="#a855f7" label={t("notifSent")} value={stats.notificationsSent}>
-          <span className="font-mono tabular-nums text-muted-foreground">
-            {t("devicesReachedCount", { count: stats.devicesReached })}
-          </span>
-        </OverviewCard>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <StatCard accent="#22c55e" label={t("statUsers")}         value={stats.totalUsers} />
+        <StatCard accent="#3b82f6" label={t("statSubscriptions")} value={stats.activeSubscriptions} />
+        <StatCard accent="#a855f7" label={t("notifSent")}         value={stats.notificationsSent} />
+        <StatCard accent="#f59e0b" label={t("devicesReached")}    value={stats.devicesReached} />
       </div>
 
       {/* Tabs */}
