@@ -30,7 +30,7 @@ interface Props {
 
 function SectionHeader({ title }: { title: string }) {
   return (
-    <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+    <h2 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">
       {title}
     </h2>
   );
@@ -64,7 +64,7 @@ function CompactResultRow({ result, slug }: { result: RaceResult; slug: string }
 
   return (
     <div className="grid grid-cols-[1.5rem_1fr_4rem] items-center gap-1 text-xs px-2 py-1.5 hover:bg-accent/30 transition-colors">
-      <span className="text-right font-bold shrink-0 text-foreground">{result.position}</span>
+      <span className="text-right font-mono font-bold shrink-0 text-foreground">{result.position}</span>
       <div className="px-1 min-w-0">
         <Link
           href={`/${slug}/drivers/${result.driverId}`}
@@ -81,7 +81,7 @@ function CompactResultRow({ result, slug }: { result: RaceResult; slug: string }
       </div>
       <span
         className={cn(
-          "text-right text-[10px] shrink-0",
+          "text-right font-mono text-[10px] shrink-0",
           showingStatusText && (isDNF || isDNS) ? "text-red-400" : "text-foreground",
         )}
       >
@@ -101,7 +101,7 @@ function StandingRow({ standing, rank }: { standing: Standing; rank: number }) {
     <div className="flex items-center gap-3 px-3 py-2 text-xs border-b border-border last:border-0 hover:bg-accent/30 transition-colors">
       <span
         className={cn(
-          "w-5 text-right font-bold shrink-0",
+          "w-5 text-right font-mono font-bold shrink-0",
           rank === 1 && "text-yellow-500",
           rank === 2 && "text-zinc-400",
           rank === 3 && "text-amber-600",
@@ -114,7 +114,7 @@ function StandingRow({ standing, rank }: { standing: Standing; rank: number }) {
         <p className="font-medium truncate">{name}</p>
         {sub && <p className="text-muted-foreground truncate">{sub}</p>}
       </div>
-      <span className="font-bold shrink-0">{standing.points}</span>
+      <span className="font-mono font-bold shrink-0">{standing.points}</span>
       {standing.wins > 0 && (
         <span className="text-muted-foreground shrink-0">{standing.wins}G</span>
       )}
@@ -161,7 +161,7 @@ export function RaceResultsSection({
         </div>
 
         <div className="rounded-lg border border-border overflow-hidden">
-          <div className="grid grid-cols-[1.5rem_1rem_1fr_2.5rem_5rem] text-xs font-medium text-muted-foreground px-3 py-2 border-b border-border bg-muted/30 gap-1">
+          <div className="grid grid-cols-[1.5rem_1rem_1fr_2.5rem_5rem] font-display text-[11px] font-semibold uppercase tracking-wider text-muted-foreground px-3 py-2 border-b border-border bg-muted/30 gap-1">
             <span className="text-right">{labels.colPos}</span>
             <span />
             <span className="ml-1">{labels.colDriverTeam}</span>
@@ -183,7 +183,7 @@ export function RaceResultsSection({
                 >
                   <span
                     className={cn(
-                      "text-right font-bold self-center shrink-0",
+                      "text-right font-mono font-bold self-center shrink-0",
                       result.position === 1 && "text-yellow-500",
                       result.position === 2 && "text-zinc-400",
                       result.position === 3 && "text-amber-600",
@@ -207,12 +207,12 @@ export function RaceResultsSection({
                     </div>
                     <span className="text-muted-foreground truncate block">{result.team}</span>
                   </div>
-                  <span className="text-right self-center font-medium shrink-0">
+                  <span className="text-right self-center font-mono font-medium shrink-0">
                     {result.points > 0 ? result.points : "—"}
                   </span>
                   <span
                     className={cn(
-                      "text-right self-center shrink-0",
+                      "text-right self-center shrink-0 font-mono",
                       result.gap == null && !isFinished && result.position !== 1
                         ? "text-red-400"
                         : "text-foreground"

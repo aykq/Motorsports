@@ -25,7 +25,7 @@ export function PracticeSection({ sessionLabel, results, labels, maxRows = 10 }:
   return (
     <section className="space-y-2">
       <div className="flex items-center justify-between">
-        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+        <h2 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">
           {sessionLabel}
         </h2>
         {fastest && (
@@ -55,7 +55,7 @@ export function PracticeSection({ sessionLabel, results, labels, maxRows = 10 }:
               >
                 <span
                   className={cn(
-                    "text-right font-bold shrink-0",
+                    "text-right font-mono font-bold shrink-0",
                     r.position === 1 && "text-yellow-500",
                     r.position === 2 && "text-zinc-400",
                     r.position === 3 && "text-amber-600",
