@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Saira_Condensed, JetBrains_Mono } from "next/font/google";
+import { Inter, Manrope, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { ServiceWorkerRegistrar } from "@/components/pwa/ServiceWorkerRegistrar";
 import { Providers } from "@/lib/providers";
@@ -12,15 +12,16 @@ const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
 });
-// Display / headings — condensed, technical (motorsport DNA)
-const saira = Saira_Condensed({
-  variable: "--font-saira",
-  weight: ["500", "600", "700"],
+// Display / headings — geometric grotesque, professional
+const manrope = Manrope({
+  variable: "--font-manrope",
+  weight: ["500", "600", "700", "800"],
   subsets: ["latin"],
 });
-// Data / numbers / times — tabular instrument readout
-const jbMono = JetBrains_Mono({
-  variable: "--font-jbmono",
+// Data / numbers / times — humanist monospace, tabular
+const plexMono = IBM_Plex_Mono({
+  variable: "--font-plexmono",
+  weight: ["400", "500", "600"],
   subsets: ["latin"],
 });
 
@@ -55,7 +56,7 @@ export default async function RootLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale} className={`${inter.variable} ${saira.variable} ${jbMono.variable} h-full antialiased`} suppressHydrationWarning>
+    <html lang={locale} className={`${inter.variable} ${manrope.variable} ${plexMono.variable} h-full antialiased`} suppressHydrationWarning>
       <body className="min-h-full flex flex-col bg-background text-foreground" suppressHydrationWarning>
         <ServiceWorkerRegistrar />
         <NextIntlClientProvider locale={locale} messages={messages}>
