@@ -24,7 +24,7 @@ export default async function NewsPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 pb-24">
-      <h1 className="font-display text-3xl font-bold tracking-tight leading-none mb-5">{t("title")}</h1>
+      <h1 className="font-display text-3xl font-bold tracking-tight leading-tight mb-5">{t("title")}</h1>
 
       {news.length === 0 && (
         <p className="text-sm text-muted-foreground text-center py-16">

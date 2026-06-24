@@ -23,7 +23,7 @@ export default async function SettingsPage() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
       <div>
-        <h1 className="font-display text-3xl font-bold tracking-tight leading-none">{t("title")}</h1>
+        <h1 className="font-display text-3xl font-bold tracking-tight leading-tight">{t("title")}</h1>
       </div>
 
       {/* Account */}

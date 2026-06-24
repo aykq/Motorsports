@@ -314,7 +314,7 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 space-y-6">
       <div className="space-y-0.5">
-        <h1 className="font-display text-3xl font-bold tracking-tight leading-none">{t("title")}</h1>
+        <h1 className="font-display text-3xl font-bold tracking-tight leading-tight">{t("title")}</h1>
         <p className="text-xs text-muted-foreground font-mono">{t("season", { year: new Date().getFullYear() })}</p>
       </div>
 
@@ -405,7 +405,7 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
                 {nextRace.seriesShortName} · {t("nextRace")}
               </span>
             </div>
-            <h2 className="font-display text-2xl sm:text-3xl font-bold tracking-tight leading-none">{nextRace.name}</h2>
+            <h2 className="font-display text-2xl sm:text-3xl font-bold tracking-tight leading-tight">{nextRace.name}</h2>
             <div className="text-xs text-muted-foreground font-mono">
               {nextRace.circuitName} · {nextRace.location}, {nextRace.country}
             </div>

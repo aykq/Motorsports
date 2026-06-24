@@ -63,7 +63,7 @@ export default async function SchedulePage({ params }: Props) {
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 space-y-8">
       <div className="space-y-1">
         <BackButton fallbackHref={`/${slug}`} label={config.shortName} />
-        <h1 className="font-display text-2xl font-bold tracking-tight leading-none">{config.name} — {t("title")}</h1>
+        <h1 className="font-display text-2xl font-bold tracking-tight leading-tight">{config.name} — {t("title")}</h1>
         <p className="text-xs text-muted-foreground font-mono">{t("season", { year, count: races.length })}</p>
       </div>
 

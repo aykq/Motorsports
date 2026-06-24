@@ -37,7 +37,7 @@ export function Sidebar({ user, isAdmin }: SidebarProps) {
     <aside className="hidden md:flex flex-col w-60 shrink-0 border-r border-border bg-sidebar h-screen sticky top-0 px-3.5 py-4.5">
       <Link href="/" className="flex items-center gap-2.5 px-2 pb-5">
         <span className="inline-flex items-center justify-center size-7 rounded-lg bg-brand text-white font-display font-bold text-[15px] leading-none">MS</span>
-        <span className="font-display font-bold text-[22px] tracking-tight leading-none">Hub</span>
+        <span className="font-display font-bold text-[22px] tracking-tight leading-tight">Hub</span>
       </Link>
 
       <nav className="flex-1 space-y-0.5">

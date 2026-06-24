@@ -141,7 +141,7 @@ export default async function SeriesPage({ params }: Props) {
               </div>
 
               <div>
-                <h2 className="font-display text-2xl font-bold tracking-tight leading-none mb-1.5">{nextRace.name}</h2>
+                <h2 className="font-display text-2xl font-bold tracking-tight leading-tight mb-1.5">{nextRace.name}</h2>
                 <p className="text-xs text-muted-foreground">
                   {nextRace.circuitName} &bull; <span className="font-mono">{formatRaceWeekend(nextRace, locale)}</span>
                 </p>
