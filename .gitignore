@@ -51,3 +51,6 @@ CLAUDE.md
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# superpowers local artifacts
+docs/superpowers/
