@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { CheckCircle, Loader2, ShieldBan, Trash2, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslations, useLocale } from "next-intl";
 
 type UserStatus = "pending" | "approved" | "blocked";
 type Action = "delete" | "approve" | "block" | "pending";
@@ -22,10 +23,10 @@ interface AdminUser {
   provider: string | null;
 }
 
-const STATUS_LABEL: Record<UserStatus, string> = {
-  pending: "Bekliyor",
-  approved: "Onaylı",
-  blocked: "Engelli",
+const STATUS_KEY: Record<UserStatus, string> = {
+  pending: "statusPending",
+  approved: "statusApproved",
+  blocked: "statusBlocked",
 };
 
 const STATUS_CLASS: Record<UserStatus, string> = {
@@ -34,14 +35,14 @@ const STATUS_CLASS: Record<UserStatus, string> = {
   blocked: "bg-destructive/10 text-destructive border-destructive/20",
 };
 
-const PROVIDER_LABEL: Record<string, string> = {
-  google: "Google",
-  resend: "E-posta",
-};
-
 export function UsersTable({ initialUsers }: { initialUsers: AdminUser[] }) {
+  const t = useTranslations("admin");
+  const locale = useLocale();
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState<Record<string, Action | null>>({});
+
+  const providerLabel = (provider: string) =>
+    provider === "resend" ? t("providerEmail") : provider === "google" ? "Google" : provider;
 
   const { data: userList } = useQuery<AdminUser[]>({
     queryKey: ["admin-users"],
@@ -58,8 +59,8 @@ export function UsersTable({ initialUsers }: { initialUsers: AdminUser[] }) {
   async function handleAction(userId: string, action: Action) {
     if (action === "delete") {
       const user = userList?.find((u) => u.id === userId);
-      const label = user?.name ?? user?.email ?? "bu kullanıcıyı";
-      if (!window.confirm(`${label} silinsin mi? Bu işlem geri alınamaz.`)) return;
+      const label = user?.name ?? user?.email ?? t("thisUser");
+      if (!window.confirm(t("confirmDelete", { label }))) return;
     }
 
     setLoading((prev) => ({ ...prev, [userId]: action }));
@@ -79,7 +80,7 @@ export function UsersTable({ initialUsers }: { initialUsers: AdminUser[] }) {
     return (
       <Card>
         <CardContent className="py-12 text-center text-sm text-muted-foreground">
-          Henüz kayıtlı kullanıcı yok.
+          {t("usersEmpty")}
         </CardContent>
       </Card>
     );
@@ -95,7 +96,7 @@ export function UsersTable({ initialUsers }: { initialUsers: AdminUser[] }) {
           ? user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
           : (user.email?.[0] ?? "?").toUpperCase();
 
-        const createdAt = new Intl.DateTimeFormat("tr-TR", {
+        const createdAt = new Intl.DateTimeFormat(locale, {
           day: "numeric", month: "short", year: "numeric",
           hour: "2-digit", minute: "2-digit",
           timeZone: "Europe/Istanbul",
@@ -120,14 +121,14 @@ export function UsersTable({ initialUsers }: { initialUsers: AdminUser[] }) {
                     <div className="flex items-center gap-1.5 shrink-0">
                       {user.provider && (
                         <Badge variant="secondary" className="text-xs">
-                          {PROVIDER_LABEL[user.provider] ?? user.provider}
+                          {providerLabel(user.provider)}
                         </Badge>
                       )}
                       <Badge
                         variant="outline"
                         className={cn("text-xs border", STATUS_CLASS[status] ?? "")}
                       >
-                        {STATUS_LABEL[status] ?? status}
+                        {STATUS_KEY[status] ? t(STATUS_KEY[status]) : status}
                       </Badge>
                     </div>
                   </div>
@@ -142,7 +143,7 @@ export function UsersTable({ initialUsers }: { initialUsers: AdminUser[] }) {
                         disabled={anyLoading}
                       >
                         {isLoading("approve") ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3 mr-1" />}
-                        Onayla
+                        {t("approve")}
                       </Button>
                     )}
                     {status !== "blocked" && (
@@ -154,7 +155,7 @@ export function UsersTable({ initialUsers }: { initialUsers: AdminUser[] }) {
                         disabled={anyLoading}
                       >
                         {isLoading("block") ? <Loader2 className="h-3 w-3 animate-spin" /> : <ShieldBan className="h-3 w-3 mr-1" />}
-                        Engelle
+                        {t("block")}
                       </Button>
                     )}
                     {status !== "pending" && (
@@ -166,7 +167,7 @@ export function UsersTable({ initialUsers }: { initialUsers: AdminUser[] }) {
                         disabled={anyLoading}
                       >
                         {isLoading("pending") ? <Loader2 className="h-3 w-3 animate-spin" /> : <Clock className="h-3 w-3 mr-1" />}
-                        Beklemeye Al
+                        {t("setPending")}
                       </Button>
                     )}
                     <Button
@@ -177,7 +178,7 @@ export function UsersTable({ initialUsers }: { initialUsers: AdminUser[] }) {
                       disabled={anyLoading}
                     >
                       {isLoading("delete") ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3 mr-1" />}
-                      Sil
+                      {t("delete")}
                     </Button>
                   </div>
                 </div>

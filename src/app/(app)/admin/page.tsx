@@ -5,11 +5,15 @@ import { cachedRaces, users, accounts, sessions, pushSubscriptions, favorites, n
 import { max, count, countDistinct, gt, sql } from "drizzle-orm";
 import { AdminPanel } from "./AdminPanel";
 import { getRecentNotificationsAction } from "./actions";
+import { getTranslations } from "next-intl/server";
 import { ShieldAlert } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "Yönetim" };
+export async function generateMetadata() {
+  const t = await getTranslations("admin");
+  return { title: t("title") };
+}
 
 async function getLastSyncTimes(): Promise<Record<string, string | null>> {
   const rows = await db
@@ -77,6 +81,8 @@ export default async function AdminPage() {
   const adminId = await requireAdmin();
   if (!adminId) redirect("/");
 
+  const t = await getTranslations("admin");
+
   const [lastSyncTimes, initialUsers, stats, initialNotifications] = await Promise.all([
     getLastSyncTimes(),
     getInitialUsers(),
@@ -88,7 +94,7 @@ export default async function AdminPage() {
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
       <div className="flex items-center gap-2">
         <ShieldAlert className="w-5 h-5 text-muted-foreground" />
-        <h1 className="text-xl font-bold">Yönetim</h1>
+        <h1 className="text-xl font-bold">{t("title")}</h1>
       </div>
       <AdminPanel
         stats={stats}

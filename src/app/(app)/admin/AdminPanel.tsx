@@ -2,6 +2,7 @@
 
 import { useTransition, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations, useLocale } from "next-intl";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import {
@@ -31,26 +32,25 @@ function syncDotColor(lastSync: string | null): string {
   return "#ef4444";
 }
 
-const DATETIME_FMT = new Intl.DateTimeFormat("tr-TR", {
-  day: "2-digit", month: "short", year: "numeric",
-  hour: "2-digit", minute: "2-digit", second: "2-digit",
-  timeZone: "Europe/Istanbul",
-});
-
-function formatDateTime(iso: string | null): string {
+function formatDateTime(iso: string | null, locale: string): string {
   if (!iso) return "—";
-  return DATETIME_FMT.format(new Date(iso));
+  return new Intl.DateTimeFormat(locale, {
+    day: "2-digit", month: "short", year: "numeric",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+    timeZone: "Europe/Istanbul",
+  }).format(new Date(iso));
 }
 
-function formatRelative(iso: string | null): string {
+function formatRelative(iso: string | null, locale: string): string {
   if (!iso) return "—";
   const diff = Date.now() - new Date(iso).getTime();
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return "şimdi";
-  if (m < 60) return `${m}d`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}s`;
-  return `${Math.floor(h / 24)}g`;
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto", style: "short" });
+  const m = Math.round(diff / 60000);
+  if (m < 1) return rtf.format(0, "minute");
+  if (m < 60) return rtf.format(-m, "minute");
+  const h = Math.round(m / 60);
+  if (h < 24) return rtf.format(-h, "hour");
+  return rtf.format(-Math.round(h / 24), "day");
 }
 
 interface Toast { id: number; ok: boolean; message: string; }
@@ -89,6 +89,8 @@ function StatCard({ value, label, accent }: { value: number; label: string; acce
 
 export function AdminPanel({ stats, lastSyncTimes, initialUsers, initialNotifications }: Props) {
   const router = useRouter();
+  const t = useTranslations("admin");
+  const locale = useLocale();
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [syncPending, startSyncTransition] = useTransition();
   const [newsSyncPending, startNewsSyncTransition] = useTransition();
@@ -237,10 +239,10 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers, initialNotifica
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3">
-        <StatCard value={stats.totalUsers}        label="Kullanıcı"    accent="#22c55e" />
-        <StatCard value={stats.pendingUsers}       label="Bekleyen"     accent="#f59e0b" />
-        <StatCard value={stats.activeSubscriptions} label="Abonelik"   accent="#3b82f6" />
-        <StatCard value={stats.activeSessions}     label="Aktif oturum" accent="#a855f7" />
+        <StatCard value={stats.totalUsers}        label={t("statUsers")}         accent="#22c55e" />
+        <StatCard value={stats.pendingUsers}       label={t("statPending")}       accent="#f59e0b" />
+        <StatCard value={stats.activeSubscriptions} label={t("statSubscriptions")} accent="#3b82f6" />
+        <StatCard value={stats.activeSessions}     label={t("statSessions")}      accent="#a855f7" />
       </div>
 
       {/* Tabs */}
@@ -248,7 +250,7 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers, initialNotifica
         <TabsList className="w-full grid grid-cols-4">
           <TabsTrigger value="users" className="flex items-center gap-1.5 text-[11px]">
             <Users className="w-3 h-3 shrink-0" />
-            <span>Kullanıcılar</span>
+            <span>{t("tabUsers")}</span>
             {stats.pendingUsers > 0 && (
               <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[9px] font-bold text-white leading-none">
                 {stats.pendingUsers}
@@ -257,15 +259,15 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers, initialNotifica
           </TabsTrigger>
           <TabsTrigger value="sync" className="flex items-center gap-1.5 text-[11px]">
             <RefreshCw className="w-3 h-3 shrink-0" />
-            Sync
+            {t("tabSync")}
           </TabsTrigger>
           <TabsTrigger value="notifications" className="flex items-center gap-1.5 text-[11px]">
             <Bell className="w-3 h-3 shrink-0" />
-            Bildirim
+            {t("tabNotifications")}
           </TabsTrigger>
           <TabsTrigger value="settings" className="flex items-center gap-1.5 text-[11px]">
             <Settings className="w-3 h-3 shrink-0" />
-            Ayarlar
+            {t("tabSettings")}
           </TabsTrigger>
         </TabsList>
 
@@ -277,7 +279,7 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers, initialNotifica
         {/* ── Sync ── */}
         <TabsContent value="sync" className="mt-3 space-y-4">
           <section className="rounded-xl bg-card border border-border p-4 space-y-3">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Tüm seriler</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">{t("allSeries")}</p>
             <button
               onClick={handleSyncAll}
               disabled={syncPending || syncAllPending}
@@ -287,8 +289,8 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers, initialNotifica
               )}
             >
               {syncAllPending
-                ? <><Loader2 className="w-4 h-4 animate-spin" /> {syncingSlug?.toUpperCase()} syncleniyor…</>
-                : <><RefreshCw className="w-4 h-4" /> Tümünü Sync Et</>}
+                ? <><Loader2 className="w-4 h-4 animate-spin" /> {t("syncing", { slug: syncingSlug?.toUpperCase() ?? "" })}</>
+                : <><RefreshCw className="w-4 h-4" /> {t("syncAll")}</>}
             </button>
 
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -317,7 +319,7 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers, initialNotifica
                         : <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: dotColor }} />}
                     </div>
                     <span className="text-[10px] text-muted-foreground tabular-nums">
-                      {formatRelative(syncTimes[slug] ?? null)}
+                      {formatRelative(syncTimes[slug] ?? null, locale)}
                     </span>
                   </button>
                 );
@@ -326,20 +328,20 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers, initialNotifica
           </section>
 
           <section className="rounded-xl bg-card border border-border p-4 space-y-3">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Race detail cache temizle</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">{t("raceDetailCache")}</p>
             <div className="flex flex-col gap-2 sm:flex-row">
               <select
                 value={clearSlug}
                 onChange={(e) => setClearSlug(e.target.value)}
                 className="w-full sm:flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               >
-                <option value="">Seri seç</option>
+                <option value="">{t("selectSeries")}</option>
                 {ALL_SERIES.map((s) => <option key={s} value={s}>{s.toUpperCase()}</option>)}
               </select>
               <div className="flex gap-2">
                 <input
                   type="number"
-                  placeholder="Round"
+                  placeholder={t("round")}
                   value={clearRound}
                   onChange={(e) => setClearRound(e.target.value)}
                   className="flex-1 sm:w-24 sm:flex-none rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
@@ -359,14 +361,14 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers, initialNotifica
           </section>
 
           <section className="rounded-xl bg-card border border-border p-4 space-y-3">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Driver cache temizle</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">{t("driverCache")}</p>
             <div className="flex gap-2">
               <select
                 value={clearDriverSlug}
                 onChange={(e) => setClearDriverSlug(e.target.value)}
                 className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               >
-                <option value="">Seri seç</option>
+                <option value="">{t("selectSeries")}</option>
                 {ALL_SERIES.map((s) => <option key={s} value={s}>{s.toUpperCase()}</option>)}
               </select>
               <button
@@ -380,19 +382,19 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers, initialNotifica
                 {clearDriverPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
               </button>
             </div>
-            <p className="text-[11px] text-muted-foreground">Cache temizledikten sonra ilgili seriyi sync et.</p>
+            <p className="text-[11px] text-muted-foreground">{t("driverCacheHint")}</p>
           </section>
 
           {/* News sync */}
           <section className="rounded-xl bg-card border border-border p-4 space-y-3">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Haberler</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">{t("news")}</p>
             <button
               onClick={handleNewsSync}
               disabled={newsSyncPending}
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-background border border-border text-sm hover:bg-white/5 disabled:opacity-50 transition-colors"
             >
               {newsSyncPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-              Haberleri Sync Et
+              {t("syncNews")}
             </button>
           </section>
         </TabsContent>
@@ -402,18 +404,18 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers, initialNotifica
           <section className="rounded-xl bg-card border border-border px-4 py-3 flex items-stretch divide-x divide-border">
             <div className="flex flex-col gap-1 pr-4">
               <span className="text-2xl font-mono font-bold tabular-nums leading-none">{stats.notificationsSent}</span>
-              <span className="text-[10px] text-muted-foreground uppercase tracking-widest leading-none mt-0.5">Gönderilen bildirim</span>
+              <span className="text-[10px] text-muted-foreground uppercase tracking-widest leading-none mt-0.5">{t("notifSent")}</span>
             </div>
             <div className="flex flex-col gap-1 pl-4">
               <span className="text-2xl font-mono font-bold tabular-nums leading-none">{stats.devicesReached}</span>
-              <span className="text-[10px] text-muted-foreground uppercase tracking-widest leading-none mt-0.5">Cihaza ulaştı</span>
+              <span className="text-[10px] text-muted-foreground uppercase tracking-widest leading-none mt-0.5">{t("devicesReached")}</span>
             </div>
           </section>
 
           <section className="rounded-xl bg-card border border-border p-4 space-y-3">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Abonelik dağılımı</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">{t("subDistribution")}</p>
             {Object.keys(stats.subscriptionsBySeries).length === 0 ? (
-              <p className="text-sm text-muted-foreground">Henüz abonelik yok.</p>
+              <p className="text-sm text-muted-foreground">{t("noSubs")}</p>
             ) : (
               <div className="space-y-2">
                 {Object.entries(stats.subscriptionsBySeries)
@@ -443,7 +445,7 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers, initialNotifica
           </section>
 
           <section className="rounded-xl bg-card border border-border p-4 space-y-3">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Bildirim gönder</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">{t("sendNotif")}</p>
             <select
               value={notifSlug}
               onChange={(e) => setNotifSlug(e.target.value)}
@@ -453,14 +455,14 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers, initialNotifica
             </select>
             <input
               type="text"
-              placeholder="Başlık"
+              placeholder={t("notifTitlePlaceholder")}
               value={notifTitle}
               onChange={(e) => setNotifTitle(e.target.value)}
               className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             />
             <input
               type="text"
-              placeholder="İçerik"
+              placeholder={t("notifBodyPlaceholder")}
               value={notifBody}
               onChange={(e) => setNotifBody(e.target.value)}
               className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
@@ -474,28 +476,28 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers, initialNotifica
               )}
             >
               {notifPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bell className="w-4 h-4" />}
-              Gönder
+              {t("send")}
             </button>
           </section>
 
           {/* Son gönderilen bildirimler */}
           <section className="rounded-xl bg-card border border-border p-4 space-y-3">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Son gönderilen bildirimler</p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">{t("recentNotifs")}</p>
               <select
                 value={recentFilter}
                 onChange={(e) => handleRecentFilter(e.target.value)}
                 disabled={recentPending}
                 className="rounded-md border border-border bg-background px-2 py-1 text-[11px] uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
               >
-                <option value="">Tüm seriler</option>
+                <option value="">{t("allSeries")}</option>
                 {ALL_SERIES.map((s) => <option key={s} value={s}>{s.toUpperCase()}</option>)}
               </select>
             </div>
 
             {recent.length === 0 ? (
               <p className="py-6 text-center text-sm text-muted-foreground">
-                {recentPending ? "Yükleniyor…" : "Henüz bildirim gönderilmedi."}
+                {recentPending ? t("loading") : t("recentEmpty")}
               </p>
             ) : (
               <ul className={cn("space-y-2 transition-opacity", recentPending && "opacity-50")}>
@@ -517,13 +519,13 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers, initialNotifica
                         </span>
                         <span className="inline-flex items-center gap-1 rounded-full bg-muted px-1.5 py-0.5 text-[9px] uppercase tracking-wider text-muted-foreground shrink-0">
                           {isManual ? <Hand className="w-2.5 h-2.5" /> : <Cpu className="w-2.5 h-2.5" />}
-                          {isManual ? "Manuel" : "Oto"}
+                          {isManual ? t("sourceManual") : t("sourceAuto")}
                         </span>
                         <span
                           className="ml-auto text-[10px] font-mono tabular-nums text-muted-foreground shrink-0"
-                          title={formatDateTime(n.sentAt)}
+                          title={formatDateTime(n.sentAt, locale)}
                         >
-                          {formatRelative(n.sentAt)}
+                          {formatRelative(n.sentAt, locale)}
                         </span>
                       </div>
                       <p className="text-sm font-medium leading-snug">{n.title}</p>
@@ -538,7 +540,7 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers, initialNotifica
                           </span>
                         )}
                         <span className="inline-flex items-center gap-1 text-muted-foreground">
-                          <Clock className="w-3 h-3" />{formatDateTime(n.sentAt)}
+                          <Clock className="w-3 h-3" />{formatDateTime(n.sentAt, locale)}
                         </span>
                         {n.url && (
                           <span className="inline-flex items-center gap-1 text-muted-foreground">
@@ -562,7 +564,7 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers, initialNotifica
                 )}
               >
                 {recentPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                Daha fazla göster
+                {t("loadMore")}
               </button>
             )}
           </section>
@@ -572,7 +574,7 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers, initialNotifica
         <TabsContent value="settings" className="mt-3">
           <div className="rounded-xl bg-card border border-border p-8 flex flex-col items-center gap-3 text-center">
             <ShieldCheck className="w-8 h-8 text-muted-foreground/40" />
-            <p className="text-sm text-muted-foreground">Ayarlar yakında eklenecek.</p>
+            <p className="text-sm text-muted-foreground">{t("settingsComingSoon")}</p>
           </div>
         </TabsContent>
       </Tabs>

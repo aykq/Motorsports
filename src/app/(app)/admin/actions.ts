@@ -8,6 +8,7 @@ import { syncSeries } from "@/lib/sync";
 import { sendPushToSubscribers } from "@/lib/push";
 import { requireAdmin } from "@/lib/admin-guard";
 import { fetchAndCacheNews } from "@/lib/scrapers/motorsportNews";
+import { getTranslations } from "next-intl/server";
 
 async function checkAdmin() {
   const adminId = await requireAdmin();
@@ -19,7 +20,12 @@ export async function syncSeriesAction(slug: string): Promise<{ ok: boolean; mes
   const year = new Date().getFullYear();
   try {
     const result = await syncSeries(slug, year);
-    const msg = `${result.racesCount} races, ${result.driversCount} drivers, ${result.raceDetailsSynced} details`;
+    const t = await getTranslations("admin");
+    const msg = t("toastSyncResult", {
+      races: result.racesCount,
+      drivers: result.driversCount,
+      details: result.raceDetailsSynced,
+    });
     return { ok: true, message: msg };
   } catch (err) {
     return { ok: false, message: String(err) };
@@ -42,7 +48,8 @@ export async function clearRaceDetailAction(
           eq(cachedRaceDetails.round, round)
         )
       );
-    return { ok: true, message: `Race detail cleared for ${slug} R${round}` };
+    const t = await getTranslations("admin");
+    return { ok: true, message: t("toastRaceDetailCleared", { slug, round }) };
   } catch (err) {
     return { ok: false, message: String(err) };
   }
@@ -56,7 +63,8 @@ export async function sendTestNotifAction(
   await checkAdmin();
   try {
     const { sent, failed } = await sendPushToSubscribers(slug, null, { title, body, url: `/${slug}` });
-    const msg = `${sent} cihaza gönderildi${failed ? `, ${failed} başarısız` : ""}`;
+    const t = await getTranslations("admin");
+    const msg = t("toastNotifSent", { sent }) + (failed ? t("toastNotifFailed", { failed }) : "");
     return { ok: true, message: msg };
   } catch (err) {
     return { ok: false, message: String(err) };
@@ -110,7 +118,8 @@ export async function clearDriverCacheAction(
     const result = await db
       .delete(cachedDrivers)
       .where(eq(cachedDrivers.seriesSlug, slug));
-    return { ok: true, message: `${slug.toUpperCase()} driver cache temizlendi (${result.rowCount ?? 0} kayıt)` };
+    const t = await getTranslations("admin");
+    return { ok: true, message: t("toastDriverCacheCleared", { slug: slug.toUpperCase(), count: result.rowCount ?? 0 }) };
   } catch (err) {
     return { ok: false, message: String(err) };
   }
@@ -120,14 +129,15 @@ export async function syncNewsAction(): Promise<{ ok: boolean; message: string }
   await checkAdmin();
   const slugs = ["f1", "motogp", "moto2", "wec"] as const;
   const results = await Promise.allSettled(slugs.map(fetchAndCacheNews));
+  const t = await getTranslations("admin");
   const lines: string[] = [];
   results.forEach((r, i) => {
     const slug = slugs[i];
     if (r.status === "fulfilled") {
-      const { urlsFound, inserted, skipped, errors } = r.value;
-      lines.push(`${slug}: ${urlsFound} URL, +${inserted} kayıt, ${skipped} mevcut${errors.length ? `, hata: ${errors[0]}` : ""}`);
+      const { urlsFound, inserted, skipped } = r.value;
+      lines.push(t("toastNewsItem", { slug, urls: urlsFound, inserted, skipped }));
     } else {
-      lines.push(`${slug}: HATA — ${r.reason}`);
+      lines.push(t("toastNewsError", { slug, error: String(r.reason) }));
     }
   });
   revalidateTag("news", {});

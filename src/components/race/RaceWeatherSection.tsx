@@ -5,6 +5,7 @@ import {
   Sun, Cloudy, CloudDrizzle, CloudRain, CloudSnow, CloudLightning,
   Droplets, Wind,
 } from "lucide-react";
+import { useTranslations, useLocale } from "next-intl";
 import type { RaceSession, RaceStatus } from "@/types/series";
 
 interface DayForecast {
@@ -25,16 +26,6 @@ interface LiveWeather {
   rainfall: boolean;
   source: "openf1" | "openmeteo";
 }
-
-const SESSION_LABELS: Record<string, string> = {
-  practice1: "FP1",
-  practice2: "FP2",
-  practice3: "FP3",
-  qualifying: "SIRA",
-  sprintQuali: "SPR SIRA",
-  sprint: "SPRINT",
-  race: "YARIŞ",
-};
 
 const SESSION_WINDOW_BEFORE_MS = 15 * 60 * 1000;
 const SESSION_WINDOW_AFTER_MS = 2 * 60 * 60 * 1000;
@@ -73,15 +64,15 @@ function WmoIcon({ code, sizeClass }: { code: number; sizeClass: string }) {
   return <CloudLightning className={cls} />;
 }
 
-function wmoDesc(code: number): string {
-  if (code <= 1) return "Açık";
-  if (code <= 3) return "Parçalı bulutlu";
-  if (code <= 48) return "Bulutlu";
-  if (code <= 55) return "Çiseleme";
-  if (code <= 67) return "Yağmurlu";
-  if (code <= 77) return "Karlı";
-  if (code <= 82) return "Sağanak";
-  return "Fırtınalı";
+function wmoCondKey(code: number): string {
+  if (code <= 1) return "clear";
+  if (code <= 3) return "partlyCloudy";
+  if (code <= 48) return "cloudy";
+  if (code <= 55) return "drizzle";
+  if (code <= 67) return "rain";
+  if (code <= 77) return "snow";
+  if (code <= 82) return "showers";
+  return "storm";
 }
 
 async function resolveMeetingKey(raceDate: string): Promise<number | null> {
@@ -149,6 +140,9 @@ interface Props {
 const FORECAST_HORIZON_DAYS = 16;
 
 export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accentColor, enableOpenF1 = false }: Props) {
+  const tWeather = useTranslations("weather");
+  const tTab = useTranslations("tabLabels");
+  const locale = useLocale();
   const [forecast, setForecast] = useState<DayForecast[] | null>(null);
   const [live, setLive] = useState<LiveWeather | null>(null);
   const [liveUpdatedAt, setLiveUpdatedAt] = useState<Date | null>(null);
@@ -272,7 +266,7 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
   if (tooFarAhead) {
     const daysUntilAvailable = daysUntilRace - FORECAST_HORIZON_DAYS;
     const availableDate = new Date(Date.now() + daysUntilAvailable * 24 * 60 * 60 * 1000);
-    const availableDateStr = availableDate.toLocaleDateString("tr-TR", { day: "numeric", month: "long" });
+    const availableDateStr = availableDate.toLocaleDateString(locale, { day: "numeric", month: "long" });
     return (
       <section className="space-y-2">
         <SectionHeader />
@@ -280,8 +274,8 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
           <Sun className="w-4 h-4 shrink-0 opacity-40" />
           <span>
             {daysUntilAvailable === 1
-              ? "Hava tahmini yarın görünecek"
-              : `Hava tahmini ${availableDateStr} itibarıyla görünecek`}
+              ? tWeather("availableTomorrow")
+              : tWeather("availableOn", { date: availableDateStr })}
           </span>
         </div>
       </section>
@@ -328,12 +322,12 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
             <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
               {(() => {
                 const activeSession = currentSession ?? (status === "live" ? { type: "race", date: raceDate } : null);
-                const sessionLabel = activeSession ? SESSION_LABELS[activeSession.type] : null;
+                const sessionLabel = activeSession ? tTab(activeSession.type) : null;
                 const isActive = status === "live" || currentSession !== null;
                 const sourceLabel = live.source === "openf1" ? "OpenF1" : "Open-Meteo";
-                if (isActive && sessionLabel) return `Anlık Hava — ${sessionLabel} · ${sourceLabel}`;
-                if (isActive) return `Anlık Hava — ${sourceLabel}`;
-                return live.source === "openf1" ? "Hafta Sonu Hava — OpenF1" : "Hafta Sonu Hava — Open-Meteo";
+                if (isActive && sessionLabel) return `${tWeather("live")} — ${sessionLabel} · ${sourceLabel}`;
+                if (isActive) return `${tWeather("live")} — ${sourceLabel}`;
+                return `${tWeather("weekend")} — ${sourceLabel}`;
               })()}
             </p>
             {(status === "live" || currentSession !== null) && (
@@ -343,7 +337,7 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
                 )}
                 {liveUpdatedAt && (
                   <span className="text-[10px] text-muted-foreground/50">
-                    {liveUpdatedAt.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                    {liveUpdatedAt.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
                   </span>
                 )}
               </div>
@@ -351,16 +345,16 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            <Stat label="Hava" value={`${live.airTemp}°C`} />
-            {live.trackTemp != null && <Stat label="Pist" value={`${live.trackTemp}°C`} />}
-            {live.humidity != null && <Stat label="Nem" value={`${live.humidity}%`} />}
-            {live.windSpeed != null && <Stat label="Rüzgar" value={`${live.windSpeed} km/h`} />}
+            <Stat label={tWeather("air")} value={`${live.airTemp}°C`} />
+            {live.trackTemp != null && <Stat label={tWeather("track")} value={`${live.trackTemp}°C`} />}
+            {live.humidity != null && <Stat label={tWeather("humidity")} value={`${live.humidity}%`} />}
+            {live.windSpeed != null && <Stat label={tWeather("wind")} value={`${live.windSpeed} km/h`} />}
           </div>
 
           {live.rainfall && (
             <div className="flex items-center gap-2 text-sky-400 bg-sky-400/10 rounded-md px-2.5 py-1.5">
               <CloudRain className="w-3.5 h-3.5 shrink-0" />
-              <span className="text-xs">Yağmur Aktif</span>
+              <span className="text-xs">{tWeather("rainActive")}</span>
             </div>
           )}
         </div>
@@ -370,7 +364,7 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
         <div className="space-y-2">
           {forecast.length > 1 && (
             <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
-              Haftalık Tahmin
+              {tWeather("weekly")}
             </p>
           )}
           <div
@@ -401,7 +395,7 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
                   )}
 
                   <p className="text-[10px] text-muted-foreground uppercase">
-                    {new Date(`${day.date}T12:00:00`).toLocaleDateString("tr-TR", {
+                    {new Date(`${day.date}T12:00:00`).toLocaleDateString(locale, {
                       weekday: "short",
                       day: "numeric",
                       month: "short",
@@ -416,7 +410,7 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
                   </div>
 
                   <p className="text-[10px] text-muted-foreground/70 text-center">
-                    {wmoDesc(day.code)}
+                    {tWeather(`conditions.${wmoCondKey(day.code)}`)}
                   </p>
 
                   <div className="flex items-center gap-2 text-muted-foreground/60">
@@ -442,7 +436,7 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
                               : { backgroundColor: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.45)" }
                           }
                         >
-                          {SESSION_LABELS[s.type] ?? s.type}
+                          {tTab(s.type)}
                         </span>
                       ))}
                     </div>
@@ -452,7 +446,7 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
             })}
           </div>
           <p className="text-[9px] text-muted-foreground/40 text-right">
-            Kaynak: Open-Meteo
+            {tWeather("source")}: Open-Meteo
           </p>
         </div>
       )}
@@ -461,9 +455,10 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
 }
 
 function SectionHeader() {
+  const tWeather = useTranslations("weather");
   return (
     <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-      Hava Durumu
+      {tWeather("title")}
     </h2>
   );
 }
