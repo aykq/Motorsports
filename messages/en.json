@@ -299,6 +299,8 @@
     "noSubs": "No subscriptions yet.",
     "notifSent": "Notifications sent",
     "devicesReached": "Devices reached",
+    "devicesReachedCount": "{count} devices reached",
+    "noSubsShort": "No subscriptions",
     "sendNotif": "Send notification",
     "notifTitlePlaceholder": "Title",
     "notifBodyPlaceholder": "Body",

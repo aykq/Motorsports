@@ -299,6 +299,8 @@
     "noSubs": "Henüz abonelik yok.",
     "notifSent": "Gönderilen bildirim",
     "devicesReached": "Cihaza ulaştı",
+    "devicesReachedCount": "{count} cihaza ulaştı",
+    "noSubsShort": "Abonelik yok",
     "sendNotif": "Bildirim gönder",
     "notifTitlePlaceholder": "Başlık",
     "notifBodyPlaceholder": "İçerik",

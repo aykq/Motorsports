@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/admin-guard";
 import { db } from "@/db";
-import { cachedRaces, users, accounts, sessions, pushSubscriptions, favorites, notificationLog } from "@/db/schema";
-import { max, count, countDistinct, gt, sql } from "drizzle-orm";
+import { cachedRaces, users, accounts, pushSubscriptions, favorites, notificationLog } from "@/db/schema";
+import { max, count, sql } from "drizzle-orm";
 import { AdminPanel } from "./AdminPanel";
 import { getRecentNotificationsAction } from "./actions";
 import { getTranslations } from "next-intl/server";
@@ -39,24 +39,23 @@ async function getInitialUsers() {
 }
 
 async function getAdminStats() {
-  const [userRows, subRows, sessionRows, notifRows] = await Promise.all([
+  const [userRows, subRows, notifRows] = await Promise.all([
     db.select({
       total: count(),
       pending: sql<number>`cast(count(*) filter (where status = 'pending') as int)`,
+      approved: sql<number>`cast(count(*) filter (where status = 'approved') as int)`,
+      blocked: sql<number>`cast(count(*) filter (where status = 'blocked') as int)`,
     }).from(users),
     db.select({
       seriesEnabled: pushSubscriptions.seriesEnabled,
     }).from(pushSubscriptions),
-    db.select({ total: countDistinct(sessions.userId) })
-      .from(sessions)
-      .where(gt(sessions.expires, new Date())),
     db.select({
       total: count(),
       devices: sql<number>`cast(coalesce(sum(${notificationLog.sentCount}), 0) as int)`,
     }).from(notificationLog),
   ]);
 
-  const userStats = userRows[0] ?? { total: 0, pending: 0 };
+  const userStats = userRows[0] ?? { total: 0, pending: 0, approved: 0, blocked: 0 };
   const notifStats = notifRows[0] ?? { total: 0, devices: 0 };
 
   const subscriptionsBySeries: Record<string, number> = {};
@@ -69,8 +68,9 @@ async function getAdminStats() {
   return {
     totalUsers: userStats.total,
     pendingUsers: Number(userStats.pending),
+    approvedUsers: Number(userStats.approved),
+    blockedUsers: Number(userStats.blocked),
     activeSubscriptions: subRows.length,
-    activeSessions: sessionRows[0]?.total ?? 0,
     subscriptionsBySeries,
     notificationsSent: Number(notifStats.total),
     devicesReached: Number(notifStats.devices),
