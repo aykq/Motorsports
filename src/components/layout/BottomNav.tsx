@@ -34,7 +34,7 @@ export function BottomNav({ isAdmin }: BottomNavProps) {
               key={href}
               href={href}
               className={cn(
-                "relative flex flex-col items-center justify-center gap-1 flex-1 text-[10px] font-medium transition-colors",
+                "relative flex flex-col items-center justify-center gap-1 flex-1 text-[10px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
                 active ? "text-[var(--series)]" : "text-muted-foreground hover:text-foreground"
               )}
             >

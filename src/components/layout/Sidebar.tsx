@@ -48,7 +48,7 @@ export function Sidebar({ user, isAdmin }: SidebarProps) {
               key={href}
               href={href}
               className={cn(
-                "relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",
+                "relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                 active
                   ? "text-[var(--series)] bg-[color-mix(in_oklch,var(--series)_13%,transparent)]"
                   : "text-muted-foreground hover:text-foreground hover:bg-accent"

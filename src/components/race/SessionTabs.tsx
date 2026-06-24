@@ -85,7 +85,7 @@ export function SessionTabs({
               key={tab.type}
               onClick={() => setActive(tab.type)}
               className={cn(
-                "px-3.5 py-1.5 rounded-lg text-[11px] font-bold tracking-widest whitespace-nowrap transition-all duration-150",
+                "font-display uppercase px-3.5 py-1.5 rounded-lg text-[11px] font-bold tracking-widest whitespace-nowrap transition-all duration-150 outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 active === tab.type
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground/80"
