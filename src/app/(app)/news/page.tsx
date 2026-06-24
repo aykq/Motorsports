@@ -23,8 +23,8 @@ export default async function NewsPage() {
   const news = await getAllCachedNews(50);
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 pb-24">
-      <h1 className="text-2xl font-bold mb-4">{t("title")}</h1>
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 pb-24">
+      <h1 className="font-display text-3xl font-bold uppercase tracking-tight leading-none mb-5">{t("title")}</h1>
 
       {news.length === 0 && (
         <p className="text-sm text-muted-foreground text-center py-16">
@@ -56,7 +56,7 @@ export default async function NewsPage() {
                   {/* Series badge + time */}
                   <div className="flex items-center gap-2">
                     <span
-                      className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded tracking-wide"
+                      className="font-display text-[10px] font-bold uppercase px-1.5 py-0.5 rounded tracking-wider"
                       style={{
                         color: seriesColor,
                         backgroundColor: `${seriesColor}20`,
@@ -64,7 +64,7 @@ export default async function NewsPage() {
                     >
                       {seriesName}
                     </span>
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="font-mono text-[10px] text-muted-foreground">
                       {timeAgo(item.publishedAt)}
                     </span>
                   </div>

@@ -32,7 +32,7 @@ export function NotificationSettings() {
   if (!isSupported) {
     return (
       <section className="rounded-xl bg-card border border-border p-4 space-y-3">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-widest">
+        <h2 className="font-display text-sm font-semibold text-muted-foreground uppercase tracking-widest">
           {t("title")}
         </h2>
         <p className="text-sm text-muted-foreground">
@@ -55,7 +55,7 @@ export function NotificationSettings() {
   return (
     <section className="rounded-xl bg-card border border-border p-4 space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-widest">
+        <h2 className="font-display text-sm font-semibold text-muted-foreground uppercase tracking-widest">
           {t("title")}
         </h2>
         {isSubscribed ? (
