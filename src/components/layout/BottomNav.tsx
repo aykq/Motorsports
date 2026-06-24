@@ -22,41 +22,28 @@ export function BottomNav({ isAdmin }: BottomNavProps) {
     { href: "/settings", label: t("settings"), icon: Settings },
   ];
 
+  const items = [...NAV_ITEMS, ...(isAdmin ? [{ href: "/admin", label: t("admin"), icon: Users }] : [])];
+
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:hidden">
-      <div className="flex items-center justify-around h-16 px-2">
-        {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70 md:hidden">
+      <div className="flex items-stretch justify-around h-[60px] px-1">
+        {items.map(({ href, label, icon: Icon }) => {
           const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
           return (
             <Link
               key={href}
               href={href}
               className={cn(
-                "flex flex-col items-center gap-1 px-3 py-2 rounded-lg text-xs transition-all duration-200",
-                active
-                  ? "text-rose-500"
-                  : "text-muted-foreground hover:text-foreground"
+                "relative flex flex-col items-center justify-center gap-1 flex-1 text-[10px] font-medium transition-colors",
+                active ? "text-[var(--series)]" : "text-muted-foreground hover:text-foreground"
               )}
             >
-              <Icon className={cn("w-5 h-5 transition-transform duration-200", active && "scale-110")} />
-              <span className={cn("transition-all duration-200", active && "font-semibold")}>{label}</span>
+              {active && <span className="absolute top-0 h-[3px] w-7 rounded-full bg-[var(--series)]" />}
+              <Icon className="w-[19px] h-[19px]" />
+              <span className={cn(active && "font-semibold")}>{label}</span>
             </Link>
           );
         })}
-        {isAdmin && (
-          <Link
-            href="/admin/users"
-            className={cn(
-              "flex flex-col items-center gap-1 px-3 py-2 rounded-lg text-xs transition-all duration-200",
-              pathname.startsWith("/admin")
-                ? "text-rose-500"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <Users className={cn("w-5 h-5 transition-transform duration-200", pathname.startsWith("/admin") && "scale-110")} />
-            <span className={cn("transition-all duration-200", pathname.startsWith("/admin") && "font-semibold")}>{t("admin")}</span>
-          </Link>
-        )}
       </div>
     </nav>
   );
