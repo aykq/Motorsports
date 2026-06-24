@@ -1,8 +1,8 @@
 "use server";
 
 import { db } from "@/db";
-import { cachedRaceDetails, cachedRaces, cachedDrivers } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { cachedRaceDetails, cachedRaces, cachedDrivers, notificationLog } from "@/db/schema";
+import { eq, and, desc } from "drizzle-orm";
 import { revalidateTag } from "next/cache";
 import { syncSeries } from "@/lib/sync";
 import { sendPushToSubscribers } from "@/lib/push";
@@ -55,11 +55,51 @@ export async function sendTestNotifAction(
 ): Promise<{ ok: boolean; message: string }> {
   await checkAdmin();
   try {
-    await sendPushToSubscribers(slug, null, { title, body, url: `/${slug}` });
-    return { ok: true, message: `Notification sent to ${slug} subscribers` };
+    const { sent, failed } = await sendPushToSubscribers(slug, null, { title, body, url: `/${slug}` });
+    const msg = `${sent} cihaza gönderildi${failed ? `, ${failed} başarısız` : ""}`;
+    return { ok: true, message: msg };
   } catch (err) {
     return { ok: false, message: String(err) };
   }
+}
+
+export interface RecentNotification {
+  id: string;
+  seriesSlug: string;
+  title: string;
+  body: string;
+  url: string | null;
+  source: string;
+  sentCount: number;
+  failedCount: number;
+  sentAt: string;
+}
+
+export async function getRecentNotificationsAction(opts: {
+  series?: string;
+  offset?: number;
+  limit?: number;
+}): Promise<RecentNotification[]> {
+  await checkAdmin();
+  const limit = opts.limit ?? 10;
+  const offset = opts.offset ?? 0;
+  const rows = await db.query.notificationLog.findMany({
+    where: opts.series ? eq(notificationLog.seriesSlug, opts.series) : undefined,
+    orderBy: desc(notificationLog.sentAt),
+    limit,
+    offset,
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    seriesSlug: r.seriesSlug,
+    title: r.title,
+    body: r.body,
+    url: r.url,
+    source: r.source,
+    sentCount: r.sentCount,
+    failedCount: r.failedCount,
+    sentAt: r.sentAt.toISOString(),
+  }));
 }
 
 export async function clearDriverCacheAction(

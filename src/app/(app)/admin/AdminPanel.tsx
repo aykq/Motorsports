@@ -1,14 +1,20 @@
 "use client";
 
 import { useTransition, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import {
   RefreshCw, Trash2, Bell, Settings, CheckCircle, XCircle,
-  Loader2, Users, ShieldCheck,
+  Loader2, Users, ShieldCheck, Hand, Cpu, ChevronDown,
 } from "lucide-react";
-import { syncSeriesAction, clearRaceDetailAction, sendTestNotifAction, syncNewsAction, clearDriverCacheAction } from "./actions";
+import {
+  syncSeriesAction, clearRaceDetailAction, sendTestNotifAction, syncNewsAction,
+  clearDriverCacheAction, getRecentNotificationsAction, type RecentNotification,
+} from "./actions";
 import { UsersTable } from "./UsersTable";
+
+const NOTIF_PAGE = 10;
 
 const ALL_SERIES = ["f1", "wec", "motogp", "moto2", "moto3", "gt3", "gt4", "carrera-cup"] as const;
 
@@ -48,12 +54,14 @@ interface Stats {
   totalUsers: number; pendingUsers: number;
   activeSubscriptions: number; activeSessions: number;
   subscriptionsBySeries: Record<string, number>;
+  notificationsSent: number; devicesReached: number;
 }
 
 interface Props {
   stats: Stats;
   lastSyncTimes: Record<string, string | null>;
   initialUsers: AdminUser[];
+  initialNotifications: RecentNotification[];
 }
 
 function StatCard({ value, label, accent }: { value: number; label: string; accent: string }) {
@@ -68,7 +76,8 @@ function StatCard({ value, label, accent }: { value: number; label: string; acce
   );
 }
 
-export function AdminPanel({ stats, lastSyncTimes, initialUsers }: Props) {
+export function AdminPanel({ stats, lastSyncTimes, initialUsers, initialNotifications }: Props) {
+  const router = useRouter();
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [syncPending, startSyncTransition] = useTransition();
   const [newsSyncPending, startNewsSyncTransition] = useTransition();
@@ -84,6 +93,12 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers }: Props) {
   const [notifTitle, setNotifTitle] = useState("");
   const [notifBody, setNotifBody] = useState("");
   const [notifPending, startNotifTransition] = useTransition();
+  // Son gönderilen bildirimler
+  const [recent, setRecent] = useState<RecentNotification[]>(initialNotifications);
+  const [recentFilter, setRecentFilter] = useState<string>("");
+  const [recentOffset, setRecentOffset] = useState(initialNotifications.length);
+  const [recentHasMore, setRecentHasMore] = useState(initialNotifications.length >= NOTIF_PAGE);
+  const [recentPending, startRecentTransition] = useTransition();
 
   function addToast(ok: boolean, message: string) {
     const id = ++toastId;
@@ -143,7 +158,47 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers }: Props) {
     startNotifTransition(async () => {
       const result = await sendTestNotifAction(notifSlug, notifTitle, notifBody);
       addToast(result.ok, result.message);
-      if (result.ok) { setNotifTitle(""); setNotifBody(""); }
+      if (result.ok) {
+        setNotifTitle("");
+        setNotifBody("");
+        // Listeyi ve sayaçları tazele
+        const rows = await getRecentNotificationsAction({
+          series: recentFilter || undefined,
+          limit: NOTIF_PAGE,
+          offset: 0,
+        });
+        setRecent(rows);
+        setRecentOffset(rows.length);
+        setRecentHasMore(rows.length >= NOTIF_PAGE);
+        router.refresh();
+      }
+    });
+  }
+
+  function handleRecentFilter(series: string) {
+    setRecentFilter(series);
+    startRecentTransition(async () => {
+      const rows = await getRecentNotificationsAction({
+        series: series || undefined,
+        limit: NOTIF_PAGE,
+        offset: 0,
+      });
+      setRecent(rows);
+      setRecentOffset(rows.length);
+      setRecentHasMore(rows.length >= NOTIF_PAGE);
+    });
+  }
+
+  function handleRecentLoadMore() {
+    startRecentTransition(async () => {
+      const rows = await getRecentNotificationsAction({
+        series: recentFilter || undefined,
+        limit: NOTIF_PAGE,
+        offset: recentOffset,
+      });
+      setRecent((p) => [...p, ...rows]);
+      setRecentOffset((o) => o + rows.length);
+      setRecentHasMore(rows.length >= NOTIF_PAGE);
     });
   }
 
@@ -333,6 +388,17 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers }: Props) {
 
         {/* ── Notifications ── */}
         <TabsContent value="notifications" className="mt-3 space-y-4">
+          <section className="rounded-xl bg-card border border-border px-4 py-3 flex items-stretch divide-x divide-border">
+            <div className="flex flex-col gap-1 pr-4">
+              <span className="text-2xl font-mono font-bold tabular-nums leading-none">{stats.notificationsSent}</span>
+              <span className="text-[10px] text-muted-foreground uppercase tracking-widest leading-none mt-0.5">Gönderilen bildirim</span>
+            </div>
+            <div className="flex flex-col gap-1 pl-4">
+              <span className="text-2xl font-mono font-bold tabular-nums leading-none">{stats.devicesReached}</span>
+              <span className="text-[10px] text-muted-foreground uppercase tracking-widest leading-none mt-0.5">Cihaza ulaştı</span>
+            </div>
+          </section>
+
           <section className="rounded-xl bg-card border border-border p-4 space-y-3">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Abonelik dağılımı</p>
             {Object.keys(stats.subscriptionsBySeries).length === 0 ? (
@@ -399,6 +465,84 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers }: Props) {
               {notifPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bell className="w-4 h-4" />}
               Gönder
             </button>
+          </section>
+
+          {/* Son gönderilen bildirimler */}
+          <section className="rounded-xl bg-card border border-border p-4 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Son gönderilen bildirimler</p>
+              <select
+                value={recentFilter}
+                onChange={(e) => handleRecentFilter(e.target.value)}
+                disabled={recentPending}
+                className="rounded-md border border-border bg-background px-2 py-1 text-[11px] uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+              >
+                <option value="">Tüm seriler</option>
+                {ALL_SERIES.map((s) => <option key={s} value={s}>{s.toUpperCase()}</option>)}
+              </select>
+            </div>
+
+            {recent.length === 0 ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">
+                {recentPending ? "Yükleniyor…" : "Henüz bildirim gönderilmedi."}
+              </p>
+            ) : (
+              <ul className={cn("space-y-2 transition-opacity", recentPending && "opacity-50")}>
+                {recent.map((n) => {
+                  const accent = SERIES_COLOR[n.seriesSlug] ?? "#71717a";
+                  const isManual = n.source === "manual";
+                  return (
+                    <li
+                      key={n.id}
+                      className="rounded-lg bg-background border border-border pl-3 pr-3 py-2.5"
+                      style={{ borderLeftColor: accent, borderLeftWidth: "3px" }}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <span
+                          className="text-[10px] font-bold uppercase tracking-wider shrink-0"
+                          style={{ color: accent }}
+                        >
+                          {n.seriesSlug}
+                        </span>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-muted px-1.5 py-0.5 text-[9px] uppercase tracking-wider text-muted-foreground shrink-0">
+                          {isManual ? <Hand className="w-2.5 h-2.5" /> : <Cpu className="w-2.5 h-2.5" />}
+                          {isManual ? "Manuel" : "Oto"}
+                        </span>
+                        <span className="ml-auto text-[10px] font-mono tabular-nums text-muted-foreground shrink-0">
+                          {formatRelative(n.sentAt)}
+                        </span>
+                      </div>
+                      <p className="text-sm font-medium leading-snug">{n.title}</p>
+                      <p className="text-xs text-muted-foreground leading-snug line-clamp-2">{n.body}</p>
+                      <div className="mt-1.5 flex items-center gap-3 text-[11px] font-mono tabular-nums">
+                        <span className="inline-flex items-center gap-1 text-emerald-500">
+                          <CheckCircle className="w-3 h-3" />{n.sentCount}
+                        </span>
+                        {n.failedCount > 0 && (
+                          <span className="inline-flex items-center gap-1 text-destructive">
+                            <XCircle className="w-3 h-3" />{n.failedCount}
+                          </span>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+
+            {recentHasMore && (
+              <button
+                onClick={handleRecentLoadMore}
+                disabled={recentPending}
+                className={cn(
+                  "w-full flex items-center justify-center gap-1.5 rounded-lg border border-border bg-background px-4 py-2 text-xs font-medium",
+                  "hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                )}
+              >
+                {recentPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                Daha fazla göster
+              </button>
+            )}
           </section>
         </TabsContent>
 
