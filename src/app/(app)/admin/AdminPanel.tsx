@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition, useState } from "react";
+import { useTransition, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -63,7 +63,8 @@ interface AdminUser {
 
 interface Stats {
   totalUsers: number; pendingUsers: number;
-  activeSubscriptions: number; activeSessions: number;
+  approvedUsers: number; blockedUsers: number;
+  activeSubscriptions: number;
   subscriptionsBySeries: Record<string, number>;
   notificationsSent: number; devicesReached: number;
 }
@@ -75,15 +76,27 @@ interface Props {
   initialNotifications: RecentNotification[];
 }
 
-function StatCard({ value, label, accent }: { value: number; label: string; accent: string }) {
+function OverviewCard({
+  accent, label, value, children,
+}: { accent: string; label: string; value: number; children?: ReactNode }) {
   return (
-    <div
-      className="rounded-xl bg-card border border-border px-4 py-3 flex flex-col gap-1"
-      style={{ borderLeftColor: accent, borderLeftWidth: "3px" }}
-    >
-      <span className="text-2xl font-mono font-bold tabular-nums leading-none">{value}</span>
-      <span className="text-[10px] text-muted-foreground uppercase tracking-widest leading-none mt-0.5">{label}</span>
+    <div className="relative rounded-xl bg-card border border-border p-4 overflow-hidden">
+      <span className="absolute inset-x-0 top-0 h-0.5" style={{ backgroundColor: accent }} />
+      <p className="text-[10px] text-muted-foreground uppercase tracking-widest leading-none">{label}</p>
+      <p className="mt-2.5 text-3xl font-mono font-bold tabular-nums leading-none">{value}</p>
+      <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] leading-none min-h-[0.75rem]">
+        {children}
+      </div>
     </div>
+  );
+}
+
+function StatPill({ color, children }: { color: string; children: ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-1 font-mono tabular-nums" style={{ color }}>
+      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+      {children}
+    </span>
   );
 }
 
@@ -216,6 +229,7 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers, initialNotifica
   }
 
   const maxSubs = Math.max(...Object.values(stats.subscriptionsBySeries), 1);
+  const topSeries = Object.entries(stats.subscriptionsBySeries).sort((a, b) => b[1] - a[1])[0] ?? null;
 
   return (
     <div className="space-y-4">
@@ -237,12 +251,33 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers, initialNotifica
         ))}
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 gap-3">
-        <StatCard value={stats.totalUsers}        label={t("statUsers")}         accent="#22c55e" />
-        <StatCard value={stats.pendingUsers}       label={t("statPending")}       accent="#f59e0b" />
-        <StatCard value={stats.activeSubscriptions} label={t("statSubscriptions")} accent="#3b82f6" />
-        <StatCard value={stats.activeSessions}     label={t("statSessions")}      accent="#a855f7" />
+      {/* Overview */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <OverviewCard accent="#22c55e" label={t("statUsers")} value={stats.totalUsers}>
+          <StatPill color="#22c55e">{stats.approvedUsers} {t("statusApproved")}</StatPill>
+          {stats.pendingUsers > 0 && (
+            <StatPill color="#f59e0b">{stats.pendingUsers} {t("statPending")}</StatPill>
+          )}
+          {stats.blockedUsers > 0 && (
+            <StatPill color="#ef4444">{stats.blockedUsers} {t("statusBlocked")}</StatPill>
+          )}
+        </OverviewCard>
+
+        <OverviewCard accent="#3b82f6" label={t("statSubscriptions")} value={stats.activeSubscriptions}>
+          {topSeries ? (
+            <StatPill color={SERIES_COLOR[topSeries[0]] ?? "#71717a"}>
+              {topSeries[0].toUpperCase()} · {topSeries[1]}
+            </StatPill>
+          ) : (
+            <span className="font-mono text-muted-foreground">{t("noSubsShort")}</span>
+          )}
+        </OverviewCard>
+
+        <OverviewCard accent="#a855f7" label={t("notifSent")} value={stats.notificationsSent}>
+          <span className="font-mono tabular-nums text-muted-foreground">
+            {t("devicesReachedCount", { count: stats.devicesReached })}
+          </span>
+        </OverviewCard>
       </div>
 
       {/* Tabs */}
@@ -401,17 +436,6 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers, initialNotifica
 
         {/* ── Notifications ── */}
         <TabsContent value="notifications" className="mt-3 space-y-4">
-          <section className="rounded-xl bg-card border border-border px-4 py-3 flex items-stretch divide-x divide-border">
-            <div className="flex flex-col gap-1 pr-4">
-              <span className="text-2xl font-mono font-bold tabular-nums leading-none">{stats.notificationsSent}</span>
-              <span className="text-[10px] text-muted-foreground uppercase tracking-widest leading-none mt-0.5">{t("notifSent")}</span>
-            </div>
-            <div className="flex flex-col gap-1 pl-4">
-              <span className="text-2xl font-mono font-bold tabular-nums leading-none">{stats.devicesReached}</span>
-              <span className="text-[10px] text-muted-foreground uppercase tracking-widest leading-none mt-0.5">{t("devicesReached")}</span>
-            </div>
-          </section>
-
           <section className="rounded-xl bg-card border border-border p-4 space-y-3">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">{t("subDistribution")}</p>
             {Object.keys(stats.subscriptionsBySeries).length === 0 ? (
