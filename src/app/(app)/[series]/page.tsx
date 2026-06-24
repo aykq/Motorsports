@@ -92,7 +92,7 @@ export default async function SeriesPage({ params }: Props) {
         {/* Header */}
         <div className="flex items-center gap-1 -ml-2">
           <BackButton fallbackHref="/series" label="" />
-          <h1 className="font-display text-2xl font-bold uppercase tracking-tight" style={{ color: config.color }}>{config.name}</h1>
+          <h1 className="font-display text-2xl font-bold tracking-tight" style={{ color: config.color }}>{config.name}</h1>
         </div>
 
         {/* Next race card */}
@@ -141,7 +141,7 @@ export default async function SeriesPage({ params }: Props) {
               </div>
 
               <div>
-                <h2 className="font-display text-2xl font-bold uppercase tracking-tight leading-none mb-1.5">{nextRace.name}</h2>
+                <h2 className="font-display text-2xl font-bold tracking-tight leading-none mb-1.5">{nextRace.name}</h2>
                 <p className="text-xs text-muted-foreground">
                   {nextRace.circuitName} &bull; <span className="font-mono">{formatRaceWeekend(nextRace, locale)}</span>
                 </p>

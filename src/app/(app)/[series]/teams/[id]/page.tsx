@@ -99,7 +99,7 @@ export default async function TeamDetailPage({ params }: Props) {
             fallbackClassName="w-16 h-16 rounded-xl text-lg shrink-0"
           />
           <div>
-            <h1 className="font-display text-3xl font-bold uppercase tracking-tight leading-none">{teamName}</h1>
+            <h1 className="font-display text-3xl font-bold tracking-tight leading-none">{teamName}</h1>
             <p className="text-sm text-muted-foreground mt-1 font-mono">
               {year} · {standing?.team?.nationality ?? ""}
             </p>

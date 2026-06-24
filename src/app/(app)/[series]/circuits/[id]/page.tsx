@@ -80,7 +80,7 @@ export default async function CircuitDetailPage({ params }: Props) {
 
       {/* ── Header ── */}
       <div className="space-y-2">
-        <h1 className="font-display text-2xl font-bold uppercase tracking-tight leading-none">{circuit.name}</h1>
+        <h1 className="font-display text-2xl font-bold tracking-tight leading-none">{circuit.name}</h1>
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <MapPin className="w-4 h-4 shrink-0" />
