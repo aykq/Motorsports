@@ -1,6 +1,6 @@
 import webpush from "web-push";
 import { db } from "@/db";
-import { pushSubscriptions } from "@/db/schema";
+import { pushSubscriptions, notificationLog } from "@/db/schema";
 import { inArray } from "drizzle-orm";
 import { DEFAULT_SESSION_TYPES } from "@/lib/session-types";
 
@@ -58,6 +58,22 @@ export async function sendPushToSubscribers(
 
   if (expiredIds.length > 0) {
     await db.delete(pushSubscriptions).where(inArray(pushSubscriptions.id, expiredIds));
+  }
+
+  // Her gönderimi logla (manuel = sessionType null, otomatik = cron seans tipi).
+  // Loglama hatası asıl gönderimi etkilemesin.
+  try {
+    await db.insert(notificationLog).values({
+      seriesSlug,
+      title: payload.title,
+      body: payload.body,
+      url: payload.url ?? null,
+      source: sessionType === null ? "manual" : "auto",
+      sentCount: sent,
+      failedCount: failed,
+    });
+  } catch (err) {
+    console.error("[push] notification_log insert failed:", err);
   }
 
   return { sent, failed };

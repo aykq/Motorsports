@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/admin-guard";
 import { db } from "@/db";
-import { cachedRaces, users, accounts, sessions, pushSubscriptions, favorites } from "@/db/schema";
+import { cachedRaces, users, accounts, sessions, pushSubscriptions, favorites, notificationLog } from "@/db/schema";
 import { max, count, countDistinct, gt, sql } from "drizzle-orm";
 import { AdminPanel } from "./AdminPanel";
+import { getRecentNotificationsAction } from "./actions";
 import { ShieldAlert } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -34,7 +35,7 @@ async function getInitialUsers() {
 }
 
 async function getAdminStats() {
-  const [userRows, subRows, sessionRows] = await Promise.all([
+  const [userRows, subRows, sessionRows, notifRows] = await Promise.all([
     db.select({
       total: count(),
       pending: sql<number>`cast(count(*) filter (where status = 'pending') as int)`,
@@ -45,9 +46,14 @@ async function getAdminStats() {
     db.select({ total: countDistinct(sessions.userId) })
       .from(sessions)
       .where(gt(sessions.expires, new Date())),
+    db.select({
+      total: count(),
+      devices: sql<number>`cast(coalesce(sum(${notificationLog.sentCount}), 0) as int)`,
+    }).from(notificationLog),
   ]);
 
   const userStats = userRows[0] ?? { total: 0, pending: 0 };
+  const notifStats = notifRows[0] ?? { total: 0, devices: 0 };
 
   const subscriptionsBySeries: Record<string, number> = {};
   for (const sub of subRows) {
@@ -62,6 +68,8 @@ async function getAdminStats() {
     activeSubscriptions: subRows.length,
     activeSessions: sessionRows[0]?.total ?? 0,
     subscriptionsBySeries,
+    notificationsSent: Number(notifStats.total),
+    devicesReached: Number(notifStats.devices),
   };
 }
 
@@ -69,10 +77,11 @@ export default async function AdminPage() {
   const adminId = await requireAdmin();
   if (!adminId) redirect("/");
 
-  const [lastSyncTimes, initialUsers, stats] = await Promise.all([
+  const [lastSyncTimes, initialUsers, stats, initialNotifications] = await Promise.all([
     getLastSyncTimes(),
     getInitialUsers(),
     getAdminStats(),
+    getRecentNotificationsAction({ limit: 10 }),
   ]);
 
   return (
@@ -81,7 +90,12 @@ export default async function AdminPage() {
         <ShieldAlert className="w-5 h-5 text-muted-foreground" />
         <h1 className="text-xl font-bold">Yönetim</h1>
       </div>
-      <AdminPanel stats={stats} lastSyncTimes={lastSyncTimes} initialUsers={initialUsers} />
+      <AdminPanel
+        stats={stats}
+        lastSyncTimes={lastSyncTimes}
+        initialUsers={initialUsers}
+        initialNotifications={initialNotifications}
+      />
     </div>
   );
 }

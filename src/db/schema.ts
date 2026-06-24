@@ -7,6 +7,7 @@ import {
   jsonb,
   primaryKey,
   uniqueIndex,
+  index,
 } from "drizzle-orm/pg-core";
 import type { AdapterAccountType } from "next-auth/adapters";
 
@@ -188,4 +189,27 @@ export const sentNotifications = pgTable(
     sentAt: timestamp("sent_at").defaultNow().notNull(),
   },
   (t) => [uniqueIndex("sent_notification_unique_idx").on(t.seriesSlug, t.season, t.round, t.sessionType, t.notifType)]
+);
+
+// Gönderilen her bildirimin (otomatik + manuel) kaydı — yönetim panelindeki
+// "son gönderilen bildirimler" listesi ve toplam sayaç için.
+export const notificationLog = pgTable(
+  "notification_log",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    seriesSlug: text("series_slug").notNull(),
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    url: text("url"),
+    source: text("source").notNull(), // "manual" | "auto"
+    sentCount: integer("sent_count").notNull().default(0),
+    failedCount: integer("failed_count").notNull().default(0),
+    sentAt: timestamp("sent_at").defaultNow().notNull(),
+  },
+  (t) => [
+    index("notification_log_sent_at_idx").on(t.sentAt),
+    index("notification_log_series_sent_at_idx").on(t.seriesSlug, t.sentAt),
+  ]
 );
