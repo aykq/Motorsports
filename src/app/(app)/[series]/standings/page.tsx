@@ -56,11 +56,11 @@ export default async function StandingsPage({ params, searchParams }: Props) {
   ]);
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 space-y-6">
       <div className="space-y-1">
         <BackButton fallbackHref={`/${slug}`} label={config.shortName} />
-        <h1 className="text-xl font-bold">{config.name} — {t("title")}</h1>
-        <p className="text-xs text-muted-foreground">{t("season", { year })}</p>
+        <h1 className="font-display text-2xl font-bold uppercase tracking-tight leading-none">{config.name} — {t("title")}</h1>
+        <p className="text-xs text-muted-foreground font-mono">{t("season", { year })}</p>
       </div>
 
       {subSeries.length > 0 && (
@@ -72,12 +72,8 @@ export default async function StandingsPage({ params, searchParams }: Props) {
               <Link
                 key={c}
                 href={c === slug ? `/${slug}/standings` : `/${slug}/standings?cat=${c}`}
-                className="shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors"
-                style={
-                  isActive
-                    ? { backgroundColor: config.color, color: "#fff", borderColor: config.color }
-                    : { borderColor: "hsl(var(--border))", color: "hsl(var(--muted-foreground))" }
-                }
+                className={`shrink-0 font-display text-[11px] font-semibold uppercase tracking-wider px-3 py-1.5 rounded-full border transition-colors ${isActive ? "text-white border-transparent" : "border-border text-muted-foreground hover:text-foreground"}`}
+                style={isActive ? { backgroundColor: config.color, borderColor: config.color } : undefined}
               >
                 {catConfig?.shortName ?? c.toUpperCase()}
               </Link>
@@ -114,7 +110,7 @@ export default async function StandingsPage({ params, searchParams }: Props) {
                     style={{ backgroundColor: teamColor }}
                   />
                   <span
-                    className="w-7 text-right font-bold text-sm shrink-0"
+                    className="w-7 text-right font-mono font-bold text-base shrink-0"
                     style={s.position <= 3 ? { color: ["#fbbf24", "#9ca3af", "#cd7f32"][s.position - 1] } : {}}
                   >
                     {s.position}
@@ -148,7 +144,7 @@ export default async function StandingsPage({ params, searchParams }: Props) {
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="font-bold text-sm">{s.points} pts</p>
+                    <p className="font-mono font-bold text-sm tabular-nums">{s.points} <span className="text-muted-foreground font-normal text-xs">pts</span></p>
                     {s.wins > 0 && (
                       <p className="text-xs text-muted-foreground">{t("wins", { count: s.wins })}</p>
                     )}
@@ -178,7 +174,7 @@ export default async function StandingsPage({ params, searchParams }: Props) {
                     style={{ backgroundColor: teamColor }}
                   />
                   <span
-                    className="w-7 text-right font-bold text-sm shrink-0"
+                    className="w-7 text-right font-mono font-bold text-base shrink-0"
                     style={s.position <= 3 ? { color: ["#fbbf24", "#9ca3af", "#cd7f32"][s.position - 1] } : {}}
                   >
                     {s.position}

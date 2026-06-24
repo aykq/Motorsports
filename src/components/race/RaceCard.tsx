@@ -44,33 +44,33 @@ export function RaceCard({ race, series, compact = false }: RaceCardProps) {
   return (
     <Card
       className={cn(
-        "overflow-hidden transition-colors hover:bg-accent/50 cursor-pointer",
+        "relative overflow-hidden transition-colors hover:bg-accent/50 cursor-pointer",
         isLive && "ring-1 ring-rose-500"
       )}
       onClick={() => router.push(`/${series.slug}/races/${race.round}`)}
     >
-      <CardContent className="p-4 space-y-3">
+      <span aria-hidden className="absolute left-0 top-0 bottom-0 w-1" style={{ backgroundColor: series.color }} />
+      <CardContent className="p-4 pl-5 space-y-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 flex-wrap">
-            <Badge
-              variant="secondary"
-              className="text-xs font-bold"
+            <span
+              className="font-display text-[11px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded"
               style={{ backgroundColor: series.color + "22", color: series.color }}
             >
               {series.shortName}
-            </Badge>
-            <span className="text-xs text-muted-foreground">{tRace("round", { round: race.round })}</span>
+            </span>
+            <span className="font-mono text-xs text-muted-foreground">{tRace("round", { round: race.round })}</span>
           </div>
           <Badge
             variant={isLive ? "destructive" : isCompleted ? "secondary" : "outline"}
-            className={cn("shrink-0 text-xs", isLive && "animate-pulse")}
+            className={cn("shrink-0 font-display uppercase tracking-wider text-[11px]", isLive && "animate-pulse")}
           >
             {tStatus(race.status)}
           </Badge>
         </div>
 
         <div>
-          <p className="font-semibold text-sm leading-tight">{race.name}</p>
+          <p className="font-display text-base font-bold uppercase tracking-tight leading-none">{race.name}</p>
           <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
             <MapPin className="w-3 h-3 shrink-0" />
             <Link
@@ -86,7 +86,7 @@ export function RaceCard({ race, series, compact = false }: RaceCardProps) {
         </div>
 
         {raceSession && (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-mono">
             <Calendar className="w-3 h-3 shrink-0" />
             <span>{formatDate(raceSession.date, locale)}</span>
             <span className="text-muted-foreground/50">·</span>
@@ -95,17 +95,17 @@ export function RaceCard({ race, series, compact = false }: RaceCardProps) {
         )}
 
         {isCompleted && race.results && race.results.length > 0 && !compact && (
-          <div className="space-y-1 pt-1 border-t border-border">
+          <div className="space-y-1 pt-2 border-t border-border">
             {race.results.slice(0, 3).map((result) => (
               <div key={result.position} className="flex items-center gap-2 text-xs">
-                <span className="w-4 text-muted-foreground text-right shrink-0">
-                  {result.position}.
+                <span className="w-4 font-mono font-bold text-right shrink-0" style={result.position === 1 ? { color: "#f5c518" } : { color: "var(--muted-foreground)" }}>
+                  {result.position}
                 </span>
                 <Flag className="w-3 h-3 text-muted-foreground shrink-0" />
                 <span className="font-medium truncate">{result.driverName}</span>
                 <span className="text-muted-foreground truncate">{result.team}</span>
                 {result.time && (
-                  <span className="ml-auto text-muted-foreground shrink-0">
+                  <span className="ml-auto text-muted-foreground shrink-0 font-mono">
                     {result.time}
                   </span>
                 )}

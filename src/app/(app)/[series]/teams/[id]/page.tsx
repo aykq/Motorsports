@@ -99,8 +99,8 @@ export default async function TeamDetailPage({ params }: Props) {
             fallbackClassName="w-16 h-16 rounded-xl text-lg shrink-0"
           />
           <div>
-            <h1 className="text-2xl font-black">{teamName}</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
+            <h1 className="font-display text-3xl font-bold uppercase tracking-tight leading-none">{teamName}</h1>
+            <p className="text-sm text-muted-foreground mt-1 font-mono">
               {year} · {standing?.team?.nationality ?? ""}
             </p>
           </div>
@@ -112,16 +112,16 @@ export default async function TeamDetailPage({ params }: Props) {
         {standing && (
           <div className="grid grid-cols-3 gap-3">
             <div className="rounded-lg bg-card border border-border p-3 text-center">
-              <p className="text-2xl font-black">{standing.position}</p>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">{t("ranking")}</p>
+              <p className="font-mono text-2xl font-bold tabular-nums">{standing.position}</p>
+              <p className="font-display text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">{t("ranking")}</p>
             </div>
             <div className="rounded-lg bg-card border border-border p-3 text-center">
-              <p className="text-2xl font-black">{standing.points}</p>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">{t("points")}</p>
+              <p className="font-mono text-2xl font-bold tabular-nums">{standing.points}</p>
+              <p className="font-display text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">{t("points")}</p>
             </div>
             <div className="rounded-lg bg-card border border-border p-3 text-center">
-              <p className="text-2xl font-black">{standing.wins}</p>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">{t("wins")}</p>
+              <p className="font-mono text-2xl font-bold tabular-nums">{standing.wins}</p>
+              <p className="font-display text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">{t("wins")}</p>
             </div>
           </div>
         )}
@@ -129,7 +129,7 @@ export default async function TeamDetailPage({ params }: Props) {
         {/* ── Pilots (GT3/GT4: grouped by car entry) ── */}
         {teamDrivers.length > 0 && (
           <section className="space-y-2">
-            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+            <h2 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">
               {t("pilots")}
             </h2>
 
@@ -256,7 +256,7 @@ export default async function TeamDetailPage({ params }: Props) {
         {/* ── Race-by-race Results ── */}
         {completedRaces.length > 0 && (
           <section className="space-y-2">
-            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+            <h2 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">
               {t("raceResults")}
             </h2>
             <div className="space-y-1.5">

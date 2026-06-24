@@ -60,11 +60,11 @@ export default async function SchedulePage({ params }: Props) {
   };
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 space-y-8">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 space-y-8">
       <div className="space-y-1">
         <BackButton fallbackHref={`/${slug}`} label={config.shortName} />
-        <h1 className="text-xl font-bold">{config.name} — {t("title")}</h1>
-        <p className="text-xs text-muted-foreground">{t("season", { year, count: races.length })}</p>
+        <h1 className="font-display text-2xl font-bold uppercase tracking-tight leading-none">{config.name} — {t("title")}</h1>
+        <p className="text-xs text-muted-foreground font-mono">{t("season", { year, count: races.length })}</p>
       </div>
 
       {races.length > 0 ? (
