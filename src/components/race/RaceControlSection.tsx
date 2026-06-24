@@ -3,16 +3,17 @@
 import { useState, useEffect } from "react";
 import { AlertTriangle, Flag, CircleDot, Languages } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 import type { RaceControlEvent } from "@/types/series";
 
-const FLAG_LABELS: Record<string, { label: string; color: string }> = {
-  RED: { label: "Kırmızı Bayrak", color: "text-red-500" },
-  YELLOW: { label: "Sarı Bayrak", color: "text-yellow-500" },
-  DOUBLE_YELLOW: { label: "Çift Sarı", color: "text-yellow-400" },
-  GREEN: { label: "Yeşil Bayrak", color: "text-green-500" },
-  CHEQUERED: { label: "Damalı Bayrak", color: "text-foreground" },
-  BLACK: { label: "Siyah Bayrak", color: "text-foreground" },
-  BLACK_AND_WHITE: { label: "Siyah-Beyaz", color: "text-foreground" },
+const FLAG_COLORS: Record<string, string> = {
+  RED: "text-red-500",
+  YELLOW: "text-yellow-500",
+  DOUBLE_YELLOW: "text-yellow-400",
+  GREEN: "text-green-500",
+  CHEQUERED: "text-foreground",
+  BLACK: "text-foreground",
+  BLACK_AND_WHITE: "text-foreground",
 };
 
 interface Props {
@@ -21,6 +22,7 @@ interface Props {
 }
 
 export function RaceControlSection({ events, eventsTr }: Props) {
+  const t = useTranslations("racePage");
   const [lang, setLang] = useState<"en" | "tr">("en");
 
   useEffect(() => {
@@ -32,7 +34,7 @@ export function RaceControlSection({ events, eventsTr }: Props) {
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-          Yarış Olayları
+          {t("raceEvents")}
         </h2>
         <div className="flex items-center gap-1 rounded-full border border-border p-0.5">
           <Languages className="w-3 h-3 text-muted-foreground ml-1.5" />
@@ -55,7 +57,7 @@ export function RaceControlSection({ events, eventsTr }: Props) {
 
       <div className="rounded-lg border border-border overflow-hidden">
         {events.map((event, i) => {
-          const flagStyle = event.flag ? FLAG_LABELS[event.flag] : null;
+          const flagColor = event.flag ? FLAG_COLORS[event.flag] : null;
           const isSafetyCar =
             event.category === "SafetyCar" ||
             event.message.toUpperCase().includes("SAFETY CAR");
@@ -82,7 +84,7 @@ export function RaceControlSection({ events, eventsTr }: Props) {
                   <Flag
                     className={cn(
                       "w-3.5 h-3.5",
-                      flagStyle?.color ?? "text-muted-foreground"
+                      flagColor ?? "text-muted-foreground"
                     )}
                   />
                 )}

@@ -8,6 +8,7 @@ import type { SeriesConfig } from "@/lib/series-config";
 import { MapPin, Calendar, Flag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { useTranslations, useLocale } from "next-intl";
 
 interface RaceCardProps {
   race: Race;
@@ -15,23 +16,16 @@ interface RaceCardProps {
   compact?: boolean;
 }
 
-const STATUS_LABELS: Record<Race["status"], string> = {
-  upcoming: "Yaklaşan",
-  live: "Canlı",
-  completed: "Tamamlandı",
-  cancelled: "İptal",
-};
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("tr-TR", {
+function formatDate(dateStr: string, locale: string): string {
+  return new Date(dateStr).toLocaleDateString(locale, {
     day: "numeric",
     month: "long",
     year: "numeric",
   });
 }
 
-function formatTime(dateStr: string): string {
-  return new Date(dateStr).toLocaleTimeString("tr-TR", {
+function formatTime(dateStr: string, locale: string): string {
+  return new Date(dateStr).toLocaleTimeString(locale, {
     hour: "2-digit",
     minute: "2-digit",
     timeZone: "Europe/Istanbul",
@@ -40,6 +34,9 @@ function formatTime(dateStr: string): string {
 
 export function RaceCard({ race, series, compact = false }: RaceCardProps) {
   const router = useRouter();
+  const tStatus = useTranslations("raceStatus");
+  const tRace = useTranslations("racePage");
+  const locale = useLocale();
   const raceSession = race.sessions.find((s) => s.type === "race");
   const isLive = race.status === "live";
   const isCompleted = race.status === "completed";
@@ -62,13 +59,13 @@ export function RaceCard({ race, series, compact = false }: RaceCardProps) {
             >
               {series.shortName}
             </Badge>
-            <span className="text-xs text-muted-foreground">Yarış {race.round}</span>
+            <span className="text-xs text-muted-foreground">{tRace("round", { round: race.round })}</span>
           </div>
           <Badge
             variant={isLive ? "destructive" : isCompleted ? "secondary" : "outline"}
             className={cn("shrink-0 text-xs", isLive && "animate-pulse")}
           >
-            {STATUS_LABELS[race.status]}
+            {tStatus(race.status)}
           </Badge>
         </div>
 
@@ -91,9 +88,9 @@ export function RaceCard({ race, series, compact = false }: RaceCardProps) {
         {raceSession && (
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Calendar className="w-3 h-3 shrink-0" />
-            <span>{formatDate(raceSession.date)}</span>
+            <span>{formatDate(raceSession.date, locale)}</span>
             <span className="text-muted-foreground/50">·</span>
-            <span>{formatTime(raceSession.date)}</span>
+            <span>{formatTime(raceSession.date, locale)}</span>
           </div>
         )}
 

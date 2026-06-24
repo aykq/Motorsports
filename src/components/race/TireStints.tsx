@@ -1,5 +1,8 @@
+"use client";
+
 import type { TireStint, TireCompound, RaceResult } from "@/types/series";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 const COMPOUND_STYLES: Record<TireCompound, { bg: string; label: string; text: string }> = {
   SOFT: { bg: "bg-red-600", label: "S", text: "text-white" },
@@ -16,6 +19,7 @@ interface Props {
 }
 
 export function TireStints({ stints, results }: Props) {
+  const t = useTranslations("tireStints");
   if (!stints.length) return null;
 
   const totalLaps = Math.max(...stints.map((s) => s.lapEnd), 1);
@@ -72,7 +76,7 @@ export function TireStints({ stints, results }: Props) {
                       key={i}
                       className={cn("relative flex items-center justify-center group", style.bg)}
                       style={{ width: `${width}%`, minWidth: "4px" }}
-                      title={`${stint.compound} — L${stint.lapStart}–${stint.lapEnd} (${stint.lapEnd - stint.lapStart + 1} tur${stint.tyreAgeAtStart > 0 ? `, +${stint.tyreAgeAtStart} kullanılmış` : ""})`}
+                      title={`${stint.compound} — L${stint.lapStart}–${stint.lapEnd} (${t("laps", { count: stint.lapEnd - stint.lapStart + 1 })}${stint.tyreAgeAtStart > 0 ? t("used", { age: stint.tyreAgeAtStart }) : ""})`}
                     >
                       {width > 8 && (
                         <span className={cn("text-[9px] font-bold leading-none select-none", style.text)}>
@@ -102,7 +106,7 @@ export function TireStints({ stints, results }: Props) {
               </div>
             );
           })}
-        <span className="text-[10px] text-muted-foreground ml-auto">Toplam {totalLaps} tur</span>
+        <span className="text-[10px] text-muted-foreground ml-auto">{t("total", { laps: totalLaps })}</span>
       </div>
     </div>
   );

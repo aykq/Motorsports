@@ -5,36 +5,38 @@ import { eq } from "drizzle-orm";
 import { verifyApprovalToken } from "@/lib/admin-token";
 import { ApproveActions } from "./ApproveActions";
 import { requireAdmin } from "@/lib/admin-guard";
+import { getTranslations } from "next-intl/server";
 
 interface Props {
   searchParams: Promise<{ token?: string }>;
 }
 
-function ErrorPage({ message }: { message: string }) {
+function ErrorPage({ title, message }: { title: string; message: string }) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="text-center space-y-2">
-        <p className="text-lg font-semibold text-destructive">Hata</p>
+        <p className="text-lg font-semibold text-destructive">{title}</p>
         <p className="text-sm text-muted-foreground">{message}</p>
       </div>
     </div>
   );
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  approved: "onaylandı",
-  blocked: "engellendi",
-};
-
 export default async function AdminApprovePage({ searchParams }: Props) {
   const adminId = await requireAdmin();
   if (!adminId) redirect("/");
 
+  const t = await getTranslations("admin");
+  const statusLabelPast: Record<string, string> = {
+    approved: t("statusApprovedPast"),
+    blocked: t("statusBlockedPast"),
+  };
+
   const { token } = await searchParams;
-  if (!token) return <ErrorPage message="Token eksik." />;
+  if (!token) return <ErrorPage title={t("error")} message={t("tokenMissing")} />;
 
   const payload = verifyApprovalToken(token);
-  if (!payload) return <ErrorPage message="Bu link geçersiz veya süresi dolmuş." />;
+  if (!payload) return <ErrorPage title={t("error")} message={t("linkInvalid")} />;
 
   const [targetUser, account] = await Promise.all([
     db.query.users.findFirst({
@@ -47,15 +49,15 @@ export default async function AdminApprovePage({ searchParams }: Props) {
     }),
   ]);
 
-  if (!targetUser) return <ErrorPage message="Kullanıcı bulunamadı veya daha önce silindi." />;
+  if (!targetUser) return <ErrorPage title={t("error")} message={t("userNotFound")} />;
 
   if (targetUser.status !== "pending") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background px-4">
         <div className="text-center space-y-2">
-          <p className="text-lg font-semibold">Bu kullanıcı zaten işleme alındı.</p>
+          <p className="text-lg font-semibold">{t("alreadyProcessed")}</p>
           <p className="text-sm text-muted-foreground">
-            {targetUser.name ?? targetUser.email} — {STATUS_LABELS[targetUser.status] ?? targetUser.status}
+            {targetUser.name ?? targetUser.email} — {statusLabelPast[targetUser.status] ?? targetUser.status}
           </p>
         </div>
       </div>

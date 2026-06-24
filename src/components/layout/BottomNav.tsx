@@ -54,7 +54,7 @@ export function BottomNav({ isAdmin }: BottomNavProps) {
             )}
           >
             <Users className={cn("w-5 h-5 transition-transform duration-200", pathname.startsWith("/admin") && "scale-110")} />
-            <span className={cn("transition-all duration-200", pathname.startsWith("/admin") && "font-semibold")}>Yönetim</span>
+            <span className={cn("transition-all duration-200", pathname.startsWith("/admin") && "font-semibold")}>{t("admin")}</span>
           </Link>
         )}
       </div>

@@ -11,6 +11,7 @@ import {
   CardHeader,
 } from "@/components/ui/card";
 import { CheckCircle, Loader2, ShieldBan, Trash2 } from "lucide-react";
+import { useTranslations, useLocale } from "next-intl";
 
 type Action = "approve" | "reject" | "block";
 
@@ -23,18 +24,15 @@ interface TargetUser {
   provider: string;
 }
 
-const ACTION_LABELS: Record<Action, string> = {
-  approve: "Kullanıcı onaylandı.",
-  reject: "Kullanıcı kaydı silindi.",
-  block: "Kullanıcı engellendi.",
-};
-
-const PROVIDER_LABELS: Record<string, string> = {
-  google: "Google OAuth",
-  resend: "E-posta (Magic Link)",
+const ACTION_KEY: Record<Action, string> = {
+  approve: "actionApproved",
+  reject: "actionRejected",
+  block: "actionBlocked",
 };
 
 export function ApproveActions({ user, token }: { user: TargetUser; token: string }) {
+  const t = useTranslations("admin");
+  const locale = useLocale();
   const [loading, setLoading] = useState<Action | null>(null);
   const [done, setDone] = useState<Action | null>(null);
   const [error, setError] = useState(false);
@@ -61,7 +59,7 @@ export function ApproveActions({ user, token }: { user: TargetUser; token: strin
     ? user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
     : (user.email?.[0] ?? "?").toUpperCase();
 
-  const signupDate = new Intl.DateTimeFormat("tr-TR", {
+  const signupDate = new Intl.DateTimeFormat(locale, {
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -70,7 +68,10 @@ export function ApproveActions({ user, token }: { user: TargetUser; token: strin
     timeZone: "Europe/Istanbul",
   }).format(new Date(user.signupAt));
 
-  const providerLabel = PROVIDER_LABELS[user.provider] ?? user.provider;
+  const providerLabel =
+    user.provider === "resend" ? t("providerMagicLink")
+    : user.provider === "google" ? "Google OAuth"
+    : user.provider;
   const isLoading = loading !== null;
 
   if (done) {
@@ -79,7 +80,7 @@ export function ApproveActions({ user, token }: { user: TargetUser; token: strin
         <div className="text-center space-y-4">
           <CheckCircle className="mx-auto h-12 w-12 text-green-500" />
           <div className="space-y-1">
-            <p className="font-semibold text-lg">{ACTION_LABELS[done]}</p>
+            <p className="font-semibold text-lg">{t(ACTION_KEY[done])}</p>
             {user.name && <p className="text-sm text-muted-foreground">{user.name}</p>}
           </div>
         </div>
@@ -95,7 +96,7 @@ export function ApproveActions({ user, token }: { user: TargetUser; token: strin
             <span className="text-3xl font-black tracking-tight text-rose-500">MS</span>
             <span className="text-3xl font-black tracking-tight text-foreground">Hub</span>
           </div>
-          <p className="text-sm text-muted-foreground">Kullanıcı Onay Paneli</p>
+          <p className="text-sm text-muted-foreground">{t("approvePanelSubtitle")}</p>
         </div>
 
         <Card>
@@ -114,13 +115,13 @@ export function ApproveActions({ user, token }: { user: TargetUser; token: strin
           </CardHeader>
 
           <CardContent>
-            <p className="text-xs text-muted-foreground">Kayıt: {signupDate}</p>
+            <p className="text-xs text-muted-foreground">{t("registered")}: {signupDate}</p>
           </CardContent>
 
           <CardFooter className="flex-col gap-2">
             {error && (
               <p className="text-sm text-destructive text-center w-full mb-1">
-                Bir hata oluştu. Tekrar dene.
+                {t("genericError")}
               </p>
             )}
             <Button
@@ -133,7 +134,7 @@ export function ApproveActions({ user, token }: { user: TargetUser; token: strin
               ) : (
                 <CheckCircle className="h-4 w-4 mr-2" />
               )}
-              Onayla
+              {t("approve")}
             </Button>
             <Button
               variant="outline"
@@ -146,7 +147,7 @@ export function ApproveActions({ user, token }: { user: TargetUser; token: strin
               ) : (
                 <Trash2 className="h-4 w-4 mr-2" />
               )}
-              Reddet (kaydı sil)
+              {t("reject")}
             </Button>
             <Button
               variant="outline"
@@ -159,7 +160,7 @@ export function ApproveActions({ user, token }: { user: TargetUser; token: strin
               ) : (
                 <ShieldBan className="h-4 w-4 mr-2" />
               )}
-              Engelle
+              {t("block")}
             </Button>
           </CardFooter>
         </Card>

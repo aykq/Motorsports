@@ -287,6 +287,8 @@ export default async function RaceDetailPage({ params }: Props) {
             championship: t("championship"),
             driverChampionship: t("driverChampionship"),
             teamChampionship: t("teamChampionship"),
+            loadMore: t("loadMore"),
+            viewAll: t("viewAll"),
           }}
         />
       )}

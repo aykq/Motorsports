@@ -21,6 +21,7 @@ interface SidebarProps {
 export function Sidebar({ user, isAdmin }: SidebarProps) {
   const pathname = usePathname();
   const t = useTranslations("nav");
+  const tAccount = useTranslations("settings.account");
 
   const NAV_ITEMS = [
     { href: "/", label: t("calendar"), icon: CalendarDays },
@@ -69,7 +70,7 @@ export function Sidebar({ user, isAdmin }: SidebarProps) {
             )}
           >
             <Users className={cn("w-4.5 h-4.5 shrink-0 transition-transform duration-200", pathname.startsWith("/admin") && "scale-110")} />
-            Yönetim
+            {t("admin")}
           </Link>
         )}
       </nav>
@@ -90,7 +91,7 @@ export function Sidebar({ user, isAdmin }: SidebarProps) {
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0">
-            <p className="text-sm font-medium truncate">{user.name ?? "Kullanıcı"}</p>
+            <p className="text-sm font-medium truncate">{user.name ?? tAccount("defaultUser")}</p>
             <p className="text-xs text-muted-foreground truncate">{user.email}</p>
           </div>
         </Link>
