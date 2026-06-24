@@ -60,8 +60,8 @@ export function BlockedClient({ userEmail, userName }: BlockedClientProps) {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm space-y-8 text-center">
         <div className="flex justify-center">
-          <span className="font-display text-4xl font-bold uppercase tracking-tight text-brand">MS</span>
-          <span className="font-display text-4xl font-bold uppercase tracking-tight text-foreground">Hub</span>
+          <span className="font-display text-4xl font-bold tracking-tight text-brand">MS</span>
+          <span className="font-display text-4xl font-bold tracking-tight text-foreground">Hub</span>
         </div>
 
         <div className="space-y-4">

@@ -92,8 +92,8 @@ export function PendingClient({ hasSession, userId, userName, userEmail }: Pendi
       <div className="w-full max-w-sm space-y-8 text-center">
         <div className="space-y-2">
           <div className="flex justify-center">
-            <span className="font-display text-4xl font-bold uppercase tracking-tight text-brand">MS</span>
-            <span className="font-display text-4xl font-bold uppercase tracking-tight text-foreground">Hub</span>
+            <span className="font-display text-4xl font-bold tracking-tight text-brand">MS</span>
+            <span className="font-display text-4xl font-bold tracking-tight text-foreground">Hub</span>
           </div>
         </div>
 

@@ -17,7 +17,7 @@ export default async function SeriesListPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 space-y-6">
       <div className="space-y-0.5">
-        <h1 className="font-display text-3xl font-bold uppercase tracking-tight leading-none">{t("title")}</h1>
+        <h1 className="font-display text-3xl font-bold tracking-tight leading-none">{t("title")}</h1>
         <p className="text-xs text-muted-foreground font-mono">{t("subtitle")}</p>
       </div>
 
@@ -33,7 +33,7 @@ export default async function SeriesListPage() {
               <span aria-hidden className="absolute inset-x-0 top-0 h-1" style={{ backgroundColor: series.color }} />
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="font-display text-2xl font-bold uppercase tracking-tight leading-none" style={{ color: series.color }}>
+                  <p className="font-display text-2xl font-bold tracking-tight leading-none" style={{ color: series.color }}>
                     {series.shortName}
                   </p>
                   <p className="text-sm font-medium mt-1.5 leading-tight">{series.name}</p>

@@ -133,7 +133,7 @@ export default async function DriverDetailPage({ params }: Props) {
             priority
           />
           <div className="min-w-0">
-            <h1 className="font-display text-3xl font-bold uppercase tracking-tight leading-none">
+            <h1 className="font-display text-3xl font-bold tracking-tight leading-none">
               {driver.firstName} {driver.lastName}
             </h1>
             <div className="flex items-center gap-2 mt-1.5 flex-wrap">

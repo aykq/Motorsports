@@ -203,7 +203,7 @@ export default async function RaceDetailPage({ params }: Props) {
               {tStatus(race.status as "upcoming" | "live" | "completed" | "cancelled") ?? race.status}
             </Badge>
           </div>
-          <h1 className="font-display text-3xl font-bold uppercase tracking-tight leading-none">{race.name}</h1>
+          <h1 className="font-display text-3xl font-bold tracking-tight leading-none">{race.name}</h1>
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground flex-wrap">
             <MapPin className="w-4 h-4 shrink-0" />
             <Link
