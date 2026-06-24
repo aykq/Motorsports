@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import {
   RefreshCw, Trash2, Bell, Settings, CheckCircle, XCircle,
-  Loader2, Users, ShieldCheck, Hand, Cpu, ChevronDown,
+  Loader2, Users, ShieldCheck, Hand, Cpu, ChevronDown, Clock, Link as LinkIcon,
 } from "lucide-react";
 import {
   syncSeriesAction, clearRaceDetailAction, sendTestNotifAction, syncNewsAction,
@@ -29,6 +29,17 @@ function syncDotColor(lastSync: string | null): string {
   if (diff < 60 * 60 * 1000) return "#22c55e";
   if (diff < 24 * 60 * 60 * 1000) return "#f59e0b";
   return "#ef4444";
+}
+
+const DATETIME_FMT = new Intl.DateTimeFormat("tr-TR", {
+  day: "2-digit", month: "short", year: "numeric",
+  hour: "2-digit", minute: "2-digit", second: "2-digit",
+  timeZone: "Europe/Istanbul",
+});
+
+function formatDateTime(iso: string | null): string {
+  if (!iso) return "—";
+  return DATETIME_FMT.format(new Date(iso));
 }
 
 function formatRelative(iso: string | null): string {
@@ -508,19 +519,30 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers, initialNotifica
                           {isManual ? <Hand className="w-2.5 h-2.5" /> : <Cpu className="w-2.5 h-2.5" />}
                           {isManual ? "Manuel" : "Oto"}
                         </span>
-                        <span className="ml-auto text-[10px] font-mono tabular-nums text-muted-foreground shrink-0">
+                        <span
+                          className="ml-auto text-[10px] font-mono tabular-nums text-muted-foreground shrink-0"
+                          title={formatDateTime(n.sentAt)}
+                        >
                           {formatRelative(n.sentAt)}
                         </span>
                       </div>
                       <p className="text-sm font-medium leading-snug">{n.title}</p>
                       <p className="text-xs text-muted-foreground leading-snug line-clamp-2">{n.body}</p>
-                      <div className="mt-1.5 flex items-center gap-3 text-[11px] font-mono tabular-nums">
+                      <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-mono tabular-nums">
                         <span className="inline-flex items-center gap-1 text-emerald-500">
                           <CheckCircle className="w-3 h-3" />{n.sentCount}
                         </span>
                         {n.failedCount > 0 && (
                           <span className="inline-flex items-center gap-1 text-destructive">
                             <XCircle className="w-3 h-3" />{n.failedCount}
+                          </span>
+                        )}
+                        <span className="inline-flex items-center gap-1 text-muted-foreground">
+                          <Clock className="w-3 h-3" />{formatDateTime(n.sentAt)}
+                        </span>
+                        {n.url && (
+                          <span className="inline-flex items-center gap-1 text-muted-foreground">
+                            <LinkIcon className="w-3 h-3" />{n.url}
                           </span>
                         )}
                       </div>
