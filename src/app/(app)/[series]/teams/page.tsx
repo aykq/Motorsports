@@ -42,11 +42,11 @@ export default async function TeamsPage({ params }: Props) {
   }, {});
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 space-y-6">
       <div className="space-y-1">
         <BackButton fallbackHref={`/${slug}`} label={config.shortName} />
-        <h1 className="text-2xl font-bold">{t("title")}</h1>
-        <p className="text-sm text-muted-foreground">{t("season", { year })}</p>
+        <h1 className="font-display text-2xl font-bold uppercase tracking-tight leading-none">{config.name} — {t("title")}</h1>
+        <p className="text-xs text-muted-foreground font-mono">{t("season", { year })}</p>
       </div>
 
       <div className="space-y-2">
@@ -64,7 +64,7 @@ export default async function TeamsPage({ params }: Props) {
                   style={{ backgroundColor: teamColor }}
                 />
 
-                <span className="text-lg font-black text-muted-foreground w-6 text-right shrink-0 ml-2">
+                <span className="font-mono text-lg font-bold text-muted-foreground w-6 text-right shrink-0 ml-2">
                   {s.position}
                 </span>
 
@@ -87,8 +87,8 @@ export default async function TeamsPage({ params }: Props) {
                 </div>
 
                 <div className="text-right shrink-0">
-                  <p className="font-black text-xl">{s.points}</p>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("points")}</p>
+                  <p className="font-mono font-bold text-xl tabular-nums">{s.points}</p>
+                  <p className="font-display text-[10px] text-muted-foreground uppercase tracking-wide">{t("points")}</p>
                 </div>
               </div>
             </Link>

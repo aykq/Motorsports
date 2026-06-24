@@ -115,7 +115,7 @@ export default async function DriverDetailPage({ params }: Props) {
       >
         {driver.number && (
           <span
-            className="absolute -right-2 top-1/2 -translate-y-1/2 text-[90px] font-black leading-none select-none pointer-events-none"
+            className="absolute -right-2 top-1/2 -translate-y-1/2 font-mono text-[90px] font-bold leading-none select-none pointer-events-none tabular-nums"
             style={{ color: teamColor, opacity: 0.12 }}
           >
             {driver.number}
@@ -133,20 +133,20 @@ export default async function DriverDetailPage({ params }: Props) {
             priority
           />
           <div className="min-w-0">
-            <h1 className="text-2xl font-black leading-tight">
+            <h1 className="font-display text-3xl font-bold uppercase tracking-tight leading-none">
               {driver.firstName} {driver.lastName}
             </h1>
             <div className="flex items-center gap-2 mt-1.5 flex-wrap">
               {driver.code && (
                 <span
-                  className="text-xs font-black px-2 py-0.5 rounded"
+                  className="font-display text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded"
                   style={{ backgroundColor: `${teamColor}30`, color: teamColor }}
                 >
                   {driver.code}
                 </span>
               )}
               {driver.number && (
-                <span className="text-sm text-muted-foreground font-bold">#{driver.number}</span>
+                <span className="font-mono text-sm text-muted-foreground font-bold">#{driver.number}</span>
               )}
               <span className="text-sm text-muted-foreground">{driver.nationality}</span>
             </div>
@@ -171,15 +171,15 @@ export default async function DriverDetailPage({ params }: Props) {
         {standing && (
           <div className="grid grid-cols-3 gap-3">
             <div className="rounded-lg bg-card border border-border p-3 text-center">
-              <p className="text-2xl font-black">{standing.position}</p>
+              <p className="font-mono text-2xl font-bold tabular-nums">{standing.position}</p>
               <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">{t("ranking")}</p>
             </div>
             <div className="rounded-lg bg-card border border-border p-3 text-center">
-              <p className="text-2xl font-black">{standing.points}</p>
+              <p className="font-mono text-2xl font-bold tabular-nums">{standing.points}</p>
               <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">{t("points")}</p>
             </div>
             <div className="rounded-lg bg-card border border-border p-3 text-center">
-              <p className="text-2xl font-black">{standing.wins}</p>
+              <p className="font-mono text-2xl font-bold tabular-nums">{standing.wins}</p>
               <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">{t("wins")}</p>
             </div>
           </div>
@@ -188,7 +188,7 @@ export default async function DriverDetailPage({ params }: Props) {
         {/* ── Race Results ── */}
         {raceResults.length > 0 && (
           <section className="space-y-2">
-            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+            <h2 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">
               {t("raceResults", { year })}
             </h2>
             <div className="space-y-1.5">

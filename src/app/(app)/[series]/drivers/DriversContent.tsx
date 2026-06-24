@@ -87,11 +87,11 @@ export function DriversContent({
     : drivers;
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 space-y-5">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 space-y-5">
       <div className="space-y-1">
         <BackButton fallbackHref={`/${slug}`} label={config.shortName} />
-        <h1 className="text-xl font-bold">{config.name} — {t("title")}</h1>
-        <p className="text-xs text-muted-foreground">{t("count", { count: drivers.length })}</p>
+        <h1 className="font-display text-2xl font-bold uppercase tracking-tight leading-none">{config.name} — {t("title")}</h1>
+        <p className="text-xs text-muted-foreground font-mono">{t("count", { count: drivers.length })}</p>
       </div>
 
       {/* Sub-series tabs — instant client-side switch, no navigation */}
@@ -151,7 +151,7 @@ export function DriversContent({
               >
                 <div className="flex items-center gap-3 px-4 py-2.5 border-b border-border/60">
                   <span
-                    className="text-xl font-black tabular-nums w-10 shrink-0"
+                    className="font-mono text-xl font-bold tabular-nums w-10 shrink-0"
                     style={{ color: accentColor }}
                   >
                     {carNo}
@@ -242,7 +242,7 @@ export function DriversContent({
                           </p>
                         </div>
                         {driver.number && (
-                          <span className="text-sm font-black shrink-0 text-muted-foreground">
+                          <span className="font-mono text-sm font-bold shrink-0 text-muted-foreground">
                             #{driver.number}
                           </span>
                         )}

@@ -32,11 +32,11 @@ export default async function CircuitsListPage({ params }: Props) {
   ).sort((a, b) => a.circuitName.localeCompare(b.circuitName));
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 space-y-6">
       <div className="space-y-1">
         <BackButton fallbackHref={`/${slug}`} label={config.shortName} />
-        <h1 className="text-xl font-bold">{config.name} — {t("title")}</h1>
-        <p className="text-xs text-muted-foreground">{t("count", { count: circuits.length })}</p>
+        <h1 className="font-display text-2xl font-bold uppercase tracking-tight leading-none">{config.name} — {t("title")}</h1>
+        <p className="text-xs text-muted-foreground font-mono">{t("count", { count: circuits.length })}</p>
       </div>
 
       {circuits.length === 0 ? (
@@ -58,7 +58,7 @@ export default async function CircuitsListPage({ params }: Props) {
                     {race.location}, {race.country}
                   </p>
                 </div>
-                <span className="text-xs text-muted-foreground shrink-0">{t("raceNumber", { round: race.round })}</span>
+                <span className="font-mono text-xs text-muted-foreground shrink-0">{t("raceNumber", { round: race.round })}</span>
               </div>
             </Link>
           ))}

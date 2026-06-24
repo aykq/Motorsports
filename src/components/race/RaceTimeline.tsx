@@ -131,12 +131,12 @@ function RaceRow({ race, series, isNext, locale, statusLabels }: RaceRowProps) {
           </span>
         </div>
         <p className="text-xs text-muted-foreground mt-0.5">
-          {race.circuitName} · {formatDate(date, locale)}
+          {race.circuitName} · <span className="font-mono">{formatDate(date, locale)}</span>
         </p>
       </div>
       <span
         className={cn(
-          "shrink-0 text-xs font-medium whitespace-nowrap mt-0.5",
+          "shrink-0 font-display text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap mt-1",
           isCompleted && "text-muted-foreground",
           isCancelled && "text-muted-foreground/60",
           isLive && "text-rose-500"
@@ -223,7 +223,7 @@ export function RaceTimeline({
           return (
             <li key="now-marker" className="flex items-center gap-3 my-3 px-2">
               <div className="flex-1 h-px bg-border" />
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest whitespace-nowrap">
+              <span className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest whitespace-nowrap">
                 {nowLabel}
               </span>
               <div className="flex-1 h-px bg-border" />
