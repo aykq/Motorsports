@@ -31,51 +31,38 @@ export function Sidebar({ user, isAdmin }: SidebarProps) {
     { href: "/settings", label: t("settings"), icon: Settings },
   ];
 
-  return (
-    <aside className="hidden md:flex flex-col w-60 shrink-0 border-r border-border bg-background h-screen sticky top-0">
-      <div className="p-5 pb-4">
-        <Link href="/" className="flex items-baseline gap-0.5">
-          <span className="text-2xl font-black text-rose-500">MS</span>
-          <span className="text-2xl font-black text-foreground">Hub</span>
-        </Link>
-      </div>
+  const items = [...NAV_ITEMS, ...(isAdmin ? [{ href: "/admin", label: t("admin"), icon: Users }] : [])];
 
-      <nav className="flex-1 px-3 space-y-1">
-        {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+  return (
+    <aside className="hidden md:flex flex-col w-60 shrink-0 border-r border-border bg-sidebar h-screen sticky top-0 px-3.5 py-4.5">
+      <Link href="/" className="flex items-center gap-2.5 px-2 pb-5">
+        <span className="inline-flex items-center justify-center size-7 rounded-lg bg-brand text-white font-display font-bold text-[15px] leading-none">MS</span>
+        <span className="font-display font-bold text-[22px] tracking-tight leading-none">Hub</span>
+      </Link>
+
+      <nav className="flex-1 space-y-0.5">
+        {items.map(({ href, label, icon: Icon }) => {
           const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
           return (
             <Link
               key={href}
               href={href}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
+                "relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",
                 active
-                  ? "bg-rose-500/10 text-rose-500"
+                  ? "text-[var(--series)] bg-[color-mix(in_oklch,var(--series)_13%,transparent)]"
                   : "text-muted-foreground hover:text-foreground hover:bg-accent"
               )}
             >
-              <Icon className={cn("w-4.5 h-4.5 shrink-0 transition-transform duration-200", active && "scale-110")} />
+              {active && <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-[var(--series)]" />}
+              <Icon className="w-[18px] h-[18px] shrink-0" />
               {label}
             </Link>
           );
         })}
-        {isAdmin && (
-          <Link
-            href="/admin"
-            className={cn(
-              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
-              pathname.startsWith("/admin")
-                ? "bg-rose-500/10 text-rose-500"
-                : "text-muted-foreground hover:text-foreground hover:bg-accent"
-            )}
-          >
-            <Users className={cn("w-4.5 h-4.5 shrink-0 transition-transform duration-200", pathname.startsWith("/admin") && "scale-110")} />
-            {t("admin")}
-          </Link>
-        )}
       </nav>
 
-      <div className="p-4 border-t border-border space-y-3">
+      <div className="mt-3 pt-3 border-t border-border space-y-3">
         <div className="flex items-center gap-2 justify-between">
           <LanguageToggle />
           <ThemeToggle />

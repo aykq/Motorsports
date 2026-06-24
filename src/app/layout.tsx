@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist } from "next/font/google";
+import { Inter, Saira_Condensed, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ServiceWorkerRegistrar } from "@/components/pwa/ServiceWorkerRegistrar";
 import { Providers } from "@/lib/providers";
@@ -7,8 +7,20 @@ import { ThemeProvider } from "next-themes";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 
-const geist = Geist({
-  variable: "--font-geist-sans",
+// Body / UI
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+});
+// Display / headings — condensed, technical (motorsport DNA)
+const saira = Saira_Condensed({
+  variable: "--font-saira",
+  weight: ["500", "600", "700"],
+  subsets: ["latin"],
+});
+// Data / numbers / times — tabular instrument readout
+const jbMono = JetBrains_Mono({
+  variable: "--font-jbmono",
   subsets: ["latin"],
 });
 
@@ -43,7 +55,7 @@ export default async function RootLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale} className={`${geist.variable} h-full antialiased`} suppressHydrationWarning>
+    <html lang={locale} className={`${inter.variable} ${saira.variable} ${jbMono.variable} h-full antialiased`} suppressHydrationWarning>
       <body className="min-h-full flex flex-col bg-background text-foreground" suppressHydrationWarning>
         <ServiceWorkerRegistrar />
         <NextIntlClientProvider locale={locale} messages={messages}>
