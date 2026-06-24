@@ -23,14 +23,14 @@ export function FavoritesClient({ initialFavorites }: Props) {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-      <div>
-        <h1 className="text-xl font-bold">{t("title")}</h1>
-        <p className="text-sm text-muted-foreground mt-1">{t("subtitle")}</p>
+      <div className="space-y-0.5">
+        <h1 className="font-display text-3xl font-bold uppercase tracking-tight leading-none">{t("title")}</h1>
+        <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
 
       {favoritedAvailable.length > 0 && (
         <section className="space-y-2">
-          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+          <h2 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">
             {t("myFavorites")}
           </h2>
           {favoritedAvailable.map((series) => (
@@ -64,7 +64,7 @@ export function FavoritesClient({ initialFavorites }: Props) {
 
       {coming.length > 0 && (
         <section className="space-y-2">
-          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+          <h2 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">
             {t("comingSoon")}
           </h2>
           {coming.map((series) => (

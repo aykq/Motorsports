@@ -146,7 +146,7 @@ function CalendarTimelineRow({
       <div className="min-w-0">
         <div className="flex items-center gap-1.5 flex-wrap">
           <span
-            className="text-xs font-bold px-1.5 py-0.5 rounded shrink-0"
+            className="text-[11px] font-display font-bold uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0"
             style={{ backgroundColor: `${race.seriesColor}22`, color: race.seriesColor }}
           >
             {race.seriesShortName}
@@ -155,7 +155,7 @@ function CalendarTimelineRow({
           {subRaces?.map((sr) => (
             <span
               key={`${sr.seriesSlug}-${sr.round}`}
-              className="text-xs font-bold px-1.5 py-0.5 rounded shrink-0"
+              className="text-[11px] font-display font-bold uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0"
               style={{ backgroundColor: `${sr.seriesColor}22`, color: sr.seriesColor }}
             >
               {sr.seriesShortName}
@@ -163,15 +163,15 @@ function CalendarTimelineRow({
           ))}
         </div>
         <p className="text-xs text-muted-foreground mt-0.5">
-          {race.circuitName} · {formatDate(date, locale)}
+          {race.circuitName} · <span className="font-mono">{formatDate(date, locale)}</span>
         </p>
       </div>
       <span
         className={cn(
-          "shrink-0 text-xs font-medium whitespace-nowrap mt-0.5",
+          "shrink-0 font-display text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap mt-1",
           isCompleted && "text-muted-foreground",
           isCancelled && "text-muted-foreground/60",
-          isLive && "text-rose-500"
+          isLive && "text-[var(--series)]"
         )}
         style={isNext ? { color: race.seriesColor } : undefined}
       >
@@ -312,10 +312,10 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
   };
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-bold">{t("title")}</h1>
-        <p className="text-sm text-muted-foreground">{t("season", { year: new Date().getFullYear() })}</p>
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+      <div className="space-y-0.5">
+        <h1 className="font-display text-3xl font-bold uppercase tracking-tight leading-none">{t("title")}</h1>
+        <p className="text-xs text-muted-foreground font-mono">{t("season", { year: new Date().getFullYear() })}</p>
       </div>
 
       {availableSeries.length > 1 && (
@@ -323,7 +323,7 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
           <button
             onClick={() => setSelectedSeries([])}
             className={cn(
-              "px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors",
+              "px-3 py-1.5 rounded-full text-[11px] font-display font-semibold uppercase tracking-wider border transition-colors",
               isAllSelected
                 ? "bg-foreground text-background border-foreground"
                 : "border-border text-muted-foreground hover:text-foreground"
@@ -338,13 +338,14 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
                 key={s.slug}
                 onClick={() => toggleSeries(s.slug)}
                 className={cn(
-                  "px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors",
+                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-display font-semibold uppercase tracking-wider border transition-colors",
                   active
                     ? "text-white border-transparent"
                     : "border-border text-muted-foreground hover:text-foreground"
                 )}
                 style={active ? { backgroundColor: s.color, borderColor: s.color } : undefined}
               >
+                <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: active ? "#fff" : s.color }} />
                 {s.shortName}
               </button>
             );
@@ -374,7 +375,7 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
               <CardWrapper key={sc.slug}>
                 <div className="flex items-center gap-2">
                   <span
-                    className="text-xs font-black px-2 py-0.5 rounded shrink-0"
+                    className="text-[11px] font-display font-bold uppercase tracking-wider px-2 py-0.5 rounded shrink-0"
                     style={{ backgroundColor: `${sc.color}25`, color: sc.color }}
                   >
                     {sc.shortName}
@@ -389,23 +390,26 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
       ) : nextRace ? (
         <Link
           href={`/${nextRace.seriesSlug}/races/${nextRace.round}`}
-          className="block rounded-xl bg-card border border-border p-6 space-y-4 hover:bg-accent/50 transition-colors cursor-pointer"
+          className="group block relative overflow-hidden rounded-2xl border border-border p-6 transition-[border-color] hover:border-border/0"
+          style={{ background: `linear-gradient(110deg, color-mix(in oklch, ${nextRace.seriesColor} 20%, var(--card)), var(--card) 52%)` }}
         >
-          <div className="flex items-center gap-2 flex-wrap">
-            <span
-              className="text-xs font-black px-2 py-0.5 rounded"
-              style={{ backgroundColor: `${nextRace.seriesColor}25`, color: nextRace.seriesColor }}
-            >
-              {nextRace.seriesShortName}
-            </span>
-            <span className="text-sm font-semibold truncate">{nextRace.name}</span>
-          </div>
-          <Countdown
-            targetDate={getRaceDate(nextRace).toISOString()}
-            label={t("nextRace")}
+          <span
+            aria-hidden
+            className="absolute -right-10 -top-8 -bottom-8 w-40 skew-x-[-18deg] opacity-15"
+            style={{ background: `linear-gradient(180deg, ${nextRace.seriesColor}, transparent)` }}
           />
-          <div className="text-xs text-muted-foreground">
-            {nextRace.circuitName} · {nextRace.location}, {nextRace.country}
+          <div className="relative space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: nextRace.seriesColor }} />
+              <span className="font-display text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: nextRace.seriesColor }}>
+                {nextRace.seriesShortName} · {t("nextRace")}
+              </span>
+            </div>
+            <h2 className="font-display text-2xl sm:text-3xl font-bold uppercase tracking-tight leading-none">{nextRace.name}</h2>
+            <div className="text-xs text-muted-foreground font-mono">
+              {nextRace.circuitName} · {nextRace.location}, {nextRace.country}
+            </div>
+            <Countdown targetDate={getRaceDate(nextRace).toISOString()} label="" />
           </div>
         </Link>
       ) : (

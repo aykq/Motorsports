@@ -87,12 +87,12 @@ export default async function SeriesPage({ params }: Props) {
 
   return (
     <div className="pb-24">
-      <div className="max-w-2xl mx-auto px-4 flex flex-col gap-4 pt-4">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 flex flex-col gap-4 pt-4">
 
         {/* Header */}
         <div className="flex items-center gap-1 -ml-2">
           <BackButton fallbackHref="/series" label="" />
-          <h1 className="text-xl font-bold">{config.name}</h1>
+          <h1 className="font-display text-2xl font-bold uppercase tracking-tight" style={{ color: config.color }}>{config.name}</h1>
         </div>
 
         {/* Next race card */}
@@ -126,7 +126,7 @@ export default async function SeriesPage({ params }: Props) {
             <div className="relative p-4 flex flex-col gap-3" style={{ zIndex: 10 }}>
               <div className="flex justify-between items-center">
                 <span
-                  className="text-[10px] font-semibold uppercase px-2 py-1 rounded tracking-wide"
+                  className="font-display text-[11px] font-semibold uppercase px-2 py-1 rounded tracking-[0.12em]"
                   style={{ color: config.color, backgroundColor: `${config.color}20` }}
                 >
                   {t("nextRound")}
@@ -141,9 +141,9 @@ export default async function SeriesPage({ params }: Props) {
               </div>
 
               <div>
-                <h2 className="text-xl font-bold leading-tight mb-1">{nextRace.name}</h2>
+                <h2 className="font-display text-2xl font-bold uppercase tracking-tight leading-none mb-1.5">{nextRace.name}</h2>
                 <p className="text-xs text-muted-foreground">
-                  {nextRace.circuitName} &bull; {formatRaceWeekend(nextRace, locale)}
+                  {nextRace.circuitName} &bull; <span className="font-mono">{formatRaceWeekend(nextRace, locale)}</span>
                 </p>
               </div>
 
@@ -172,7 +172,7 @@ export default async function SeriesPage({ params }: Props) {
         {sortedDrivers.length > 0 && (
           <section>
             <div className="flex justify-between items-center mb-3">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">{t("drivers")}</h3>
+              <h3 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">{t("drivers")}</h3>
               <Link
                 href={`/${slug}/drivers`}
                 className="text-xs hover:opacity-70 transition-opacity"
@@ -240,7 +240,7 @@ export default async function SeriesPage({ params }: Props) {
         {(top5Drivers.length > 0 || top5Teams.length > 0) && (
           <section className="mb-2">
             <div className="flex justify-between items-center mb-3">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">{t("standings")}</h3>
+              <h3 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">{t("standings")}</h3>
               <Link href={`/${slug}/standings`} className="text-xs hover:opacity-70 transition-opacity" style={{ color: config.color }}>
                 {t("viewAll")}
               </Link>
@@ -296,7 +296,7 @@ export default async function SeriesPage({ params }: Props) {
         {news.length > 0 && (
           <section className="mb-2">
             <div className="flex justify-between items-center mb-3">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">{t("latestNews")}</h3>
+              <h3 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">{t("latestNews")}</h3>
               <Link href="/news" className="text-xs hover:opacity-70 transition-opacity" style={{ color: config.color }}>
                 {t("viewAll")}
               </Link>
@@ -339,7 +339,7 @@ interface StandingsRow {
 function StandingsTable({ color, rows }: { color: string; rows: StandingsRow[] }) {
   return (
     <div className="bg-card rounded-xl border border-border overflow-hidden">
-        <div className="flex items-center px-4 py-2 border-b border-border text-[10px] text-muted-foreground uppercase tracking-wider">
+        <div className="flex items-center px-4 py-2 border-b border-border font-display text-[10px] text-muted-foreground uppercase tracking-wider">
           <div className="w-8">POS</div>
           <div className="flex-1">NAME</div>
           <div>PTS</div>
@@ -355,7 +355,7 @@ function StandingsTable({ color, rows }: { color: string; rows: StandingsRow[] }
             style={{ animationDelay: `${i * 60}ms` }}
           >
             <div
-              className="w-8 text-xl font-bold leading-none"
+              className="w-8 font-mono text-xl font-bold leading-none"
               style={s.position === 1 ? { color } : undefined}
             >
               {s.position}
@@ -364,7 +364,7 @@ function StandingsTable({ color, rows }: { color: string; rows: StandingsRow[] }
               <span className="text-sm font-semibold leading-tight">{s.name}</span>
               {s.sub && <span className="text-[10px] text-muted-foreground">{s.sub}</span>}
             </div>
-            <div className="text-sm font-semibold tabular-nums">{s.points}</div>
+            <div className="font-mono text-sm font-semibold tabular-nums">{s.points}</div>
           </Link>
         ))}
       </div>
