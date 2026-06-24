@@ -87,8 +87,8 @@ export function InstallPrompt() {
     >
       <div className="rounded-2xl bg-card border border-border shadow-2xl p-4 space-y-3">
         <div className="flex items-start gap-3">
-          <div className="w-11 h-11 rounded-xl bg-rose-500/10 flex items-center justify-center shrink-0">
-            <span className="text-base font-black leading-none text-rose-500">MS</span>
+          <div className="w-11 h-11 rounded-xl bg-brand/10 flex items-center justify-center shrink-0">
+            <span className="font-display text-lg font-bold uppercase leading-none text-brand">MS</span>
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold">{t("title")}</p>
@@ -114,7 +114,7 @@ export function InstallPrompt() {
             </Button>
             <Button
               size="sm"
-              className="flex-1 h-8 text-xs bg-rose-500 hover:bg-rose-600 text-white border-0"
+              className="flex-1 h-8 text-xs bg-brand hover:bg-brand/90 text-white border-0"
               onClick={install}
             >
               {t("install")}

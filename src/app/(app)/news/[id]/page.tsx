@@ -62,7 +62,7 @@ export default async function NewsDetailPage({ params }: Props) {
   const blocks = parseContent(item.content);
 
   return (
-    <div className="max-w-2xl mx-auto pb-24">
+    <div className="max-w-3xl mx-auto pb-24">
       {/* Back button */}
       <div className="px-4 pt-4">
         <BackButton fallbackHref="/news" label={t("back")} />
@@ -82,12 +82,12 @@ export default async function NewsDetailPage({ params }: Props) {
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
           <div className="absolute bottom-4 left-4 right-4">
             <span
-              className="text-[10px] font-bold uppercase px-2 py-1 rounded tracking-wide mb-2 inline-block"
+              className="font-display text-[10px] font-bold uppercase px-2 py-1 rounded tracking-wider mb-2 inline-block"
               style={{ color: seriesColor, backgroundColor: `${seriesColor}30` }}
             >
               {seriesName}
             </span>
-            <h1 className="text-white text-xl font-bold leading-snug drop-shadow-lg">
+            <h1 className="text-white font-display text-2xl sm:text-3xl font-bold leading-tight drop-shadow-lg">
               {item.title}
             </h1>
           </div>
@@ -99,12 +99,12 @@ export default async function NewsDetailPage({ params }: Props) {
         {!item.imageUrl && (
           <>
             <span
-              className="text-[10px] font-bold uppercase px-2 py-1 rounded tracking-wide inline-block self-start"
+              className="font-display text-[10px] font-bold uppercase px-2 py-1 rounded tracking-wider inline-block self-start"
               style={{ color: seriesColor, backgroundColor: `${seriesColor}20` }}
             >
               {seriesName}
             </span>
-            <h1 className="text-2xl font-bold leading-snug">{item.title}</h1>
+            <h1 className="font-display text-3xl font-bold leading-tight">{item.title}</h1>
           </>
         )}
 
@@ -117,7 +117,7 @@ export default async function NewsDetailPage({ params }: Props) {
             </span>
           )}
           {item.publishedAt && (
-            <span className="flex items-center gap-1.5">
+            <span className="flex items-center gap-1.5 font-mono">
               <CalendarDays className="w-3.5 h-3.5 shrink-0" />
               {formatDate(item.publishedAt, locale)}
             </span>
