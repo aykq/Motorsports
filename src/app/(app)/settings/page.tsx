@@ -23,12 +23,12 @@ export default async function SettingsPage() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
       <div>
-        <h1 className="text-xl font-bold">{t("title")}</h1>
+        <h1 className="font-display text-3xl font-bold uppercase tracking-tight leading-none">{t("title")}</h1>
       </div>
 
       {/* Account */}
       <section className="rounded-xl bg-card border border-border p-4 space-y-4">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-widest">
+        <h2 className="font-display text-sm font-semibold text-muted-foreground uppercase tracking-widest">
           {t("account.title")}
         </h2>
         <div className="flex items-center gap-3">
@@ -58,7 +58,7 @@ export default async function SettingsPage() {
 
       {/* Appearance */}
       <section className="rounded-xl bg-card border border-border p-4 space-y-4">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-widest">
+        <h2 className="font-display text-sm font-semibold text-muted-foreground uppercase tracking-widest">
           {t("appearance.title")}
         </h2>
         <div className="flex items-center justify-between">

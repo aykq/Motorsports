@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { BottomNav } from "@/components/layout/BottomNav";
+import { SeriesAccent } from "@/components/layout/SeriesAccent";
 import { PreferenceSyncer } from "@/components/layout/PreferenceSyncer";
 import { SessionGuard } from "@/components/layout/SessionGuard";
 import { PageTransitionWrapper } from "@/components/layout/PageTransitionWrapper";
@@ -42,6 +43,7 @@ export default async function AppLayout({
 
   return (
     <div className="flex min-h-screen">
+      <SeriesAccent />
       <SessionGuard />
       <PreferenceSyncer
         dbLanguage={userPrefs.language ?? null}
