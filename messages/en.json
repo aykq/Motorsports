@@ -240,7 +240,8 @@
     "install": "Install",
     "notNow": "Not now",
     "gotIt": "Got it",
-    "iosInstruction": "Tap Share, then select \"Add to Home Screen\"."
+    "iosInstruction": "Tap Share, then select \"Add to Home Screen\".",
+    "desktopInstruction": "Click the install icon in your browser's address bar to install the app."
   },
   "common": {
     "back": "Back",

@@ -2,14 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Share, Plus } from "lucide-react";
+import { Share, Plus, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 const STORAGE_KEY = "pwa-install-dismissed";
 const SESSION_KEY = "pwa-install-snoozed";
 
-type Platform = "ios" | "android";
+// "ios" → manual share sheet · "prompt" → native install (Chromium mobile+desktop)
+// "desktop" → manual hint for desktop browsers without beforeinstallprompt
+type Platform = "ios" | "prompt" | "desktop";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -32,32 +34,54 @@ export function InstallPrompt() {
       (window.navigator as { standalone?: boolean }).standalone === true;
     if (isStandalone) return;
 
+    const reveal = () => {
+      setShow(true);
+      setTimeout(() => setVisible(true), 50);
+    };
+
     const ua = navigator.userAgent;
     const isIOS = /iphone|ipad|ipod/i.test(ua);
+    const isAndroid = /android/i.test(ua);
+    const isDesktop = !isIOS && !isAndroid && !/mobile/i.test(ua);
 
     if (isIOS) {
       const isSafari = /safari/i.test(ua) && !/crios|fxios|opios|mercury/i.test(ua);
       if (!isSafari) return;
       setPlatform("ios");
-      const timer = setTimeout(() => {
-        setShow(true);
-        setTimeout(() => setVisible(true), 50);
-      }, 2000);
+      const timer = setTimeout(reveal, 2000);
       return () => clearTimeout(timer);
     }
 
+    let captured = false;
+    let showTimer: ReturnType<typeof setTimeout> | undefined;
+    let fallbackTimer: ReturnType<typeof setTimeout> | undefined;
+
     const handler = (e: Event) => {
       e.preventDefault();
+      captured = true;
+      if (fallbackTimer) clearTimeout(fallbackTimer);
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setPlatform("android");
-      setTimeout(() => {
-        setShow(true);
-        setTimeout(() => setVisible(true), 50);
-      }, 2000);
+      setPlatform("prompt");
+      showTimer = setTimeout(reveal, 2000);
     };
-
     window.addEventListener("beforeinstallprompt", handler);
-    return () => window.removeEventListener("beforeinstallprompt", handler);
+
+    // Desktop browsers that never fire beforeinstallprompt (Safari, Firefox) →
+    // show a manual install hint instead.
+    if (isDesktop) {
+      fallbackTimer = setTimeout(() => {
+        if (!captured) {
+          setPlatform("desktop");
+          reveal();
+        }
+      }, 3500);
+    }
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handler);
+      if (showTimer) clearTimeout(showTimer);
+      if (fallbackTimer) clearTimeout(fallbackTimer);
+    };
   }, []);
 
   const remindLater = () => {
@@ -102,6 +126,16 @@ export function InstallPrompt() {
               <Share className="w-3.5 h-3.5 shrink-0 text-foreground" />
               <span>{t("iosInstruction")}</span>
               <Plus className="w-3.5 h-3.5 shrink-0 text-foreground ml-auto" />
+            </div>
+            <Button size="sm" variant="outline" className="w-full h-8 text-xs" onClick={remindLater}>
+              {t("gotIt")}
+            </Button>
+          </>
+        ) : platform === "desktop" ? (
+          <>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2.5">
+              <Download className="w-3.5 h-3.5 shrink-0 text-foreground" />
+              <span>{t("desktopInstruction")}</span>
             </div>
             <Button size="sm" variant="outline" className="w-full h-8 text-xs" onClick={remindLater}>
               {t("gotIt")}

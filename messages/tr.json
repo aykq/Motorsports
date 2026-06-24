@@ -240,7 +240,8 @@
     "install": "Yükle",
     "notNow": "Şimdi Değil",
     "gotIt": "Anladım",
-    "iosInstruction": "Paylaş'a dokun, ardından \"Ana Ekrana Ekle\"yi seç."
+    "iosInstruction": "Paylaş'a dokun, ardından \"Ana Ekrana Ekle\"yi seç.",
+    "desktopInstruction": "Uygulamayı yüklemek için tarayıcının adres çubuğundaki kur simgesine tıkla."
   },
   "common": {
     "back": "Geri",
