@@ -70,7 +70,7 @@ export function RaceCard({ race, series, compact = false }: RaceCardProps) {
         </div>
 
         <div>
-          <p className="font-display text-base font-bold tracking-tight leading-none">{race.name}</p>
+          <p className="font-display text-base font-bold tracking-tight leading-tight">{race.name}</p>
           <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
             <MapPin className="w-3 h-3 shrink-0" />
             <Link
