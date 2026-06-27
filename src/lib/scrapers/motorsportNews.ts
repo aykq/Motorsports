@@ -30,7 +30,7 @@ function fixUrl(url: string | undefined): string | null {
 }
 
 const SHARE_PATTERN =
-  /paylaş|kopyala|tweetle|pinterest|viber|linkedin|facebook|whatsapp|tercih edilen kaynak|motorsports\.com.{0,10}ne görmek istersiniz/i;
+  /paylaş|kopyala|tweetle|pinterest|viber|linkedin|facebook|whatsapp|tercih edilen kaynak|ne görmek istersiniz/i;
 
 // Author names are short; anything containing these is a bloated container, not a name
 const AUTHOR_GARBAGE =
