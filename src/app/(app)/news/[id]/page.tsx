@@ -6,7 +6,7 @@ import { getTranslations, getLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import { ExternalLink, User, CalendarDays } from "lucide-react";
+import { ExternalLink, User, CalendarDays, Camera } from "lucide-react";
 import type { ContentBlock, ResultRow } from "@/lib/scrapers/motorsportNews";
 
 // SVG src gibi "//cdn.../cf/gb-2.svg" → 🇬🇧
@@ -198,8 +198,11 @@ export default async function NewsDetailPage({ params }: Props) {
                       loading="lazy"
                     />
                     {block.caption && (
-                      <figcaption className="text-[11px] text-muted-foreground mt-1.5 leading-snug">
-                        {block.caption}
+                      <figcaption className="flex items-start gap-1 mt-1.5 px-0.5">
+                        <Camera className="w-2.5 h-2.5 shrink-0 mt-[1px] text-muted-foreground/40" />
+                        <span className="text-[10px] leading-snug text-muted-foreground/50 italic tracking-wide">
+                          {block.caption}
+                        </span>
                       </figcaption>
                     )}
                   </figure>
