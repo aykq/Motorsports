@@ -5,6 +5,8 @@ import { getCachedSchedule } from "@/lib/cache";
 import { adapters } from "@/lib/adapters";
 import { db } from "@/db";
 import { notifySessions } from "@/lib/notify-sessions";
+import { fetchAndCacheNews } from "@/lib/scrapers/motorsportNews";
+import { revalidateTag } from "next/cache";
 import type { Race } from "@/types/series";
 
 const POST_RACE_WINDOW_MS = 12 * 60 * 60 * 1000;
@@ -156,4 +158,25 @@ cron.schedule(
   { timezone: "UTC" }
 );
 
-console.log("[cron] scheduled: full sync @00/06/12/18 UTC, session notify @every 5 min, session sync @:02/04/06..., status refresh @:03/13/23..., post-race refresh @:15/:45");
+// Haber fetch — her 2 saatte bir (:30 offsetli, full sync ile örtüşmez)
+const NEWS_SERIES = ["f1", "motogp", "moto2", "wec"] as const;
+cron.schedule(
+  "30 */2 * * *",
+  async () => {
+    console.log("[cron] news fetch started");
+    const results = await Promise.allSettled(NEWS_SERIES.map(fetchAndCacheNews));
+    results.forEach((r, i) => {
+      if (r.status === "fulfilled") {
+        const { urlsFound, inserted } = r.value;
+        if (inserted > 0) console.log(`[cron] news ${NEWS_SERIES[i]}: +${inserted}/${urlsFound}`);
+      } else {
+        console.error(`[cron] news ${NEWS_SERIES[i]} error:`, r.reason);
+      }
+    });
+    revalidateTag("news", {});
+    console.log("[cron] news fetch finished");
+  },
+  { timezone: "UTC" }
+);
+
+console.log("[cron] scheduled: full sync @00/06/12/18 UTC, session notify @every 5 min, session sync @:02/04/06..., status refresh @:03/13/23..., post-race refresh @:15/:45, news fetch @:30 every 2h");
