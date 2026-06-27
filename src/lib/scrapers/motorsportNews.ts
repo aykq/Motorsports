@@ -1,6 +1,7 @@
 import * as cheerio from "cheerio";
 import { db } from "@/db";
 import { cachedNews } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 const BASE = "https://tr.motorsport.com";
 const TIMEOUT_MS = 15_000;
@@ -29,7 +30,7 @@ function fixUrl(url: string | undefined): string | null {
 }
 
 const SHARE_PATTERN =
-  /paylaş|kopyala|tweetle|pinterest|viber|linkedin|facebook|whatsapp|tercih edilen kaynak/i;
+  /paylaş|kopyala|tweetle|pinterest|viber|linkedin|facebook|whatsapp|tercih edilen kaynak|motorsports\.com.{0,10}ne görmek istersiniz/i;
 
 // Author names are short; anything containing these is a bloated container, not a name
 const AUTHOR_GARBAGE =
@@ -252,4 +253,32 @@ export async function fetchAndCacheNews(seriesSlug: string): Promise<SyncResult>
     }
   }
   return result;
+}
+
+// Mevcut DB kayıtlarındaki kirli paragrafları temizler.
+// SHARE_PATTERN'daki herhangi bir metin içeren <p> bloklarını siler.
+export async function cleanAllNewsContent(): Promise<number> {
+  const rows = await db.query.cachedNews.findMany({
+    columns: { id: true, content: true },
+  });
+
+  let cleaned = 0;
+  for (const row of rows) {
+    if (!row.content) continue;
+    try {
+      const blocks = JSON.parse(row.content) as ContentBlock[];
+      const filtered = blocks.filter(
+        (b) => !(b.type === "p" && SHARE_PATTERN.test(b.text))
+      );
+      if (filtered.length === blocks.length) continue;
+      await db
+        .update(cachedNews)
+        .set({ content: filtered.length > 0 ? JSON.stringify(filtered) : null })
+        .where(eq(cachedNews.id, row.id));
+      cleaned++;
+    } catch {
+      // parse hatası — dokunma
+    }
+  }
+  return cleaned;
 }

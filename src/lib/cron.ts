@@ -5,7 +5,7 @@ import { getCachedSchedule } from "@/lib/cache";
 import { adapters } from "@/lib/adapters";
 import { db } from "@/db";
 import { notifySessions } from "@/lib/notify-sessions";
-import { fetchAndCacheNews } from "@/lib/scrapers/motorsportNews";
+import { fetchAndCacheNews, cleanAllNewsContent } from "@/lib/scrapers/motorsportNews";
 import { revalidateTag } from "next/cache";
 import type { Race } from "@/types/series";
 
@@ -173,6 +173,8 @@ cron.schedule(
         console.error(`[cron] news ${NEWS_SERIES[i]} error:`, r.reason);
       }
     });
+    const cleanedCount = await cleanAllNewsContent();
+    if (cleanedCount > 0) console.log(`[cron] news content cleaned: ${cleanedCount} items`);
     revalidateTag("news", {});
     console.log("[cron] news fetch finished");
   },

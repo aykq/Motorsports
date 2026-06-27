@@ -7,7 +7,7 @@ import { revalidateTag } from "next/cache";
 import { syncSeries } from "@/lib/sync";
 import { sendPushToSubscribers } from "@/lib/push";
 import { requireAdmin } from "@/lib/admin-guard";
-import { fetchAndCacheNews } from "@/lib/scrapers/motorsportNews";
+import { fetchAndCacheNews, cleanAllNewsContent } from "@/lib/scrapers/motorsportNews";
 import { getTranslations } from "next-intl/server";
 
 async function checkAdmin() {
@@ -140,6 +140,7 @@ export async function syncNewsAction(): Promise<{ ok: boolean; message: string }
       lines.push(t("toastNewsError", { slug, error: String(r.reason) }));
     }
   });
+  await cleanAllNewsContent();
   revalidateTag("news", {});
   return { ok: true, message: lines.join("\n") };
 }
