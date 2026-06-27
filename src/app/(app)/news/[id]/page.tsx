@@ -181,16 +181,21 @@ export default async function NewsDetailPage({ params }: Props) {
           <div className="flex flex-col gap-4">
             {blocks.map((block, i) => {
               if (block.type === "p") {
-                // Short lines starting with a photo credit prefix → render as caption
                 const isPhotoCredit =
                   block.text.length < 180 &&
                   /^(Fotoğraf|Foto|Photo(graph)?( by)?|©|Resim|Görsel)\s*[:;©]/i.test(block.text);
-                if (isPhotoCredit) {
+                // Very short p-block immediately after an image → image label (e.g. "Fernando Alonso, Aston Martin Racing")
+                const prevBlock = i > 0 ? blocks[i - 1] : null;
+                const isImageLabel = !isPhotoCredit && prevBlock?.type === "img" && block.text.length < 120;
+
+                if (isPhotoCredit || isImageLabel) {
                   return (
                     <div key={i} className="flex items-center justify-center gap-1.5 -mt-2">
-                      <Camera className="w-2.5 h-2.5 shrink-0 text-muted-foreground/40" />
-                      <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground/55 leading-tight text-center">
-                        {block.text.replace(/^(Fotoğraf|Foto|Photo(?:graph)?(?:\s+by)?)\s*[:;]\s*/i, "")}
+                      <Camera className="w-2.5 h-2.5 shrink-0 text-muted-foreground/50" />
+                      <span className="text-[11px] italic text-muted-foreground/65 leading-tight text-center">
+                        {isPhotoCredit
+                          ? block.text.replace(/^(Fotoğraf|Foto|Photo(?:graph)?(?:\s+by)?)\s*[:;]\s*/i, "")
+                          : block.text}
                       </span>
                     </div>
                   );
