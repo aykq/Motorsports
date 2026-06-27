@@ -2,14 +2,14 @@ import { eq, and } from "drizzle-orm";
 import { db } from "@/db";
 import { sentNotifications } from "@/db/schema";
 import { sendPushToSubscribers } from "@/lib/push";
-import { jolpicaFetchQualifyingResults, jolpicaFetchSprintResults } from "@/lib/adapters/f1/jolpica";
+import { openf1IsF1SessionFinished } from "@/lib/adapters/f1/openf1";
 import { getSeriesConfig } from "@/lib/series-config";
 import type { Race } from "@/types/series";
 
 const STATUS_DRIVEN_SERIES = new Set(["motogp", "moto2", "moto3", "wec"]);
 
 const RESULTS_WINDOW: Record<string, number> = {
-  qualifying:   4 * 60 * 60 * 1000,
+  qualifying:  12 * 60 * 60 * 1000,
   sprintQuali:  2 * 60 * 60 * 1000,
   sprint:       2 * 60 * 60 * 1000,
   race:        32 * 60 * 60 * 1000,
@@ -136,18 +136,7 @@ export async function notifySessions(): Promise<NotifySessionsResult> {
         let resultsReady = false;
 
         if (row.seriesSlug === "f1") {
-          if (session.type === "race") {
-            resultsReady = (race.results?.length ?? 0) >= 18;
-          } else if (session.type === "qualifying") {
-            const results = await jolpicaFetchQualifyingResults(row.season, race.round);
-            resultsReady = results.filter((r) => r.q3).length >= 9;
-          } else if (session.type === "sprintQuali") {
-            const results = await jolpicaFetchQualifyingResults(row.season, race.round);
-            resultsReady = results.filter((r) => r.q1).length >= 15;
-          } else if (session.type === "sprint") {
-            const results = await jolpicaFetchSprintResults(row.season, race.round);
-            resultsReady = results.length >= 18;
-          }
+          resultsReady = await openf1IsF1SessionFinished(row.season, session.date, session.type);
         } else {
           if (session.type === "race") {
             if (STATUS_DRIVEN_SERIES.has(row.seriesSlug)) {

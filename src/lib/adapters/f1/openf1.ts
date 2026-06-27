@@ -295,3 +295,33 @@ export async function fetchOpenF1RaceControl(sessionKey: number): Promise<RaceCo
     return [];
   }
 }
+
+export async function openf1IsF1SessionFinished(
+  year: number,
+  sessionDateISO: string,
+  sessionType: string,
+  bufferMs = 5 * 60 * 1000
+): Promise<boolean> {
+  try {
+    const of1Name = SESSION_TYPE_TO_OF1_NAME[sessionType];
+    if (!of1Name) return false;
+    const sessions = await fetchOpenF1Sessions(year);
+    const dayStr = new Date(sessionDateISO).toISOString().split("T")[0];
+    const session = sessions.find(
+      (s) => s.session_name === of1Name && s.date_start.startsWith(dayStr)
+    );
+    if (!session) return false;
+    const flags = await openF1Fetch(
+      `/race_control?session_key=${session.session_key}&category=Flag`,
+      z.array(OpenF1RaceControlSchema)
+    );
+    const chequeredTimes = flags
+      .filter((e) => e.flag === "CHEQUERED" && e.date)
+      .map((e) => new Date(e.date!).getTime());
+    if (!chequeredTimes.length) return false;
+    const lastChequered = Math.max(...chequeredTimes);
+    return Date.now() > lastChequered + bufferMs;
+  } catch {
+    return false;
+  }
+}
