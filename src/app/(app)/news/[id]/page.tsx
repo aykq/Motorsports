@@ -70,7 +70,7 @@ export default async function NewsDetailPage({ params }: Props) {
 
       {/* Hero image */}
       {item.imageUrl && (
-        <div className="relative w-full aspect-video mt-3 overflow-hidden">
+        <div className="relative mx-4 aspect-video mt-3 overflow-hidden rounded-xl">
           <Image
             src={item.imageUrl}
             alt={item.title}
