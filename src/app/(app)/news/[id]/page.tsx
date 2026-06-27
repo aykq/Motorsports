@@ -181,6 +181,20 @@ export default async function NewsDetailPage({ params }: Props) {
           <div className="flex flex-col gap-4">
             {blocks.map((block, i) => {
               if (block.type === "p") {
+                // Short lines starting with a photo credit prefix → render as caption
+                const isPhotoCredit =
+                  block.text.length < 180 &&
+                  /^(Fotoğraf|Foto|Photo(graph)?( by)?|©|Resim|Görsel)\s*[:;©]/i.test(block.text);
+                if (isPhotoCredit) {
+                  return (
+                    <div key={i} className="flex items-start gap-1 -mt-2 px-0.5">
+                      <Camera className="w-2.5 h-2.5 shrink-0 mt-[2px] text-muted-foreground/40" />
+                      <span className="text-[10px] leading-snug text-muted-foreground/50 italic tracking-wide">
+                        {block.text}
+                      </span>
+                    </div>
+                  );
+                }
                 return (
                   <p key={i} className="text-sm leading-relaxed text-foreground/80">
                     {block.text}
