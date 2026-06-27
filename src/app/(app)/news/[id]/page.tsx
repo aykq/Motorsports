@@ -190,14 +190,11 @@ export default async function NewsDetailPage({ params }: Props) {
 
                 if (isPhotoCredit || isImageLabel) {
                   return (
-                    <div key={i} className="flex items-center justify-center gap-1.5 -mt-2">
-                      <Camera className="w-2.5 h-2.5 shrink-0 text-muted-foreground/50" />
-                      <span className="text-xs italic text-muted-foreground/70 leading-tight text-center">
-                        {isPhotoCredit
-                          ? block.text.replace(/^(Fotoğraf|Foto|Photo(?:graph)?(?:\s+by)?)\s*[:;]\s*/i, "")
-                          : block.text}
-                      </span>
-                    </div>
+                    <p key={i} className="text-xs italic text-muted-foreground/70 leading-tight text-center -mt-2">
+                      {isPhotoCredit
+                        ? block.text.replace(/^(Fotoğraf|Foto|Photo(?:graph)?(?:\s+by)?)\s*[:;]\s*/i, "")
+                        : block.text}
+                    </p>
                   );
                 }
                 return (
