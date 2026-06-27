@@ -187,10 +187,10 @@ export default async function NewsDetailPage({ params }: Props) {
                   /^(Fotoğraf|Foto|Photo(graph)?( by)?|©|Resim|Görsel)\s*[:;©]/i.test(block.text);
                 if (isPhotoCredit) {
                   return (
-                    <div key={i} className="flex items-start gap-1 -mt-2 px-0.5">
-                      <Camera className="w-2.5 h-2.5 shrink-0 mt-[2px] text-muted-foreground/40" />
-                      <span className="text-[10px] leading-snug text-muted-foreground/50 italic tracking-wide">
-                        {block.text}
+                    <div key={i} className="flex items-center justify-end gap-1.5 -mt-2">
+                      <Camera className="w-2.5 h-2.5 shrink-0 text-muted-foreground/30" />
+                      <span className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/40 leading-tight text-right">
+                        {block.text.replace(/^(Fotoğraf|Foto|Photo(?:graph)?(?:\s+by)?)\s*[:;]\s*/i, "")}
                       </span>
                     </div>
                   );
