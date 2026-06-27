@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import {
   RefreshCw, Trash2, Bell, Settings, CheckCircle, XCircle,
-  Loader2, Users, ShieldCheck, Hand, Cpu, ChevronDown, Clock, Link as LinkIcon,
+  Loader2, Users, ShieldCheck, Hand, Cpu, ChevronDown, Clock, Link as LinkIcon, Check,
 } from "lucide-react";
 import {
   syncSeriesAction, clearRaceDetailAction, sendTestNotifAction, syncNewsAction,
@@ -93,6 +93,7 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers, initialNotifica
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [syncPending, startSyncTransition] = useTransition();
   const [newsSyncPending, startNewsSyncTransition] = useTransition();
+  const [newsSyncSuccess, setNewsSyncSuccess] = useState(false);
   const [syncingSlug, setSyncingSlug] = useState<string | null>(null);
   const [syncAllPending, setSyncAllPending] = useState(false);
   const [syncTimes, setSyncTimes] = useState(lastSyncTimes);
@@ -163,6 +164,10 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers, initialNotifica
     startNewsSyncTransition(async () => {
       const result = await syncNewsAction();
       addToast(result.ok, result.message);
+      if (result.ok) {
+        setNewsSyncSuccess(true);
+        setTimeout(() => setNewsSyncSuccess(false), 3000);
+      }
     });
   }
 
@@ -389,10 +394,21 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers, initialNotifica
             <p className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">{t("news")}</p>
             <button
               onClick={handleNewsSync}
-              disabled={newsSyncPending}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-background border border-border text-sm hover:bg-white/5 disabled:opacity-50 transition-colors"
+              disabled={newsSyncPending || newsSyncSuccess}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-lg border text-sm transition-all duration-300 disabled:cursor-not-allowed",
+                newsSyncSuccess
+                  ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
+                  : "bg-background border-border hover:bg-white/5 disabled:opacity-50",
+              )}
             >
-              {newsSyncPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+              {newsSyncPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : newsSyncSuccess ? (
+                <Check className="w-4 h-4 animate-in zoom-in-50 duration-200" />
+              ) : (
+                <RefreshCw className="w-4 h-4" />
+              )}
               {t("syncNews")}
             </button>
           </section>
