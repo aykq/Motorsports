@@ -7,7 +7,49 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { ExternalLink, User, CalendarDays } from "lucide-react";
-import type { ContentBlock } from "@/lib/scrapers/motorsportNews";
+import type { ContentBlock, ResultRow } from "@/lib/scrapers/motorsportNews";
+
+// SVG src gibi "//cdn.../cf/gb-2.svg" → 🇬🇧
+function flagEmoji(src: string): string {
+  const m = src.match(/\/cf\/([a-z]{2})-/);
+  if (!m) return "";
+  const code = m[1].toUpperCase();
+  return [...code].map((c) => String.fromCodePoint(0x1f1e6 + c.charCodeAt(0) - 65)).join("");
+}
+
+function ResultTable({ label, rows }: { label: string; rows: ResultRow[] }) {
+  return (
+    <div className="rounded-xl border border-border overflow-hidden text-sm">
+      {label && (
+        <div className="px-3 py-2 bg-muted/50 border-b border-border">
+          <span className="font-display text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            {label}
+          </span>
+        </div>
+      )}
+      <div className="divide-y divide-border">
+        {rows.map((row) => (
+          <div key={row.position} className="flex items-center gap-3 px-3 py-2 hover:bg-accent/20 transition-colors">
+            <span className="font-mono text-xs text-muted-foreground w-5 shrink-0 text-right">
+              {row.position}
+            </span>
+            <span className="text-base leading-none w-5 shrink-0">{flagEmoji(row.flagSrc)}</span>
+            <div className="flex-1 min-w-0">
+              <span className="font-semibold text-xs">{row.driverName}</span>
+              <span className="text-[10px] text-muted-foreground ml-1.5">{row.team}</span>
+            </div>
+            {row.time && (
+              <span className="font-mono text-[11px] text-muted-foreground shrink-0">{row.time}</span>
+            )}
+            {row.gap && (
+              <span className="font-mono text-[10px] text-muted-foreground/60 shrink-0">{row.gap}</span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -162,6 +204,9 @@ export default async function NewsDetailPage({ params }: Props) {
                     )}
                   </figure>
                 );
+              }
+              if (block.type === "result-table") {
+                return <ResultTable key={i} label={block.label} rows={block.rows} />;
               }
               return null;
             })}

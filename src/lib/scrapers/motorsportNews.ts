@@ -6,9 +6,19 @@ import { eq } from "drizzle-orm";
 const BASE = "https://tr.motorsport.com";
 const TIMEOUT_MS = 15_000;
 
+export interface ResultRow {
+  position: number;
+  driverName: string;
+  team: string;
+  flagSrc: string;
+  time: string;
+  gap: string;
+}
+
 export type ContentBlock =
   | { type: "p"; text: string }
-  | { type: "img"; src: string; caption: string | null };
+  | { type: "img"; src: string; caption: string | null }
+  | { type: "result-table"; label: string; rows: ResultRow[] };
 
 function decodeEntities(str: string): string {
   return str
@@ -104,6 +114,36 @@ interface ArticleData {
   publishedAt: Date | null;
 }
 
+function extractResultTableBlock($: cheerio.CheerioAPI, $container: ReturnType<typeof $>): ContentBlock | null {
+  const label = $container.find("h3.msnt-heading").first().text().replace(/ /g, "").trim();
+  const $table = $container.find("table.ms-table--result").first();
+  if (!$table.length) return null;
+
+  const rows: ResultRow[] = [];
+  $table.find("tbody tr.ms-table_row").each((_, tr) => {
+    const $tr = $(tr);
+    const position = parseInt($tr.find(".ms-table_field--pos .ms-table_row-value").text().trim(), 10);
+    if (isNaN(position)) return;
+
+    const $driverCell = $tr.find(".ms-table_field--result_driver_id");
+    const $flagImg = $driverCell.find("img").first();
+    const flagSrc = fixUrl($flagImg.attr("src")) ?? "";
+    const driverName = $driverCell.find(".name-short").text().trim();
+    const team = $driverCell.find(".team").text().trim();
+
+    const timeRaw = $tr.find(".ms-table_field--time p").first().text().trim() ||
+                    $tr.find(".ms-table_field--time .ms-table_row-value").first().text().trim();
+    const gapRaw = $tr.find(".ms-table_field--interval .ms-table_row-value").text().trim();
+    const gap = gapRaw && gapRaw !== " " ? gapRaw : "";
+
+    if (driverName) {
+      rows.push({ position, driverName, team, flagSrc, time: timeRaw, gap });
+    }
+  });
+
+  return rows.length > 0 ? { type: "result-table", label, rows } : null;
+}
+
 function extractBlocks($: cheerio.CheerioAPI): ContentBlock[] {
   const BODY_SELECTORS = [
     ".ms-article__body",
@@ -124,9 +164,12 @@ function extractBlocks($: cheerio.CheerioAPI): ContentBlock[] {
 
   const blocks: ContentBlock[] = [];
 
-  // cheerio's .find("p, img") returns elements in document (DOM) order
-  bodyEl.find("p, img").each((_, el) => {
+  // cheerio's .find() returns elements in document (DOM) order
+  bodyEl.find("p, img, div.ms-result-table").each((_, el) => {
     const $el = $(el);
+
+    // Skip elements nested inside a result table container
+    if (!$el.is("div.ms-result-table") && $el.closest("div.ms-result-table").length > 0) return;
 
     if ($el.is("p")) {
       const text = $el.text().trim();
@@ -144,6 +187,9 @@ function extractBlocks($: cheerio.CheerioAPI): ContentBlock[] {
         $el.closest('[class*="caption"]').text().trim() ||
         null;
       blocks.push({ type: "img", src, caption: caption || null });
+    } else if ($el.is("div.ms-result-table")) {
+      const tableBlock = extractResultTableBlock($, $el);
+      if (tableBlock) blocks.push(tableBlock);
     }
   });
 
