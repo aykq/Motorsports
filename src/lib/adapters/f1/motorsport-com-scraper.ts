@@ -92,11 +92,20 @@ async function scrapeResultsPage(url: string): Promise<RaceResult[]> {
     const driverNumber = parseInt($(cells[2]).text().trim()) || undefined;
     const laps = parseInt($(cells[4]).text().trim()) || undefined;
 
-    // Time column: winner has total race time; others have "+gap total-time"
+    // Time column: winner has total race time; others have "+gap" or "+N Lap(s)"
     const timeRaw = $(cells[5]).text().replace(/\s+/g, " ").trim();
+    const lapGapMatch = timeRaw.match(/^(\+\d+)\s+(Lap|Laps)$/i);
     const gapMatch = timeRaw.match(/^(\+\S+)/);
     const time = pos === 1 ? timeRaw : undefined;
-    const gap = pos !== 1 ? (gapMatch?.[1] ?? timeRaw) : undefined;
+    let gap: string | undefined;
+    if (pos !== 1) {
+      if (lapGapMatch) {
+        const count = parseInt(lapGapMatch[1].slice(1));
+        gap = `${lapGapMatch[1]} ${count === 1 ? "Lap" : "Laps"}`;
+      } else {
+        gap = gapMatch?.[1] ?? timeRaw;
+      }
+    }
 
     const points = parseFloat($(cells[9]).text().trim()) || 0;
     const retirementText = $(cells[10]).text().trim();
