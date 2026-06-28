@@ -229,24 +229,24 @@ export default async function RaceDetailPage({ params }: Props) {
             const [r1, r2, r3] = podiumDrivers;
             const shortName = (r: typeof r1) => r.driverCode ?? r.driverName.split(" ").pop()!;
             return (
-              <div className="flex items-end justify-center gap-2 pt-1 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                <div className="flex flex-col items-center gap-0.5" style={{ opacity: 0.85 }}>
+              <div className="flex items-end gap-2 pt-1 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                <div className="flex flex-col items-center gap-0.5 flex-1 opacity-80">
                   <span className="font-mono text-[9px] text-zinc-400 tracking-widest">P2</span>
-                  <div className="rounded-lg border border-border/50 bg-background/20 backdrop-blur-sm px-3 py-1.5 text-center">
+                  <div className="w-full rounded-lg border border-border/50 bg-background/20 backdrop-blur-sm px-3 py-1.5 text-center">
                     <p className="font-display text-sm font-bold">{shortName(r2)}</p>
                     <p className="text-[10px] text-muted-foreground font-mono">{r2.gap ?? "—"}</p>
                   </div>
                 </div>
-                <div className="flex flex-col items-center gap-0.5 -translate-y-1.5">
+                <div className="flex flex-col items-center gap-0.5 flex-1 -translate-y-1.5">
                   <span className="font-mono text-[9px] text-yellow-500 tracking-widest">P1</span>
-                  <div className="rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-3 py-2 text-center">
+                  <div className="w-full rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-3 py-2 text-center">
                     <p className="font-display text-base font-extrabold text-yellow-500">{shortName(r1)}</p>
                     <p className="text-[10px] text-muted-foreground font-mono">{r1.time ?? "—"}</p>
                   </div>
                 </div>
-                <div className="flex flex-col items-center gap-0.5" style={{ opacity: 0.85 }}>
+                <div className="flex flex-col items-center gap-0.5 flex-1 opacity-80">
                   <span className="font-mono text-[9px] text-amber-600 tracking-widest">P3</span>
-                  <div className="rounded-lg border border-border/50 bg-background/20 backdrop-blur-sm px-3 py-1.5 text-center">
+                  <div className="w-full rounded-lg border border-border/50 bg-background/20 backdrop-blur-sm px-3 py-1.5 text-center">
                     <p className="font-display text-sm font-bold">{shortName(r3)}</p>
                     <p className="text-[10px] text-muted-foreground font-mono">{r3.gap ?? "—"}</p>
                   </div>
@@ -273,7 +273,7 @@ export default async function RaceDetailPage({ params }: Props) {
           {t("schedule")}
         </h2>
         <div className="overflow-x-auto -mx-4 px-4">
-          <div className="flex gap-2 min-w-max pb-1">
+          <div className="flex gap-2 pb-1">
             {race.sessions.map((session) => {
               const { date, time, dayName } = formatDateTime(session.date);
               const isPast = new Date(session.date) < now;
@@ -283,7 +283,7 @@ export default async function RaceDetailPage({ params }: Props) {
                 <div
                   key={session.type}
                   className={cn(
-                    "flex flex-col gap-1.5 rounded-xl border p-3 min-w-[104px] transition-all",
+                    "flex flex-col gap-1.5 rounded-xl border p-3 flex-1 min-w-[90px] transition-all",
                     isRaceSession
                       ? "border-border bg-card"
                       : "border-border bg-transparent",
