@@ -9,6 +9,7 @@ import {
 } from "./jolpica";
 import { fetchLatestOpenF1Drivers } from "./openf1";
 import { getF1DriverImage } from "./driver-images";
+import { scrapeF1RaceResults } from "./motorsport-com-scraper";
 
 async function mergeDriverHeadshots(
   drivers: Driver[],
@@ -45,10 +46,29 @@ export const f1Adapter: SeriesAdapter = {
       jolpicaFetchSchedule(season),
       jolpicaFetchResults(season),
     ]);
-    return races.map((race) => ({
-      ...race,
-      results: resultsMap.get(race.round),
-    }));
+
+    const now = Date.now();
+    return Promise.all(
+      races.map(async (race) => {
+        const jolpicaResults = resultsMap.get(race.round);
+        if (jolpicaResults?.length) return { ...race, results: jolpicaResults };
+
+        // Jolpica sonuçları yayınlamadan önce (genellikle birkaç saat) motorsport.com
+        // kullan — sadece son 48 saatte bitmiş, iptal olmayan yarışlar için.
+        const raceTime = new Date(race.date).getTime();
+        const isRecentFinished =
+          race.status !== "cancelled" &&
+          raceTime < now &&
+          raceTime > now - 48 * 60 * 60 * 1000;
+
+        if (isRecentFinished) {
+          const msResults = await scrapeF1RaceResults(season, race.name).catch(() => []);
+          if (msResults.length > 0) return { ...race, results: msResults };
+        }
+
+        return race;
+      })
+    );
   },
 
   fetchStandings: (season: number, type: StandingType): Promise<Standing[]> =>
