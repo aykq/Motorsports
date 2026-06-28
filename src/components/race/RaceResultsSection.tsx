@@ -57,7 +57,7 @@ function PositionBadge({ position }: { position: number }) {
   return (
     <div
       className={cn(
-        "w-5 h-5 rounded-full flex items-center justify-center font-mono text-[10px] font-bold shrink-0 self-center",
+        "w-6 h-6 rounded-full flex items-center justify-center font-mono text-xs font-bold shrink-0 self-center mx-auto",
         position === 1 && "bg-yellow-500/15 text-yellow-500",
         position === 2 && "bg-zinc-500/15 text-zinc-400",
         position === 3 && "bg-amber-700/15 text-amber-600",
@@ -74,20 +74,19 @@ function CompactResultRow({ result, slug }: { result: RaceResult; slug: string }
   const isLapped = status.startsWith("+") && status.toLowerCase().includes("lap");
   const isDNS = status === "Did Not Start" || status === "Withdrew";
   const isDNF = status !== "Finished" && !isLapped && !isDNS;
+  const isOut = isDNF || isDNS;
   const displayName = result.driverCode ?? result.driverName.split(" ").pop()!;
   const displayTime = result.gap ?? (isDNS ? "DNS" : status);
-  const showingStatusText = result.gap == null;
 
   return (
-    <div className="grid grid-cols-[1.5rem_1fr_4rem] items-center gap-1 text-xs px-2 py-1.5 hover:bg-accent/30 transition-colors">
-      <span className="text-right font-mono font-bold shrink-0 text-foreground">{result.position}</span>
+    <div className="grid grid-cols-[1.75rem_1fr_auto] items-center gap-1 text-xs px-2 py-2 hover:bg-accent/30 transition-colors">
+      <span className="text-center font-mono font-bold shrink-0 text-muted-foreground text-[11px]">
+        {result.position}
+      </span>
       <div className="px-1 min-w-0">
         <Link
           href={`/${slug}/drivers/${result.driverId}`}
-          className={cn(
-            "font-medium truncate block hover:underline cursor-pointer leading-snug",
-            (isDNF || isDNS) && "opacity-60",
-          )}
+          className="font-medium truncate block hover:underline cursor-pointer leading-snug"
         >
           {displayName}
         </Link>
@@ -97,8 +96,8 @@ function CompactResultRow({ result, slug }: { result: RaceResult; slug: string }
       </div>
       <span
         className={cn(
-          "text-right font-mono text-[10px] shrink-0",
-          showingStatusText && (isDNF || isDNS) ? "text-red-400" : "text-foreground",
+          "text-right font-mono text-xs shrink-0 pl-2",
+          isOut ? "text-red-400 font-medium" : "text-muted-foreground"
         )}
       >
         {displayTime}
@@ -135,7 +134,7 @@ function StandingRow({ standing, rank }: { standing: Standing; rank: number }) {
       </div>
       <span className="font-display text-sm font-bold shrink-0">{standing.points}</span>
       {standing.wins > 0 && (
-        <span className="text-muted-foreground shrink-0 text-[10px]">{standing.wins}G</span>
+        <span className="text-muted-foreground shrink-0 text-[10px]">{standing.wins}W</span>
       )}
     </div>
   );
@@ -156,7 +155,7 @@ export function RaceResultsSection({
   const fastestLapHolder = results.find((r) => r.fastestLap);
   const topResults = results.filter((r) => r.position <= 10);
   const nonPoints = results.filter((r) => r.position > 10);
-  const npThird = Math.ceil(nonPoints.length / 3);
+  const npHalf = Math.ceil(nonPoints.length / 2);
 
   return (
     <div className="space-y-6">
@@ -180,14 +179,16 @@ export function RaceResultsSection({
         </div>
 
         <div className="rounded-lg border border-border overflow-hidden">
-          <div className="grid grid-cols-[1.5rem_1rem_1fr_2.5rem_5rem] font-display text-[11px] font-semibold uppercase tracking-wider text-muted-foreground px-3 py-2 border-b border-border bg-muted/30 gap-1">
-            <span className="text-right">{labels.colPos}</span>
+          {/* Header row */}
+          <div className="grid grid-cols-[2rem_1rem_1fr_2.5rem_6rem] font-display text-[11px] font-semibold uppercase tracking-wider text-muted-foreground px-3 py-2 border-b border-border bg-muted/30 gap-2">
+            <span className="text-center">{labels.colPos}</span>
             <span />
             <span className="ml-1">{labels.colDriverTeam}</span>
             <span className="text-right">{labels.colPoints}</span>
             <span className="text-right">{labels.colTimeStatus}</span>
           </div>
 
+          {/* Top 10 rows */}
           <div className="divide-y divide-border">
             {topResults.map((result, index) => {
               const isFinished = result.status === "Finished" || result.status.startsWith("+");
@@ -203,7 +204,7 @@ export function RaceResultsSection({
                 <div
                   key={result.position}
                   className={cn(
-                    "grid grid-cols-[1.5rem_1rem_1fr_2.5rem_5rem] text-xs px-3 py-2.5 hover:bg-accent/30 transition-colors gap-1 animate-in fade-in slide-in-from-left-1 duration-300",
+                    "grid grid-cols-[2rem_1rem_1fr_2.5rem_6rem] text-xs px-3 py-2.5 hover:bg-accent/30 transition-colors gap-2 animate-in fade-in slide-in-from-left-1 duration-300",
                     "border-l-4",
                     result.position === 1 && "border-l-yellow-500/50",
                     result.position === 2 && "border-l-zinc-400/40",
@@ -218,7 +219,7 @@ export function RaceResultsSection({
                   <div className="self-center">
                     <GridChange grid={result.gridPosition} position={result.position} />
                   </div>
-                  <div className="ml-1 min-w-0">
+                  <div className="ml-1 min-w-0 self-center">
                     <div className="flex items-center gap-1">
                       <Link
                         href={`/${slug}/drivers/${result.driverId}`}
@@ -236,9 +237,7 @@ export function RaceResultsSection({
                   <span
                     className={cn(
                       "text-right self-center shrink-0 font-mono",
-                      result.gap == null && !isFinished && result.position !== 1
-                        ? "text-red-400"
-                        : "text-foreground"
+                      isOut ? "text-red-400" : "text-foreground"
                     )}
                   >
                     {displayTime}
@@ -248,21 +247,17 @@ export function RaceResultsSection({
             })}
           </div>
 
+          {/* Non-points compact section — 2 columns */}
           {nonPoints.length > 0 && (
             <div className="border-t border-dashed border-border">
-              <div className="grid grid-cols-3 divide-x divide-border">
+              <div className="grid grid-cols-2 divide-x divide-border">
                 <div className="divide-y divide-border">
-                  {nonPoints.slice(0, npThird).map((r) => (
+                  {nonPoints.slice(0, npHalf).map((r) => (
                     <CompactResultRow key={r.position} result={r} slug={slug} />
                   ))}
                 </div>
                 <div className="divide-y divide-border">
-                  {nonPoints.slice(npThird, npThird * 2).map((r) => (
-                    <CompactResultRow key={r.position} result={r} slug={slug} />
-                  ))}
-                </div>
-                <div className="divide-y divide-border">
-                  {nonPoints.slice(npThird * 2).map((r) => (
+                  {nonPoints.slice(npHalf).map((r) => (
                     <CompactResultRow key={r.position} result={r} slug={slug} />
                   ))}
                 </div>

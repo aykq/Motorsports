@@ -5,12 +5,12 @@ import { cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
 
 const COMPOUND_STYLES: Record<TireCompound, { bg: string; label: string; text: string }> = {
-  SOFT: { bg: "bg-red-600", label: "S", text: "text-white" },
-  MEDIUM: { bg: "bg-yellow-400", label: "M", text: "text-black" },
-  HARD: { bg: "bg-zinc-300 dark:bg-zinc-500", label: "H", text: "text-black dark:text-white" },
-  INTERMEDIATE: { bg: "bg-green-500", label: "I", text: "text-white" },
-  WET: { bg: "bg-blue-500", label: "W", text: "text-white" },
-  UNKNOWN: { bg: "bg-zinc-600", label: "", text: "text-white" },
+  SOFT: { bg: "bg-rose-800/80", label: "S", text: "text-rose-100" },
+  MEDIUM: { bg: "bg-amber-600/75", label: "M", text: "text-amber-100" },
+  HARD: { bg: "bg-zinc-500/80 dark:bg-zinc-600/80", label: "H", text: "text-zinc-100" },
+  INTERMEDIATE: { bg: "bg-emerald-700/75", label: "I", text: "text-emerald-100" },
+  WET: { bg: "bg-blue-700/75", label: "W", text: "text-blue-100" },
+  UNKNOWN: { bg: "bg-zinc-700/60", label: "?", text: "text-zinc-300" },
 };
 
 interface Props {
@@ -53,9 +53,8 @@ export function TireStints({ stints, results }: Props) {
       {sortedDrivers.map((driverNumber) => {
         const driverStints = grouped.get(driverNumber) ?? [];
         const position = driverNumberToPosition.get(driverNumber);
-        const code = driverNumberToCode.get(driverNumber);
         const name = driverNumberToName.get(driverNumber);
-        const displayName = code ?? (name ? name.split(" ").pop() : `#${driverNumber}`);
+        const fullName = name ?? `#${driverNumber}`;
 
         return (
           <div key={driverNumber} className="flex items-center gap-2 min-h-[28px]">
@@ -71,8 +70,8 @@ export function TireStints({ stints, results }: Props) {
             >
               {position ?? "—"}
             </div>
-            <div className="w-10 text-xs text-muted-foreground truncate shrink-0 font-mono">
-              {displayName}
+            <div className="w-28 text-xs text-muted-foreground shrink-0 truncate">
+              {fullName}
             </div>
             <div className="flex-1 flex h-7 rounded overflow-hidden gap-px">
               {driverStints
@@ -101,9 +100,6 @@ export function TireStints({ stints, results }: Props) {
                     </div>
                   );
                 })}
-            </div>
-            <div className="w-8 text-right text-[10px] text-muted-foreground shrink-0">
-              {driverStints.length}st
             </div>
           </div>
         );
