@@ -13,7 +13,7 @@ interface Props {
   sessionLabel: string;
   results: PracticeDriverResult[];
   labels: PracticeLabels;
-  maxRows?: number;
+  maxRows?: number; // varsayılan: tüm sürücüler
 }
 
 function parseGapSec(gap: string): number {
@@ -23,10 +23,10 @@ function parseGapSec(gap: string): number {
   return parseFloat(s) || 0;
 }
 
-export function PracticeSection({ sessionLabel, results, labels, maxRows = 20 }: Props) {
+export function PracticeSection({ sessionLabel, results, labels, maxRows }: Props) {
   if (!results.length) return null;
 
-  const rows = results.slice(0, maxRows);
+  const rows = maxRows !== undefined ? results.slice(0, maxRows) : results;
   const fastest = rows[0];
 
   const maxGapSec = Math.max(
