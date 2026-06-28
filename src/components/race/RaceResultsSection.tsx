@@ -71,24 +71,31 @@ function PositionBadge({ position }: { position: number }) {
 }
 
 function classifyStatus(status: string, gap?: string) {
+  const s = status.toLowerCase().trim();
+  // Lapped: "+1 Lap", "+2 Laps" (Jolpica); "Lapped"; or gap "+1 Lap" (scraper)
   const isLapped =
-    (status.startsWith("+") && status.toLowerCase().includes("lap")) ||
-    (gap != null && /^\+\d+\s+(Lap|Laps)$/i.test(gap));
-  const isDNS = status === "Did Not Start" || status === "Withdrew" || status === "DNS";
-  const isFinished = status === "Finished" || isLapped;
+    s === "lapped" ||
+    (s.startsWith("+") && s.includes("lap")) ||
+    (gap != null && /^\+?\d+\s*(lap|laps)$/i.test(gap.trim()));
+  const isDNS =
+    s === "did not start" || s === "withdrew" || s === "dns" || s === "withdrawn";
+  const isFinished = s === "finished" || isLapped;
   const isDNF = !isFinished && !isDNS;
-  return { isLapped, isDNS, isDNF, isFinished, isOut: isDNF || isDNS };
+  // isRed: ONLY for DNF and DNS — never for lapped or time gaps
+  // Secondary guard: anything whose status starts with "+" is not red (covers all Jolpica lapped/gap formats)
+  const isRed = (isDNF || isDNS) && !status.startsWith("+");
+  return { isLapped, isDNS, isDNF, isFinished, isOut: isDNF || isDNS, isRed };
 }
 
 function CompactResultRow({ result, slug }: { result: RaceResult; slug: string }) {
-  const { isLapped, isDNS, isDNF, isFinished, isOut } = classifyStatus(result.status, result.gap);
+  const { isLapped, isDNS, isDNF, isFinished, isRed } = classifyStatus(result.status, result.gap);
   const displayName = result.driverCode ?? result.driverName.split(" ").pop()!;
   const displayTime = isLapped
     ? (result.gap ?? result.status)
     : isDNS
     ? "DNS"
     : isDNF
-    ? (result.status)
+    ? result.status
     : (result.gap ?? (isFinished ? "—" : result.status));
 
   return (
@@ -110,7 +117,7 @@ function CompactResultRow({ result, slug }: { result: RaceResult; slug: string }
       <span
         className={cn(
           "text-right font-mono text-xs shrink-0 pl-2",
-          isOut ? "text-red-400 font-medium" : "text-muted-foreground"
+          isRed ? "text-red-400" : "text-muted-foreground"
         )}
       >
         {displayTime}
@@ -225,7 +232,7 @@ export function RaceResultsSection({
           {/* Top 10 rows */}
           <div className="divide-y divide-border">
             {topResults.map((result, index) => {
-              const { isLapped, isDNS, isDNF, isFinished, isOut } = classifyStatus(result.status, result.gap);
+              const { isLapped, isDNS, isDNF, isFinished, isOut, isRed } = classifyStatus(result.status, result.gap);
               const displayTime =
                 result.position === 1
                   ? (result.time ?? "—")
@@ -274,7 +281,7 @@ export function RaceResultsSection({
                   <span
                     className={cn(
                       "text-right self-center shrink-0 font-mono",
-                      isOut ? "text-red-400" : "text-foreground"
+                      isRed ? "text-red-400" : "text-muted-foreground"
                     )}
                   >
                     {displayTime}
