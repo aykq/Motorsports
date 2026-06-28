@@ -1,37 +1,37 @@
 "use client";
 
+import Link from "next/link";
 import type { TireStint, TireCompound, RaceResult } from "@/types/series";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
 
-const COMPOUND_STYLES: Record<TireCompound, { bg: string; label: string; text: string }> = {
-  SOFT: { bg: "bg-rose-800/80", label: "S", text: "text-rose-100" },
-  MEDIUM: { bg: "bg-amber-600/75", label: "M", text: "text-amber-100" },
-  HARD: { bg: "bg-zinc-500/80 dark:bg-zinc-600/80", label: "H", text: "text-zinc-100" },
-  INTERMEDIATE: { bg: "bg-emerald-700/75", label: "I", text: "text-emerald-100" },
-  WET: { bg: "bg-blue-700/75", label: "W", text: "text-blue-100" },
-  UNKNOWN: { bg: "bg-zinc-700/60", label: "?", text: "text-zinc-300" },
+const COMPOUND_STYLES: Record<TireCompound, { bg: string; text: string }> = {
+  SOFT: { bg: "bg-red-500/90", text: "text-white" },
+  MEDIUM: { bg: "bg-yellow-400/95", text: "text-gray-900" },
+  HARD: { bg: "bg-zinc-300/95 dark:bg-zinc-500/90", text: "text-gray-900 dark:text-gray-100" },
+  INTERMEDIATE: { bg: "bg-green-500/90", text: "text-white" },
+  WET: { bg: "bg-blue-500/90", text: "text-white" },
+  UNKNOWN: { bg: "bg-zinc-600/70", text: "text-gray-200" },
 };
 
 interface Props {
   stints: TireStint[];
   results: RaceResult[];
+  slug: string;
 }
 
-export function TireStints({ stints, results }: Props) {
+export function TireStints({ stints, results, slug }: Props) {
   const t = useTranslations("tireStints");
   if (!stints.length) return null;
 
   const totalLaps = Math.max(...stints.map((s) => s.lapEnd), 1);
 
-  const driverNumberToCode = new Map(
-    results.filter((r) => r.driverCode).map((r) => [r.driverNumber, r.driverCode!])
+  const driverNumberToId = new Map(
+    results.filter((r) => r.driverNumber != null).map((r) => [r.driverNumber!, r.driverId])
   );
-
   const driverNumberToName = new Map(
     results.map((r) => [r.driverNumber, r.driverName])
   );
-
   const driverNumberToPosition = new Map(
     results.map((r) => [r.driverNumber, r.position])
   );
@@ -54,6 +54,7 @@ export function TireStints({ stints, results }: Props) {
         const driverStints = grouped.get(driverNumber) ?? [];
         const position = driverNumberToPosition.get(driverNumber);
         const name = driverNumberToName.get(driverNumber);
+        const driverId = driverNumberToId.get(driverNumber);
         const fullName = name ?? `#${driverNumber}`;
 
         return (
@@ -70,8 +71,17 @@ export function TireStints({ stints, results }: Props) {
             >
               {position ?? "—"}
             </div>
-            <div className="w-28 text-xs text-muted-foreground shrink-0 truncate">
-              {fullName}
+            <div className="w-28 shrink-0">
+              {driverId ? (
+                <Link
+                  href={`/${slug}/drivers/${driverId}`}
+                  className="text-xs text-muted-foreground hover:text-foreground hover:underline transition-colors truncate block"
+                >
+                  {fullName}
+                </Link>
+              ) : (
+                <span className="text-xs text-muted-foreground truncate block">{fullName}</span>
+              )}
             </div>
             <div className="flex-1 flex h-7 rounded overflow-hidden gap-px">
               {driverStints
@@ -83,17 +93,12 @@ export function TireStints({ stints, results }: Props) {
                   return (
                     <div
                       key={i}
-                      className={cn("relative flex items-center justify-between group px-1", style.bg)}
+                      className={cn("relative flex items-center justify-center group", style.bg)}
                       style={{ width: `${width}%`, minWidth: "4px" }}
                       title={`${stint.compound} — L${stint.lapStart}–${stint.lapEnd} (${t("laps", { count: lapCount })}${stint.tyreAgeAtStart > 0 ? t("used", { age: stint.tyreAgeAtStart }) : ""})`}
                     >
-                      {width > 5 && (
-                        <span className={cn("text-[9px] font-bold leading-none select-none shrink-0", style.text)}>
-                          {style.label}
-                        </span>
-                      )}
                       {width > 18 && (
-                        <span className={cn("text-[8px] leading-none font-mono select-none opacity-70 ml-auto", style.text)}>
+                        <span className={cn("text-[8px] leading-none font-mono select-none opacity-80", style.text)}>
                           {stint.lapStart}–{stint.lapEnd}
                         </span>
                       )}
@@ -111,7 +116,7 @@ export function TireStints({ stints, results }: Props) {
           .map((compound) => {
             const style = COMPOUND_STYLES[compound];
             return (
-              <div key={compound} className="flex items-center gap-1">
+              <div key={compound} className="flex items-center gap-1.5">
                 <div className={cn("w-3 h-3 rounded-sm", style.bg)} />
                 <span className="text-[10px] text-muted-foreground">{compound}</span>
               </div>

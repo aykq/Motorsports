@@ -157,6 +157,7 @@ export default async function RaceDetailPage({ params }: Props) {
     colDriverTeam: t("colDriverTeam"),
     colPoints: t("colPoints"),
     colTimeStatus: t("colTimeStatus"),
+    winsLabel: t("winsLabel"),
   };
 
   function formatDateTime(dateStr: string) {
@@ -272,7 +273,7 @@ export default async function RaceDetailPage({ params }: Props) {
         <h2 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">
           {t("schedule")}
         </h2>
-        <div className="overflow-x-auto -mx-4 px-4">
+        <div className="overflow-x-auto -mx-4 px-4 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
           <div className="flex gap-2 pb-1">
             {race.sessions.map((session) => {
               const { date, time, dayName } = formatDateTime(session.date);

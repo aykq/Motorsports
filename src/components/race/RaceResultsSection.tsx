@@ -15,6 +15,7 @@ export interface RaceLabels {
   colDriverTeam: string;
   colPoints: string;
   colTimeStatus: string;
+  winsLabel: string;
 }
 
 interface Props {
@@ -69,14 +70,26 @@ function PositionBadge({ position }: { position: number }) {
   );
 }
 
+function classifyStatus(status: string, gap?: string) {
+  const isLapped =
+    (status.startsWith("+") && status.toLowerCase().includes("lap")) ||
+    (gap != null && /^\+\d+\s+(Lap|Laps)$/i.test(gap));
+  const isDNS = status === "Did Not Start" || status === "Withdrew" || status === "DNS";
+  const isFinished = status === "Finished" || isLapped;
+  const isDNF = !isFinished && !isDNS;
+  return { isLapped, isDNS, isDNF, isFinished, isOut: isDNF || isDNS };
+}
+
 function CompactResultRow({ result, slug }: { result: RaceResult; slug: string }) {
-  const { status } = result;
-  const isLapped = status.startsWith("+") && status.toLowerCase().includes("lap");
-  const isDNS = status === "Did Not Start" || status === "Withdrew";
-  const isDNF = status !== "Finished" && !isLapped && !isDNS;
-  const isOut = isDNF || isDNS;
+  const { isLapped, isDNS, isDNF, isFinished, isOut } = classifyStatus(result.status, result.gap);
   const displayName = result.driverCode ?? result.driverName.split(" ").pop()!;
-  const displayTime = result.gap ?? (isDNS ? "DNS" : status);
+  const displayTime = isLapped
+    ? (result.gap ?? result.status)
+    : isDNS
+    ? "DNS"
+    : isDNF
+    ? (result.status)
+    : (result.gap ?? (isFinished ? "—" : result.status));
 
   return (
     <div className="grid grid-cols-[1.75rem_1fr_auto] items-center gap-1 text-xs px-2 py-2 hover:bg-accent/30 transition-colors">
@@ -106,11 +119,26 @@ function CompactResultRow({ result, slug }: { result: RaceResult; slug: string }
   );
 }
 
-function StandingRow({ standing, rank }: { standing: Standing; rank: number }) {
+function StandingRow({
+  standing,
+  rank,
+  slug,
+  winsLabel,
+}: {
+  standing: Standing;
+  rank: number;
+  slug: string;
+  winsLabel: string;
+}) {
   const name = standing.driver
     ? `${standing.driver.firstName} ${standing.driver.lastName}`
     : (standing.team?.name ?? "—");
   const sub = standing.driver?.team ?? standing.team?.nationality;
+  const href = standing.driver?.id
+    ? `/${slug}/drivers/${standing.driver.id}`
+    : standing.team?.id
+    ? `/${slug}/teams/${standing.team.id}`
+    : null;
 
   return (
     <div className={cn(
@@ -129,12 +157,18 @@ function StandingRow({ standing, rank }: { standing: Standing; rank: number }) {
         {rank}
       </span>
       <div className="flex-1 min-w-0">
-        <p className="font-medium truncate">{name}</p>
+        {href ? (
+          <Link href={href} className="font-medium truncate block hover:underline cursor-pointer">
+            {name}
+          </Link>
+        ) : (
+          <p className="font-medium truncate">{name}</p>
+        )}
         {sub && <p className="text-muted-foreground truncate text-[10px]">{sub}</p>}
       </div>
       <span className="font-display text-sm font-bold shrink-0">{standing.points}</span>
       {standing.wins > 0 && (
-        <span className="text-muted-foreground shrink-0 text-[10px]">{standing.wins}W</span>
+        <span className="text-muted-foreground shrink-0 text-[10px]">{standing.wins}{winsLabel}</span>
       )}
     </div>
   );
@@ -191,13 +225,16 @@ export function RaceResultsSection({
           {/* Top 10 rows */}
           <div className="divide-y divide-border">
             {topResults.map((result, index) => {
-              const isFinished = result.status === "Finished" || result.status.startsWith("+");
-              const isDNS = result.status === "Did Not Start" || result.status === "Withdrew";
-              const isDNF = !isFinished && !isDNS;
-              const isOut = isDNF || isDNS;
+              const { isLapped, isDNS, isDNF, isFinished, isOut } = classifyStatus(result.status, result.gap);
               const displayTime =
                 result.position === 1
                   ? (result.time ?? "—")
+                  : isLapped
+                  ? (result.gap ?? result.status)
+                  : isDNS
+                  ? "DNS"
+                  : isDNF
+                  ? result.status
                   : (result.gap ?? (isFinished ? "—" : result.status));
 
               return (
@@ -272,7 +309,7 @@ export function RaceResultsSection({
         <section className="space-y-2">
           <SectionHeader title={labels.tireStints} />
           <div className="rounded-lg border border-border p-3">
-            <TireStints stints={tireStints} results={results} />
+            <TireStints stints={tireStints} results={results} slug={slug} />
           </div>
         </section>
       )}
@@ -294,7 +331,7 @@ export function RaceResultsSection({
               </div>
               <div className="rounded-lg border border-border overflow-hidden">
                 {driverStandingsAfter.slice(0, 10).map((s) => (
-                  <StandingRow key={s.position} standing={s} rank={s.position} />
+                  <StandingRow key={s.position} standing={s} rank={s.position} slug={slug} winsLabel={labels.winsLabel} />
                 ))}
               </div>
             </div>
@@ -307,7 +344,7 @@ export function RaceResultsSection({
                 </div>
                 <div className="rounded-lg border border-border overflow-hidden">
                   {teamStandingsAfter.slice(0, 10).map((s) => (
-                    <StandingRow key={s.position} standing={s} rank={s.position} />
+                    <StandingRow key={s.position} standing={s} rank={s.position} slug={slug} winsLabel={labels.winsLabel} />
                   ))}
                 </div>
               </div>
