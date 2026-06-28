@@ -85,20 +85,23 @@ export function SessionTabs({
               key={tab.type}
               onClick={() => setActive(tab.type)}
               className={cn(
-                "font-display uppercase px-3.5 py-1.5 rounded-lg text-[11px] font-bold tracking-widest whitespace-nowrap transition-all duration-150 outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                "relative font-display uppercase px-3.5 py-1.5 rounded-lg text-[11px] font-bold tracking-widest whitespace-nowrap transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 active === tab.type
-                  ? "bg-background text-foreground shadow-sm"
+                  ? "text-foreground"
                   : "text-muted-foreground hover:text-foreground/80"
               )}
             >
-              {tab.shortLabel}
+              {active === tab.type && (
+                <span className="absolute inset-0 rounded-lg bg-background shadow-sm animate-in zoom-in-95 duration-150" />
+              )}
+              <span className="relative">{tab.shortLabel}</span>
             </button>
           ))}
         </div>
       </div>
 
       {/* Content */}
-      <div key={active} className="animate-in fade-in slide-in-from-bottom-1 duration-200">
+      <div key={active} className="animate-in fade-in slide-in-from-bottom-2 duration-300">
         {isPractice && (
           <PracticeSection
             sessionLabel={activeTab.fullLabel}

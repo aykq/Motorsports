@@ -19,14 +19,25 @@ function getBestTime(r: QualifyingDriverResult): string | undefined {
   return r.q3 ?? r.q2 ?? r.q1;
 }
 
-function SegmentHeader({ label, fastest }: { label: string; fastest?: QualifyingDriverResult }) {
+function SegmentHeader({
+  label,
+  fastest,
+  accent,
+}: {
+  label: string;
+  fastest?: QualifyingDriverResult;
+  accent?: string;
+}) {
   const fastestDisplay = fastest
     ? (fastest.driverCode ?? fastest.driverName.split(" ").pop())
     : null;
   const fastestTime = fastest ? getBestTime(fastest) : null;
 
   return (
-    <div className="flex items-center justify-between px-3 py-1.5 bg-muted/30 border-b border-border">
+    <div className={cn(
+      "flex items-center justify-between px-3 py-1.5 border-b border-border",
+      accent === "gold" ? "bg-yellow-500/5" : "bg-muted/30"
+    )}>
       <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
         {label}
       </span>
@@ -58,7 +69,7 @@ function QualifyingRow({
     <div
       className={cn(
         "grid grid-cols-[1.5rem_1fr_5rem] items-center gap-1 text-xs px-3 py-2 hover:bg-accent/30 transition-colors border-b border-border last:border-0",
-        isPole && "bg-yellow-500/5"
+        isPole && "bg-yellow-500/5 border-l-4 border-yellow-500/50"
       )}
     >
       <span
@@ -105,27 +116,29 @@ export function QualifyingSection({ results, labels, slug }: Props) {
   return (
     <div className="space-y-3">
       {poleDriver && (
-        <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/5 px-4 py-3 flex items-center gap-3">
-          <Trophy className="w-4 h-4 text-yellow-500 shrink-0" />
+        <div className="rounded-xl border-2 border-yellow-500/40 bg-yellow-500/5 px-4 py-4 flex items-center gap-4 relative overflow-hidden">
+          <span className="absolute top-2 right-3 text-[9px] font-black uppercase tracking-[0.12em] text-yellow-500/50">
+            POLE
+          </span>
+          <Trophy className="w-5 h-5 text-yellow-500 shrink-0" />
           <div className="min-w-0 flex-1">
             <Link
               href={`/${slug}/drivers/${poleDriver.driverId}`}
-              className="text-sm font-bold hover:underline"
+              className="font-display text-base font-extrabold hover:underline block"
             >
               {poleDriver.driverName}
             </Link>
-            <p className="text-[10px] text-muted-foreground">{poleDriver.team}</p>
+            <p className="text-xs text-muted-foreground">{poleDriver.team}</p>
           </div>
           <div className="text-right shrink-0">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Pole</p>
-            <p className="font-mono text-sm font-semibold text-yellow-500">{poleDriver.q3}</p>
+            <p className="font-mono text-lg font-bold text-yellow-500">{poleDriver.q3}</p>
           </div>
         </div>
       )}
 
       {q3.length > 0 && (
-        <div className="rounded-lg border border-border overflow-hidden">
-          <SegmentHeader label="Q3" fastest={poleDriver} />
+        <div className="rounded-lg border border-yellow-500/20 overflow-hidden">
+          <SegmentHeader label="Q3" fastest={poleDriver} accent="gold" />
           {q3.map((r) => (
             <QualifyingRow key={r.driverId} result={r} timeKey="q3" slug={slug} />
           ))}
@@ -134,7 +147,7 @@ export function QualifyingSection({ results, labels, slug }: Props) {
 
       {q2Eliminated.length > 0 && (
         <div className="rounded-lg border border-border overflow-hidden">
-          <SegmentHeader label={labels.q2Eliminated}/>
+          <SegmentHeader label={labels.q2Eliminated} fastest={q2Fastest} />
           {q2Eliminated.map((r) => (
             <QualifyingRow key={r.driverId} result={r} timeKey="q2" slug={slug} />
           ))}
@@ -142,8 +155,8 @@ export function QualifyingSection({ results, labels, slug }: Props) {
       )}
 
       {q1Eliminated.length > 0 && (
-        <div className="rounded-lg border border-border overflow-hidden">
-          <SegmentHeader label={labels.q1Eliminated} />
+        <div className="rounded-lg border border-border overflow-hidden opacity-70">
+          <SegmentHeader label={labels.q1Eliminated} fastest={q1Fastest} />
           {q1Eliminated.map((r) => (
             <QualifyingRow key={r.driverId} result={r} timeKey="q1" slug={slug} />
           ))}

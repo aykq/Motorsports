@@ -115,6 +115,7 @@ export default async function RaceDetailPage({ params }: Props) {
   } = detail;
 
   const allResults = race.results ?? [];
+  const podiumDrivers = isCompleted && allResults.length >= 3 ? allResults.slice(0, 3) : null;
 
   // ── Build session tabs (only completed sessions with data) ──
   const tabs: SessionTab[] = [];
@@ -223,6 +224,36 @@ export default async function RaceDetailPage({ params }: Props) {
               <Clock className="w-3 h-3" />{raceTimeStr} ({t("ist")})
             </span>
           </div>
+
+          {podiumDrivers && (() => {
+            const [r1, r2, r3] = podiumDrivers;
+            const shortName = (r: typeof r1) => r.driverCode ?? r.driverName.split(" ").pop()!;
+            return (
+              <div className="flex items-end justify-center gap-2 pt-1 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                <div className="flex flex-col items-center gap-0.5" style={{ opacity: 0.85 }}>
+                  <span className="font-mono text-[9px] text-zinc-400 tracking-widest">P2</span>
+                  <div className="rounded-lg border border-border/50 bg-background/20 backdrop-blur-sm px-3 py-1.5 text-center">
+                    <p className="font-display text-sm font-bold">{shortName(r2)}</p>
+                    <p className="text-[10px] text-muted-foreground font-mono">{r2.gap ?? "—"}</p>
+                  </div>
+                </div>
+                <div className="flex flex-col items-center gap-0.5 -translate-y-1.5">
+                  <span className="font-mono text-[9px] text-yellow-500 tracking-widest">P1</span>
+                  <div className="rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-3 py-2 text-center">
+                    <p className="font-display text-base font-extrabold text-yellow-500">{shortName(r1)}</p>
+                    <p className="text-[10px] text-muted-foreground font-mono">{r1.time ?? "—"}</p>
+                  </div>
+                </div>
+                <div className="flex flex-col items-center gap-0.5" style={{ opacity: 0.85 }}>
+                  <span className="font-mono text-[9px] text-amber-600 tracking-widest">P3</span>
+                  <div className="rounded-lg border border-border/50 bg-background/20 backdrop-blur-sm px-3 py-1.5 text-center">
+                    <p className="font-display text-sm font-bold">{shortName(r3)}</p>
+                    <p className="text-[10px] text-muted-foreground font-mono">{r3.gap ?? "—"}</p>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </div>
 
@@ -241,32 +272,40 @@ export default async function RaceDetailPage({ params }: Props) {
         <h2 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">
           {t("schedule")}
         </h2>
-        <div className="rounded-lg border border-border overflow-hidden">
-          {race.sessions.map((session) => {
-            const { date, time, dayName } = formatDateTime(session.date);
-            const isRaceSession = session.type === "race";
-            const sessionKey = session.type as Parameters<typeof tSessions>[0];
-            return (
-              <div
-                key={session.type}
-                className={cn(
-                  "flex items-center gap-3 px-4 py-2.5 text-sm border-b border-border last:border-0",
-                  isRaceSession && "bg-card font-medium"
-                )}
-              >
-                <span className={cn("w-32 shrink-0 text-sm", isRaceSession ? "text-foreground" : "text-muted-foreground")}>
-                  {tSessions.has(sessionKey) ? tSessions(sessionKey) : session.type}
-                </span>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground ml-auto font-mono">
-                  <span className="hidden sm:block capitalize">{dayName}</span>
-                  <Calendar className="w-3 h-3 shrink-0" />
-                  <span>{date}</span>
-                  <Clock className="w-3 h-3 ml-1 shrink-0" />
-                  <span>{time}</span>
+        <div className="overflow-x-auto -mx-4 px-4">
+          <div className="flex gap-2 min-w-max pb-1">
+            {race.sessions.map((session) => {
+              const { date, time, dayName } = formatDateTime(session.date);
+              const isPast = new Date(session.date) < now;
+              const isRaceSession = session.type === "race";
+              const sessionKey = session.type as Parameters<typeof tSessions>[0];
+              return (
+                <div
+                  key={session.type}
+                  className={cn(
+                    "flex flex-col gap-1.5 rounded-xl border p-3 min-w-[104px] transition-all",
+                    isRaceSession
+                      ? "border-border bg-card"
+                      : "border-border bg-transparent",
+                    isPast && !isRaceSession && "opacity-55"
+                  )}
+                  style={isRaceSession ? { borderColor: `${config.color}55` } : undefined}
+                >
+                  <span className="font-display text-[9px] font-bold uppercase tracking-widest text-muted-foreground capitalize">
+                    {dayName}
+                  </span>
+                  <span className={cn(
+                    "font-display text-xs font-semibold leading-tight",
+                    isRaceSession && "text-foreground"
+                  )}>
+                    {tSessions.has(sessionKey) ? tSessions(sessionKey) : session.type}
+                  </span>
+                  <span className="font-mono text-[11px] text-muted-foreground">{time}</span>
+                  <span className="text-[10px] text-muted-foreground">{date}</span>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </section>
 

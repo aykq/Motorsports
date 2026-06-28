@@ -53,6 +53,22 @@ function GridChange({ grid, position }: { grid?: number; position: number }) {
   );
 }
 
+function PositionBadge({ position }: { position: number }) {
+  return (
+    <div
+      className={cn(
+        "w-5 h-5 rounded-full flex items-center justify-center font-mono text-[10px] font-bold shrink-0 self-center",
+        position === 1 && "bg-yellow-500/15 text-yellow-500",
+        position === 2 && "bg-zinc-500/15 text-zinc-400",
+        position === 3 && "bg-amber-700/15 text-amber-600",
+        position > 3 && "text-muted-foreground"
+      )}
+    >
+      {position}
+    </div>
+  );
+}
+
 function CompactResultRow({ result, slug }: { result: RaceResult; slug: string }) {
   const { status } = result;
   const isLapped = status.startsWith("+") && status.toLowerCase().includes("lap");
@@ -98,7 +114,10 @@ function StandingRow({ standing, rank }: { standing: Standing; rank: number }) {
   const sub = standing.driver?.team ?? standing.team?.nationality;
 
   return (
-    <div className="flex items-center gap-3 px-3 py-2 text-xs border-b border-border last:border-0 hover:bg-accent/30 transition-colors">
+    <div className={cn(
+      "flex items-center gap-3 px-3 py-1.5 text-xs border-b border-border last:border-0 hover:bg-accent/30 transition-colors",
+      rank === 1 && "bg-yellow-500/5"
+    )}>
       <span
         className={cn(
           "w-5 text-right font-mono font-bold shrink-0",
@@ -112,11 +131,11 @@ function StandingRow({ standing, rank }: { standing: Standing; rank: number }) {
       </span>
       <div className="flex-1 min-w-0">
         <p className="font-medium truncate">{name}</p>
-        {sub && <p className="text-muted-foreground truncate">{sub}</p>}
+        {sub && <p className="text-muted-foreground truncate text-[10px]">{sub}</p>}
       </div>
-      <span className="font-mono font-bold shrink-0">{standing.points}</span>
+      <span className="font-display text-sm font-bold shrink-0">{standing.points}</span>
       {standing.wins > 0 && (
-        <span className="text-muted-foreground shrink-0">{standing.wins}G</span>
+        <span className="text-muted-foreground shrink-0 text-[10px]">{standing.wins}G</span>
       )}
     </div>
   );
@@ -137,7 +156,7 @@ export function RaceResultsSection({
   const fastestLapHolder = results.find((r) => r.fastestLap);
   const topResults = results.filter((r) => r.position <= 10);
   const nonPoints = results.filter((r) => r.position > 10);
-  const npHalf = Math.ceil(nonPoints.length / 2);
+  const npThird = Math.ceil(nonPoints.length / 3);
 
   return (
     <div className="space-y-6">
@@ -149,7 +168,7 @@ export function RaceResultsSection({
             <div className="flex items-center gap-1 text-xs text-purple-400">
               <Zap className="w-3 h-3" />
               <span>
-                {fastestLapHolder.driverName.split(" ").pop()}
+                {fastestLapHolder.driverCode ?? fastestLapHolder.driverName.split(" ").pop()}
                 {fastestLapHolder.fastestLapTime && (
                   <span className="text-muted-foreground ml-1">
                     ({fastestLapHolder.fastestLapTime})
@@ -170,28 +189,32 @@ export function RaceResultsSection({
           </div>
 
           <div className="divide-y divide-border">
-            {topResults.map((result) => {
+            {topResults.map((result, index) => {
               const isFinished = result.status === "Finished" || result.status.startsWith("+");
+              const isDNS = result.status === "Did Not Start" || result.status === "Withdrew";
+              const isDNF = !isFinished && !isDNS;
+              const isOut = isDNF || isDNS;
               const displayTime =
                 result.position === 1
                   ? (result.time ?? "—")
                   : (result.gap ?? (isFinished ? "—" : result.status));
+
               return (
                 <div
                   key={result.position}
-                  className="grid grid-cols-[1.5rem_1rem_1fr_2.5rem_5rem] text-xs px-3 py-2.5 hover:bg-accent/30 transition-colors gap-1"
+                  className={cn(
+                    "grid grid-cols-[1.5rem_1rem_1fr_2.5rem_5rem] text-xs px-3 py-2.5 hover:bg-accent/30 transition-colors gap-1 animate-in fade-in slide-in-from-left-1 duration-300",
+                    "border-l-4",
+                    result.position === 1 && "border-l-yellow-500/50",
+                    result.position === 2 && "border-l-zinc-400/40",
+                    result.position === 3 && "border-l-amber-600/40",
+                    result.position > 3 && "border-l-transparent",
+                    result.fastestLap && "bg-purple-500/[0.04]",
+                    isOut && "opacity-50",
+                  )}
+                  style={{ animationDelay: `${index * 25}ms` }}
                 >
-                  <span
-                    className={cn(
-                      "text-right font-mono font-bold self-center shrink-0",
-                      result.position === 1 && "text-yellow-500",
-                      result.position === 2 && "text-zinc-400",
-                      result.position === 3 && "text-amber-600",
-                      result.position > 3 && "text-muted-foreground"
-                    )}
-                  >
-                    {result.position}
-                  </span>
+                  <PositionBadge position={result.position} />
                   <div className="self-center">
                     <GridChange grid={result.gridPosition} position={result.position} />
                   </div>
@@ -227,14 +250,19 @@ export function RaceResultsSection({
 
           {nonPoints.length > 0 && (
             <div className="border-t border-dashed border-border">
-              <div className="grid grid-cols-2 divide-x divide-border">
+              <div className="grid grid-cols-3 divide-x divide-border">
                 <div className="divide-y divide-border">
-                  {nonPoints.slice(0, npHalf).map((r) => (
+                  {nonPoints.slice(0, npThird).map((r) => (
                     <CompactResultRow key={r.position} result={r} slug={slug} />
                   ))}
                 </div>
                 <div className="divide-y divide-border">
-                  {nonPoints.slice(npHalf).map((r) => (
+                  {nonPoints.slice(npThird, npThird * 2).map((r) => (
+                    <CompactResultRow key={r.position} result={r} slug={slug} />
+                  ))}
+                </div>
+                <div className="divide-y divide-border">
+                  {nonPoints.slice(npThird * 2).map((r) => (
                     <CompactResultRow key={r.position} result={r} slug={slug} />
                   ))}
                 </div>

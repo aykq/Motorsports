@@ -59,28 +59,43 @@ export function TireStints({ stints, results }: Props) {
 
         return (
           <div key={driverNumber} className="flex items-center gap-2 min-h-[28px]">
-            <div className="w-4 text-xs text-right text-muted-foreground shrink-0">
+            {/* Position circle */}
+            <div
+              className={cn(
+                "w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0",
+                position === 1 ? "bg-yellow-500/20 text-yellow-500" :
+                position === 2 ? "bg-zinc-500/20 text-zinc-400" :
+                position === 3 ? "bg-amber-700/20 text-amber-600" :
+                "border border-border text-muted-foreground"
+              )}
+            >
               {position ?? "—"}
             </div>
-            <div className="w-12 text-xs text-muted-foreground truncate shrink-0 font-mono">
+            <div className="w-10 text-xs text-muted-foreground truncate shrink-0 font-mono">
               {displayName}
             </div>
-            <div className="flex-1 flex h-5 rounded overflow-hidden gap-px">
+            <div className="flex-1 flex h-7 rounded overflow-hidden gap-px">
               {driverStints
                 .sort((a, b) => a.lapStart - b.lapStart)
                 .map((stint, i) => {
                   const style = COMPOUND_STYLES[stint.compound];
                   const width = ((stint.lapEnd - stint.lapStart + 1) / totalLaps) * 100;
+                  const lapCount = stint.lapEnd - stint.lapStart + 1;
                   return (
                     <div
                       key={i}
-                      className={cn("relative flex items-center justify-center group", style.bg)}
+                      className={cn("relative flex items-center justify-between group px-1", style.bg)}
                       style={{ width: `${width}%`, minWidth: "4px" }}
-                      title={`${stint.compound} — L${stint.lapStart}–${stint.lapEnd} (${t("laps", { count: stint.lapEnd - stint.lapStart + 1 })}${stint.tyreAgeAtStart > 0 ? t("used", { age: stint.tyreAgeAtStart }) : ""})`}
+                      title={`${stint.compound} — L${stint.lapStart}–${stint.lapEnd} (${t("laps", { count: lapCount })}${stint.tyreAgeAtStart > 0 ? t("used", { age: stint.tyreAgeAtStart }) : ""})`}
                     >
-                      {width > 8 && (
-                        <span className={cn("text-[9px] font-bold leading-none select-none", style.text)}>
+                      {width > 5 && (
+                        <span className={cn("text-[9px] font-bold leading-none select-none shrink-0", style.text)}>
                           {style.label}
+                        </span>
+                      )}
+                      {width > 18 && (
+                        <span className={cn("text-[8px] leading-none font-mono select-none opacity-70 ml-auto", style.text)}>
+                          {stint.lapStart}–{stint.lapEnd}
                         </span>
                       )}
                     </div>

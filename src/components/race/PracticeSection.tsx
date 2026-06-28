@@ -16,11 +16,23 @@ interface Props {
   maxRows?: number;
 }
 
-export function PracticeSection({ sessionLabel, results, labels, maxRows = 10 }: Props) {
+function parseGapSec(gap: string): number {
+  const s = gap.replace(/^[+\s]+/, "");
+  const m = s.match(/^(\d+):(\d+\.\d+)$/);
+  if (m) return parseInt(m[1]) * 60 + parseFloat(m[2]);
+  return parseFloat(s) || 0;
+}
+
+export function PracticeSection({ sessionLabel, results, labels, maxRows = 20 }: Props) {
   if (!results.length) return null;
 
   const rows = results.slice(0, maxRows);
   const fastest = rows[0];
+
+  const maxGapSec = Math.max(
+    0,
+    ...rows.filter((r) => r.position > 1 && r.gap).map((r) => parseGapSec(r.gap!))
+  );
 
   return (
     <section className="space-y-2">
@@ -48,10 +60,15 @@ export function PracticeSection({ sessionLabel, results, labels, maxRows = 10 }:
         <div className="divide-y divide-border">
           {rows.map((r) => {
             const displayName = r.driverCode ?? r.driverName.split(" ").pop()!;
+            const isP1 = r.position === 1;
+            const gapRatio = r.gap && maxGapSec > 0 ? parseGapSec(r.gap) / maxGapSec : 0;
             return (
               <div
                 key={r.driverNumber ?? r.driverName}
-                className="grid grid-cols-[1.5rem_1fr_4rem_4rem] items-center gap-1 text-xs px-3 py-2 hover:bg-accent/30 transition-colors"
+                className={cn(
+                  "grid grid-cols-[1.5rem_1fr_4rem_4rem] items-center gap-1 text-xs px-3 py-2 hover:bg-accent/30 transition-colors",
+                  isP1 && "bg-purple-500/5 border-l-2 border-purple-500/40"
+                )}
               >
                 <span
                   className={cn(
@@ -67,12 +84,20 @@ export function PracticeSection({ sessionLabel, results, labels, maxRows = 10 }:
                 <div className="min-w-0 ml-1">
                   <div className="flex items-center gap-1">
                     <span className="font-medium truncate">{displayName}</span>
-                    {r.position === 1 && <Zap className="w-3 h-3 text-purple-400 shrink-0" />}
+                    {isP1 && <Zap className="w-3 h-3 text-purple-400 shrink-0" />}
                   </div>
                   {r.team && (
                     <span className="text-[10px] text-muted-foreground truncate block">
                       {r.team}
                     </span>
+                  )}
+                  {r.gap && r.position > 1 && maxGapSec > 0 && (
+                    <div className="mt-0.5 h-[2px] rounded-full bg-muted/30 overflow-hidden w-full">
+                      <div
+                        className="h-full bg-muted-foreground/40 rounded-full"
+                        style={{ width: `${Math.min(100, gapRatio * 100)}%` }}
+                      />
+                    </div>
                   )}
                 </div>
                 <span className="text-right text-[10px] text-muted-foreground shrink-0 font-mono">
