@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { sentNotifications } from "@/db/schema";
 import { sendPushToSubscribers } from "@/lib/push";
 import { openf1IsF1SessionFinished } from "@/lib/adapters/f1/openf1";
+import { isMScomF1RaceFinished } from "@/lib/adapters/f1/motorsport-com-scraper";
 import { getSeriesConfig } from "@/lib/series-config";
 import type { Race } from "@/types/series";
 
@@ -136,7 +137,11 @@ export async function notifySessions(): Promise<NotifySessionsResult> {
         let resultsReady = false;
 
         if (row.seriesSlug === "f1") {
-          resultsReady = await openf1IsF1SessionFinished(row.season, session.date, session.type);
+          if (session.type === "race") {
+            resultsReady = await isMScomF1RaceFinished(row.season, race.name);
+          } else {
+            resultsReady = await openf1IsF1SessionFinished(row.season, session.date, session.type);
+          }
         } else {
           if (session.type === "race") {
             if (STATUS_DRIVEN_SERIES.has(row.seriesSlug)) {

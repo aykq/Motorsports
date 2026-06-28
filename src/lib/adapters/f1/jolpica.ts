@@ -222,6 +222,9 @@ function detectStatus(raceDate: string, hasResults: boolean | null): Race["statu
   if (date > now - twoHours) return "live";
   // null → API hatası, yarışı iptal saymıyoruz
   if (hasResults === null) return "completed";
+  // Jolpica sonuçları yarıştan saatler sonra yayınlanır; 24 saat içindeyse
+  // henüz yüklenmemiş demektir — iptal değil, tamamlandı olarak işaretle.
+  if (!hasResults && now - date < 24 * 60 * 60 * 1000) return "completed";
   if (!hasResults) return "cancelled";
   return "completed";
 }
