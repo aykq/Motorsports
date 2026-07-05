@@ -43,7 +43,8 @@ export async function sendPushToSubscribers(
             endpoint: sub.endpoint,
             keys: sub.keys as { p256dh: string; auth: string },
           },
-          JSON.stringify(payload)
+          JSON.stringify(payload),
+          { urgency: "high", TTL: 6 * 60 * 60 }
         );
         sent++;
       } catch (err: unknown) {
