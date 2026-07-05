@@ -16,6 +16,7 @@ jobs:
           host: ${{ secrets.VDS_HOST }}
           username: root
           key: ${{ secrets.VDS_SSH_KEY }}
+          command_timeout: 20m
           script: |
             set -e
             cd /opt/motorsports
