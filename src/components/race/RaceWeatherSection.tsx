@@ -319,7 +319,7 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
       {live && (
         <div className="rounded-lg border border-border bg-card px-3 py-3 space-y-2.5">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
+            <p className="text-[10px] text-muted-foreground tracking-wide">
               {(() => {
                 const activeSession = currentSession ?? (status === "live" ? { type: "race", date: raceDate } : null);
                 const sessionLabel = activeSession ? tTab(activeSession.type) : null;
@@ -363,7 +363,7 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
       {forecast && forecast.length > 0 && (
         <div className="space-y-2">
           {forecast.length > 1 && (
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
+            <p className="text-[10px] text-muted-foreground tracking-wide">
               {tWeather("weekly")}
             </p>
           )}
@@ -457,7 +457,7 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
 function SectionHeader() {
   const tWeather = useTranslations("weather");
   return (
-    <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+    <h2 className="text-xs font-semibold text-muted-foreground tracking-wide">
       {tWeather("title")}
     </h2>
   );

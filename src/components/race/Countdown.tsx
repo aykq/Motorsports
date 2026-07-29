@@ -47,7 +47,7 @@ export function Countdown({ targetDate, label, compact = false }: CountdownProps
 
   if (!time) return (
     <div className="text-center">
-      <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">{label}</p>
+      <p className="text-xs text-muted-foreground tracking-wide mb-3">{label}</p>
       <div className="flex items-end justify-center gap-3">
         {unitLabels.map((u, i) => (
           <div key={u} className="flex items-end gap-3">
@@ -65,7 +65,7 @@ export function Countdown({ targetDate, label, compact = false }: CountdownProps
   if (time.expired) {
     return (
       <div className="text-center">
-        <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">{label}</p>
+        <p className="text-xs text-muted-foreground tracking-wide mb-2">{label}</p>
         <p className="text-rose-500 font-bold">{t("started")}</p>
       </div>
     );
@@ -102,7 +102,7 @@ export function Countdown({ targetDate, label, compact = false }: CountdownProps
 
   return (
     <div className="text-center">
-      <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">{label}</p>
+      <p className="text-xs text-muted-foreground tracking-wide mb-3">{label}</p>
       <div className="flex items-end justify-center gap-3">
         {units.map(({ value, label: unitLabel }, i) => (
           <div key={unitLabel} className="flex items-end gap-3">

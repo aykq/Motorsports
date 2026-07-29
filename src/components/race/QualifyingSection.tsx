@@ -21,7 +21,7 @@ function SegmentHeader({ label, accent }: { label: string; accent?: "gold" }) {
       "flex items-center px-3 py-1.5 border-b border-border",
       accent === "gold" ? "bg-yellow-500/5" : "bg-muted/30"
     )}>
-      <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
+      <span className="text-[10px] font-semibold text-muted-foreground tracking-wide">
         {label}
       </span>
     </div>

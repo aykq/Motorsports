@@ -226,7 +226,7 @@ export function WECRaceResultsSection({
   return (
     <div className="space-y-6">
       <section className="space-y-2">
-        <h2 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest text-center">
+        <h2 className="font-display text-xs font-semibold text-muted-foreground tracking-wide text-center">
           {labels.results}
         </h2>
 
@@ -247,7 +247,7 @@ export function WECRaceResultsSection({
 
       {(driverStandingsAfter.length > 0 || teamStandingsAfter.length > 0) && (
         <section className="space-y-2">
-          <h2 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest text-center">
+          <h2 className="font-display text-xs font-semibold text-muted-foreground tracking-wide text-center">
             {labels.championship}
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

@@ -106,7 +106,7 @@ export default async function CircuitDetailPage({ params }: Props) {
       {/* ── Pist İstatistikleri ── */}
       {specs && (
         <section className="space-y-2">
-          <h2 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+          <h2 className="font-display text-xs font-semibold text-muted-foreground tracking-wide">
             {t("specifications")}
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -126,7 +126,7 @@ export default async function CircuitDetailPage({ params }: Props) {
       {/* ── Bu Sezonun En İyileri ── */}
       {(fastestLapResult || raceWinner) && (
         <section className="space-y-2">
-          <h2 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+          <h2 className="font-display text-xs font-semibold text-muted-foreground tracking-wide">
             {t("thisSeason", { year })}
           </h2>
           <div className="rounded-lg border border-border overflow-hidden">
@@ -158,7 +158,7 @@ export default async function CircuitDetailPage({ params }: Props) {
       {/* ── Yaklaşan Yarışlar ── */}
       {upcomingRaces.length > 0 && (
         <section className="space-y-3">
-          <h2 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+          <h2 className="font-display text-xs font-semibold text-muted-foreground tracking-wide">
             {t("upcoming")}
           </h2>
           {upcomingRaces.map((race) => {
@@ -189,7 +189,7 @@ export default async function CircuitDetailPage({ params }: Props) {
       {/* ── Geçmiş Yarışlar ── */}
       {completedRaces.length > 0 && (
         <section className="space-y-3">
-          <h2 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+          <h2 className="font-display text-xs font-semibold text-muted-foreground tracking-wide">
             {t("pastRaces")}
           </h2>
           {completedRaces.map((race) => {

@@ -24,10 +24,18 @@ MSHub şu an Tailwind v4 + shadcn'in **kutudan-çıkma nötr gri teması**, **te
 
 ## Fazlar
 
-### Faz 0 — Tasarım dili + kilit ekran mockup'ları  ⛔ ONAY KAPISI
+### Faz 0 — Tasarım dili + kilit ekran mockup'ları  ✅ ONAYLANDI (2026-07-30)
 - Token sistemi: renk (açık+koyu oklch ramp + brand + 8 seri rengi), **tipografi** (tek Geist yerine: karakterli kondens display + tabular/mono sayı fontu + okunur body), spacing/radius/elevation/motion/breakpoint ölçeği. "Signature" öğesi belirlenir.
 - 3-4 kilit ekran statik mockup (HTML, **açık+koyu**, **mobil+masaüstü**), Playwright ile ekran görüntüsü: (1) Takvim/ana sayfa, (2) **Race detay**, (3) Seri hub, (4) Admin.
 - Kullanıcı yönü onaylar → ancak sonra kod yazılır.
+
+**Onaylanan kararlar (superpowers brainstorming, visual-companion mockup karşılaştırmasıyla):**
+
+1. **Genel karakter — "Kontrollü teknik" (B yönü).** Koyu zemin, ince telemetri-grid çizgileri, mono veri (IBM Plex Mono ruhu), tek seri rengi ölçülü vurgu. Editoryal/dergi ve koyu-cesur/marka-öncelikli yönler değerlendirildi, elenmedi ama B seçildi — mevcut yönün olgunlaşmış hali, dashboard'a kaçmıyor.
+2. **Signature öğe — pist hattı vektörü.** Fotoğraf değil, her pistin gerçek layout'undan (mevcut `CircuitLayoutImage` / `lookupCircuitCoords` verisi) türetilen ince çizgi, seri renginde. Race hero'da ana grafik, takvim kartında watermark olarak tekrarlanır. Gerekçe: fotoğraf kalitesi/kompozisyonu kaynağa bağlı ve kontrolümüz dışında, vektör hat her yerde tutarlı ve "MSHub'a ait" bir dil kurar. **Not:** pist fotoğrafları (`getF1CircuitPhotoUrl`) DRS/Active Aero bölge işaretlemesi içermediği için bu karardan ayrı, ayrıca bkz. Faz 6'daki `drsZones` içerik notu.
+3. **Büyük başlıklar — Title Case, section etiketleri küçük harf.** Sayfa/hero başlığı (ör. "Dutch Grand Prix") Title Case; section etiketleri (Race Results, Tire Stints, Weather) küçük harf + ince mono kalıyor, `text-transform:uppercase` kaldırılıyor. Manrope'un title-case mockup'ıyla tutarlı, "hacker/dashboard" hissini azaltıyor. (Bkz. [[project-mshub-redesign-font]])
+4. **Seri rengi — ambient glow formülü.** Her seri sayfasında (hub) üstte ince renkli şerit + köşede soluk radial glow + standings'te aktif satır o serinin renginde vurgu. Tek formül, 8 seri için sadece renk token'ı değişir (`--f1`, `--wec` vb. zaten mevcut). Takvim kartlarında da aynı mantık: gradient arka plan + kenarlık + pist hattı watermark, seri rengiyle.
+5. **Admin paneli — nötr/işlevsel, seri rengi/glow yok.** Admin marka kimliğinden çok netlik gerektiren bir alan; stat kartları + onay listesi + semantik renkler (sarı=pending, yeşil=approve, kırmızı=reject) yeterli. Diğer ekranlarla aynı tipografi/spacing/radius token'ları paylaşılır.
 
 ### Faz 1 — Tasarım sistemini koda dök
 - `globals.css` token'ları (açık+koyu) yeniden yaz; `next/font` ile yeni fontlar; tailwind `@theme` güncelle.
@@ -48,6 +56,8 @@ News list + detay, Admin paneli, NotificationSettings, InstallPrompt.
 
 ### Faz 6 — Backend uyarlaması (tasarım gereksinimlerine göre)
 Her veri-güdümlü bileşen için backend hizalaması: sync adapter'lar / API route'lar / DB şeması, yeni tasarımın ihtiyaç duyduğu alanları (ör. pilot uyruğu/bayrak, ek görsel, sıralama alanları) sağlayacak şekilde güncellenir. [[project-gt3-carrera-datadriven]] notu da bu fazda değerlendirilir. Migration motorsports'un `scripts/migrate.cjs` (drizzle SQL) akışıyla.
+
+**Bekleyen içerik sorunu (2026-07-30 tespit edildi):** `src/lib/circuit-data.ts:9-32`'deki `F1_CIRCUIT_SPECS.drsZones` sabit sayısı ve UI'daki "DRS Zones" etiketi, 2026 sezonunda gelen Active Aero kuralıyla (DRS'in yerini aldı, pilotlar artık neredeyse her yerde kullanabiliyor) kavramsal olarak eskimiş durumda. Bu fazda: ya spec'i 2026 aktif aero kurallarına göre güncelle, ya etiketi/kavramı "Active Aero" olarak yeniden adlandır, ya da anlamını yitirdiği için stat'ı tamamen kaldır. Not: pist fotoğrafları (`getF1CircuitPhotoUrl`) ve F1 resmi CDN pist haritası (`getF1CircuitMapUrl`) bu sorundan etkilenmiyor — ikisi de DRS bölgesi işaretlemesi içermiyor, sadece `drsZones` sayısal alanı etkileniyor.
 
 ### Faz 7 — Responsive QA + cila
 xs→2xl tüm kırılımlar, açık+koyu tema, erişilebilirlik (focus, reduced-motion, kontrast), performans, PWA. Her faz sonunda Playwright ekran görüntüsü + canlı gözden geçirme.

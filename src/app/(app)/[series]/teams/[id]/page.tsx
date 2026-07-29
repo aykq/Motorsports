@@ -129,7 +129,7 @@ export default async function TeamDetailPage({ params }: Props) {
         {/* ── Pilots (GT3/GT4: grouped by car entry) ── */}
         {teamDrivers.length > 0 && (
           <section className="space-y-2">
-            <h2 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+            <h2 className="font-display text-xs font-semibold text-muted-foreground tracking-wide">
               {t("pilots")}
             </h2>
 
@@ -256,7 +256,7 @@ export default async function TeamDetailPage({ params }: Props) {
         {/* ── Race-by-race Results ── */}
         {completedRaces.length > 0 && (
           <section className="space-y-2">
-            <h2 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+            <h2 className="font-display text-xs font-semibold text-muted-foreground tracking-wide">
               {t("raceResults")}
             </h2>
             <div className="space-y-1.5">

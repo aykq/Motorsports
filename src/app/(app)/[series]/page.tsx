@@ -172,7 +172,7 @@ export default async function SeriesPage({ params }: Props) {
         {sortedDrivers.length > 0 && (
           <section>
             <div className="flex justify-between items-center mb-3">
-              <h3 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">{t("drivers")}</h3>
+              <h3 className="font-display text-xs font-semibold text-muted-foreground tracking-wide">{t("drivers")}</h3>
               <Link
                 href={`/${slug}/drivers`}
                 className="text-xs hover:opacity-70 transition-opacity"
@@ -240,7 +240,7 @@ export default async function SeriesPage({ params }: Props) {
         {(top5Drivers.length > 0 || top5Teams.length > 0) && (
           <section className="mb-2">
             <div className="flex justify-between items-center mb-3">
-              <h3 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">{t("standings")}</h3>
+              <h3 className="font-display text-xs font-semibold text-muted-foreground tracking-wide">{t("standings")}</h3>
               <Link href={`/${slug}/standings`} className="text-xs hover:opacity-70 transition-opacity" style={{ color: config.color }}>
                 {t("viewAll")}
               </Link>
@@ -296,7 +296,7 @@ export default async function SeriesPage({ params }: Props) {
         {news.length > 0 && (
           <section className="mb-2">
             <div className="flex justify-between items-center mb-3">
-              <h3 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">{t("latestNews")}</h3>
+              <h3 className="font-display text-xs font-semibold text-muted-foreground tracking-wide">{t("latestNews")}</h3>
               <Link href="/news" className="text-xs hover:opacity-70 transition-opacity" style={{ color: config.color }}>
                 {t("viewAll")}
               </Link>

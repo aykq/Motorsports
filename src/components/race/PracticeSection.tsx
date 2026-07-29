@@ -37,7 +37,7 @@ export function PracticeSection({ sessionLabel, results, labels, maxRows }: Prop
   return (
     <section className="space-y-2">
       <div className="flex items-center justify-between">
-        <h2 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+        <h2 className="font-display text-xs font-semibold text-muted-foreground tracking-wide">
           {sessionLabel}
         </h2>
         {fastest && (

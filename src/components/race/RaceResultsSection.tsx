@@ -31,7 +31,7 @@ interface Props {
 
 function SectionHeader({ title }: { title: string }) {
   return (
-    <h2 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+    <h2 className="font-display text-xs font-semibold text-muted-foreground tracking-wide">
       {title}
     </h2>
   );
