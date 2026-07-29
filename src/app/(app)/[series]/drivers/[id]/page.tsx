@@ -188,7 +188,7 @@ export default async function DriverDetailPage({ params }: Props) {
         {/* ── Race Results ── */}
         {raceResults.length > 0 && (
           <section className="space-y-2">
-            <h2 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+            <h2 className="font-display text-xs font-semibold text-muted-foreground tracking-wide">
               {t("raceResults", { year })}
             </h2>
             <div className="space-y-1.5">

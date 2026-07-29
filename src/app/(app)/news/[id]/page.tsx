@@ -22,7 +22,7 @@ function ResultTable({ label, rows }: { label: string; rows: ResultRow[] }) {
     <div className="rounded-xl border border-border overflow-hidden text-sm">
       {label && (
         <div className="px-3 py-2 bg-muted/50 border-b border-border">
-          <span className="font-display text-xs font-bold uppercase tracking-widest text-muted-foreground">
+          <span className="font-display text-xs font-bold tracking-wide text-muted-foreground">
             {label}
           </span>
         </div>

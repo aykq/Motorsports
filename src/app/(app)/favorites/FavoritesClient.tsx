@@ -30,7 +30,7 @@ export function FavoritesClient({ initialFavorites }: Props) {
 
       {favoritedAvailable.length > 0 && (
         <section className="space-y-2">
-          <h2 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+          <h2 className="font-display text-xs font-semibold text-muted-foreground tracking-wide">
             {t("myFavorites")}
           </h2>
           {favoritedAvailable.map((series) => (
@@ -47,7 +47,7 @@ export function FavoritesClient({ initialFavorites }: Props) {
       )}
 
       <section className="space-y-2">
-        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+        <h2 className="text-xs font-semibold text-muted-foreground tracking-wide">
           {t("availableSeries")}
         </h2>
         {available.map((series) => (
@@ -64,7 +64,7 @@ export function FavoritesClient({ initialFavorites }: Props) {
 
       {coming.length > 0 && (
         <section className="space-y-2">
-          <h2 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+          <h2 className="font-display text-xs font-semibold text-muted-foreground tracking-wide">
             {t("comingSoon")}
           </h2>
           {coming.map((series) => (

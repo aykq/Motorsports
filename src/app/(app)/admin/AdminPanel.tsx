@@ -81,7 +81,7 @@ function StatCard({ accent, label, value }: { accent: string; label: string; val
     <div className="relative rounded-xl bg-card border border-border overflow-hidden p-4 flex flex-col gap-1.5">
       <span className="absolute inset-x-0 top-0 h-0.5" style={{ backgroundColor: accent }} />
       <span className="text-3xl font-mono font-bold tabular-nums leading-none">{value}</span>
-      <span className="font-display text-[10px] text-muted-foreground uppercase tracking-widest leading-none">{label}</span>
+      <span className="font-display text-[10px] text-muted-foreground tracking-wide leading-none">{label}</span>
     </div>
   );
 }
@@ -283,7 +283,7 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers, initialNotifica
         {/* ── Sync ── */}
         <TabsContent value="sync" className="mt-3 space-y-4">
           <section className="rounded-xl bg-card border border-border p-4 space-y-3">
-            <p className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">{t("allSeries")}</p>
+            <p className="font-display text-xs font-semibold text-muted-foreground tracking-wide">{t("allSeries")}</p>
             <button
               onClick={handleSyncAll}
               disabled={syncPending || syncAllPending}
@@ -332,7 +332,7 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers, initialNotifica
           </section>
 
           <section className="rounded-xl bg-card border border-border p-4 space-y-3">
-            <p className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">{t("raceDetailCache")}</p>
+            <p className="font-display text-xs font-semibold text-muted-foreground tracking-wide">{t("raceDetailCache")}</p>
             <div className="flex flex-col gap-2 sm:flex-row">
               <select
                 value={clearSlug}
@@ -365,7 +365,7 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers, initialNotifica
           </section>
 
           <section className="rounded-xl bg-card border border-border p-4 space-y-3">
-            <p className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">{t("driverCache")}</p>
+            <p className="font-display text-xs font-semibold text-muted-foreground tracking-wide">{t("driverCache")}</p>
             <div className="flex gap-2">
               <select
                 value={clearDriverSlug}
@@ -391,7 +391,7 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers, initialNotifica
 
           {/* News sync */}
           <section className="rounded-xl bg-card border border-border p-4 space-y-3">
-            <p className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">{t("news")}</p>
+            <p className="font-display text-xs font-semibold text-muted-foreground tracking-wide">{t("news")}</p>
             <button
               onClick={handleNewsSync}
               disabled={newsSyncPending || newsSyncSuccess}
@@ -417,7 +417,7 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers, initialNotifica
         {/* ── Notifications ── */}
         <TabsContent value="notifications" className="mt-3 space-y-4">
           <section className="rounded-xl bg-card border border-border p-4 space-y-3">
-            <p className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">{t("subDistribution")}</p>
+            <p className="font-display text-xs font-semibold text-muted-foreground tracking-wide">{t("subDistribution")}</p>
             {Object.keys(stats.subscriptionsBySeries).length === 0 ? (
               <p className="text-sm text-muted-foreground">{t("noSubs")}</p>
             ) : (
@@ -449,7 +449,7 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers, initialNotifica
           </section>
 
           <section className="rounded-xl bg-card border border-border p-4 space-y-3">
-            <p className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">{t("sendNotif")}</p>
+            <p className="font-display text-xs font-semibold text-muted-foreground tracking-wide">{t("sendNotif")}</p>
             <select
               value={notifSlug}
               onChange={(e) => setNotifSlug(e.target.value)}
@@ -487,7 +487,7 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers, initialNotifica
           {/* Son gönderilen bildirimler */}
           <section className="rounded-xl bg-card border border-border p-4 space-y-3">
             <div className="flex items-center justify-between gap-2">
-              <p className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">{t("recentNotifs")}</p>
+              <p className="font-display text-xs font-semibold text-muted-foreground tracking-wide">{t("recentNotifs")}</p>
               <select
                 value={recentFilter}
                 onChange={(e) => handleRecentFilter(e.target.value)}

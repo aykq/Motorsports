@@ -54,3 +54,4 @@ next-env.d.ts
 
 # superpowers local artifacts
 docs/superpowers/
+.superpowers/

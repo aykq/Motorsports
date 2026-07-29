@@ -23,7 +23,7 @@ export function RaceControlSection({ events, eventsTr }: Props) {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+        <h2 className="text-xs font-semibold text-muted-foreground tracking-wide">
           {t("raceEvents")}
         </h2>
         <div className="flex items-center gap-1 rounded-full border border-border p-0.5">

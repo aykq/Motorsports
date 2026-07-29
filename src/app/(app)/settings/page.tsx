@@ -28,7 +28,7 @@ export default async function SettingsPage() {
 
       {/* Account */}
       <section className="rounded-xl bg-card border border-border p-4 space-y-4">
-        <h2 className="font-display text-sm font-semibold text-muted-foreground uppercase tracking-widest">
+        <h2 className="font-display text-sm font-semibold text-muted-foreground tracking-wide">
           {t("account.title")}
         </h2>
         <div className="flex items-center gap-3">
@@ -58,7 +58,7 @@ export default async function SettingsPage() {
 
       {/* Appearance */}
       <section className="rounded-xl bg-card border border-border p-4 space-y-4">
-        <h2 className="font-display text-sm font-semibold text-muted-foreground uppercase tracking-widest">
+        <h2 className="font-display text-sm font-semibold text-muted-foreground tracking-wide">
           {t("appearance.title")}
         </h2>
         <div className="flex items-center justify-between">

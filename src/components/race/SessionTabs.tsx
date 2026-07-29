@@ -125,7 +125,7 @@ export function SessionTabs({
 
         {active === "qualifying" && (
           <div className="space-y-3">
-            <h2 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+            <h2 className="font-display text-xs font-semibold text-muted-foreground tracking-wide">
               {qualifyingLabels.qualifyingResults}
             </h2>
             <QualifyingSection

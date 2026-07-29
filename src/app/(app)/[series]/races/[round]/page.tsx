@@ -270,7 +270,7 @@ export default async function RaceDetailPage({ params }: Props) {
 
       {/* ── Program ── */}
       <section className="space-y-2">
-        <h2 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+        <h2 className="font-display text-xs font-semibold text-muted-foreground tracking-wide">
           {t("schedule")}
         </h2>
         <div className="overflow-x-auto -mx-4 px-4 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
@@ -292,7 +292,7 @@ export default async function RaceDetailPage({ params }: Props) {
                   )}
                   style={isRaceSession ? { borderColor: `${config.color}55` } : undefined}
                 >
-                  <span className="font-display text-[9px] font-bold uppercase tracking-widest text-muted-foreground capitalize">
+                  <span className="font-display text-[9px] font-bold tracking-wide text-muted-foreground capitalize">
                     {dayName}
                   </span>
                   <span className={cn(
@@ -366,7 +366,7 @@ export default async function RaceDetailPage({ params }: Props) {
 
       {/* ── Quotes Placeholder ── */}
       <section className="space-y-2">
-        <h2 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+        <h2 className="font-display text-xs font-semibold text-muted-foreground tracking-wide">
           {t("quotes")}
         </h2>
         <div className="rounded-lg border border-border border-dashed p-6 flex flex-col items-center gap-2 text-center">
@@ -379,7 +379,7 @@ export default async function RaceDetailPage({ params }: Props) {
 
       {/* ── Analysis Placeholder ── */}
       <section className="space-y-2">
-        <h2 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+        <h2 className="font-display text-xs font-semibold text-muted-foreground tracking-wide">
           {isCompleted ? t("analysis") : t("updates")}
         </h2>
         <div className="rounded-lg border border-border border-dashed p-6 flex flex-col items-center gap-2 text-center">
