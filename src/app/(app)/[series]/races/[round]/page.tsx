@@ -12,6 +12,7 @@ import { RaceWeatherSection } from "@/components/race/RaceWeatherSection";
 import { SessionTabs, type SessionTab } from "@/components/race/SessionTabs";
 import { WECRaceResultsSection } from "@/components/race/WECRaceResultsSection";
 import { CircuitHeroPhoto } from "@/components/race/CircuitHeroPhoto";
+import { SeriesGlowSurface } from "@/components/series/SeriesGlowSurface";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { getF1CircuitCoords, getF1CircuitPhotoUrl } from "@/lib/circuit-data";
@@ -179,16 +180,8 @@ export default async function RaceDetailPage({ params }: Props) {
       <BackButton fallbackHref={`/${slug}/schedule`} label={t("schedule")} />
 
       {/* ── Livery header ── */}
-      <div
-        className="relative overflow-hidden rounded-2xl border border-border p-5 space-y-2"
-        style={{ background: `linear-gradient(110deg, color-mix(in oklch, ${config.color} 20%, var(--card)), var(--card) 55%)` }}
-      >
-        <span
-          aria-hidden
-          className="absolute -right-10 -top-8 -bottom-8 w-40 skew-x-[-18deg] opacity-15"
-          style={{ background: `linear-gradient(180deg, ${config.color}, transparent)` }}
-        />
-        <div className="relative space-y-2">
+      <SeriesGlowSurface color={config.color} className="p-5">
+        <div className="space-y-2">
           <div className="flex items-center gap-2 flex-wrap">
             <Link
               href={`/${slug}`}
@@ -256,7 +249,7 @@ export default async function RaceDetailPage({ params }: Props) {
             );
           })()}
         </div>
-      </div>
+      </SeriesGlowSurface>
 
       {/* ── Circuit Hero ── */}
       {slug === "f1" && (
