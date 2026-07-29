@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { cn, toTitleCase } from "@/lib/utils";
 import { Countdown } from "@/components/race/Countdown";
+import { SeriesGlowSurface } from "@/components/series/SeriesGlowSurface";
 import { useTranslations, useLocale } from "next-intl";
 import type { RaceStatus } from "@/types/series";
 import type { SeriesConfig } from "@/lib/series-config";
@@ -388,17 +389,13 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
           })}
         </div>
       ) : nextRace ? (
-        <Link
+        <SeriesGlowSurface
+          color={nextRace.seriesColor}
+          as="a"
           href={`/${nextRace.seriesSlug}/races/${nextRace.round}`}
-          className="group block relative overflow-hidden rounded-2xl border border-border p-6 transition-[border-color] hover:border-border/0"
-          style={{ background: `linear-gradient(110deg, color-mix(in oklch, ${nextRace.seriesColor} 20%, var(--card)), var(--card) 52%)` }}
+          className="group p-6 transition-[border-color] hover:border-border/0"
         >
-          <span
-            aria-hidden
-            className="absolute -right-10 -top-8 -bottom-8 w-40 skew-x-[-18deg] opacity-15"
-            style={{ background: `linear-gradient(180deg, ${nextRace.seriesColor}, transparent)` }}
-          />
-          <div className="relative space-y-3">
+          <div className="space-y-3">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full" style={{ backgroundColor: nextRace.seriesColor }} />
               <span className="font-display text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: nextRace.seriesColor }}>
@@ -411,7 +408,7 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
             </div>
             <Countdown targetDate={getRaceDate(nextRace).toISOString()} label="" />
           </div>
-        </Link>
+        </SeriesGlowSurface>
       ) : (
         <div className="rounded-xl bg-card border border-border p-6 text-center text-muted-foreground">
           <p className="text-sm">{t("noUpcoming")}</p>
