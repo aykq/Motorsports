@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="rounded-lg bg-card border border-border p-3 text-center space-y-1">
-      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</p>
+      <p className="text-[10px] text-muted-foreground tracking-wide">{label}</p>
       <p className="font-bold text-base">{value}</p>
     </div>
   );

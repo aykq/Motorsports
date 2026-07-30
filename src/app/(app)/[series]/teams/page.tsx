@@ -91,7 +91,7 @@ export default async function TeamsPage({ params }: Props) {
 
                 <div className="text-right shrink-0">
                   <p className="font-mono font-bold text-xl tabular-nums">{s.points}</p>
-                  <p className="font-display text-[10px] text-muted-foreground uppercase tracking-wide">{t("points")}</p>
+                  <p className="font-display text-[10px] text-muted-foreground tracking-wide">{t("points")}</p>
                 </div>
               </div>
             </Link>
