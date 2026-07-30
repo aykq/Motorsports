@@ -363,14 +363,14 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
             if (!sc.nextRaceDate) return null;
             const CardWrapper = sc.nextRaceHref
               ? ({ children }: { children: React.ReactNode }) => (
-                  <Link href={sc.nextRaceHref!} className="block rounded-xl bg-card border border-border p-4 space-y-3 hover:bg-accent/50 transition-colors cursor-pointer" style={{ borderTopWidth: 2, borderTopColor: sc.color }}>
+                  <SeriesGlowSurface color={sc.color} as="a" href={sc.nextRaceHref!} className="p-4 space-y-3 hover:bg-accent/20 transition-colors cursor-pointer">
                     {children}
-                  </Link>
+                  </SeriesGlowSurface>
                 )
               : ({ children }: { children: React.ReactNode }) => (
-                  <div className="rounded-xl bg-card border border-border p-4 space-y-3" style={{ borderTopWidth: 2, borderTopColor: sc.color }}>
+                  <SeriesGlowSurface color={sc.color} className="p-4 space-y-3">
                     {children}
-                  </div>
+                  </SeriesGlowSurface>
                 );
             return (
               <CardWrapper key={sc.slug}>
