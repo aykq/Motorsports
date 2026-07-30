@@ -53,7 +53,7 @@ export function Countdown({ targetDate, label, compact = false }: CountdownProps
           <div key={u} className="flex items-end gap-3">
             <div className="flex flex-col items-center">
               <span className="text-3xl font-mono font-bold tabular-nums text-foreground leading-none">--</span>
-              <span className="text-xs text-muted-foreground mt-1 uppercase tracking-wide">{u}</span>
+              <span className="text-xs text-muted-foreground mt-1 tracking-wide">{u}</span>
             </div>
             {i < 3 && <span className="text-2xl font-bold text-muted-foreground/50 mb-1">:</span>}
           </div>
@@ -87,7 +87,7 @@ export function Countdown({ targetDate, label, compact = false }: CountdownProps
               <span className="text-xl font-mono font-bold tabular-nums text-foreground leading-none">
                 {pad(value)}
               </span>
-              <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
+              <span className="text-[10px] text-muted-foreground tracking-wide">
                 {unitLabel}
               </span>
             </div>
@@ -110,7 +110,7 @@ export function Countdown({ targetDate, label, compact = false }: CountdownProps
               <span className="text-3xl font-mono font-bold tabular-nums text-foreground leading-none">
                 {pad(value)}
               </span>
-              <span className="text-xs text-muted-foreground mt-1 uppercase tracking-wide">
+              <span className="text-xs text-muted-foreground mt-1 tracking-wide">
                 {unitLabel}
               </span>
             </div>

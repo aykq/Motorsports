@@ -466,7 +466,7 @@ function SectionHeader() {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</span>
+      <span className="text-[10px] text-muted-foreground tracking-wide">{label}</span>
       <span className="font-mono text-base font-semibold leading-none tabular-nums">{value}</span>
     </div>
   );

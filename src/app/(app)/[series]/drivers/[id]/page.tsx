@@ -172,15 +172,15 @@ export default async function DriverDetailPage({ params }: Props) {
           <div className="grid grid-cols-3 gap-3">
             <div className="rounded-lg bg-card border border-border p-3 text-center">
               <p className="font-mono text-2xl font-bold tabular-nums">{standing.position}</p>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">{t("ranking")}</p>
+              <p className="text-[10px] text-muted-foreground tracking-wide mt-0.5">{t("ranking")}</p>
             </div>
             <div className="rounded-lg bg-card border border-border p-3 text-center">
               <p className="font-mono text-2xl font-bold tabular-nums">{standing.points}</p>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">{t("points")}</p>
+              <p className="text-[10px] text-muted-foreground tracking-wide mt-0.5">{t("points")}</p>
             </div>
             <div className="rounded-lg bg-card border border-border p-3 text-center">
               <p className="font-mono text-2xl font-bold tabular-nums">{standing.wins}</p>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">{t("wins")}</p>
+              <p className="text-[10px] text-muted-foreground tracking-wide mt-0.5">{t("wins")}</p>
             </div>
           </div>
         )}
