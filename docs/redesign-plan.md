@@ -45,6 +45,8 @@ MSHub şu an Tailwind v4 + shadcn'in **kutudan-çıkma nötr gri teması**, **te
 ### Faz 2 — Çekirdek navigasyon + yoğun sayfalar
 Takvim/ana sayfa (CalendarClient), Seri seçici, Seri hub, Favorites, Settings, Login + pending/blocked/force-signout.
 
+**Login/pending/blocked/force-signout — 2026-07-30 karar: değişiklik yok.** Ambient glow + grid mockup'ı sunuldu (auth-shell.html), kullanıcı mevcut düz zeminin kalmasını tercih etti. force-signout zaten anlık redirect, görünürlüğü çok düşük, dokunulmadı.
+
 ### Faz 3 — Seri alt sayfaları
 Schedule, Standings, Drivers + drivers/[id], Teams + teams/[id], Circuits + circuits/[id]. Bileşenler: RaceCard, DriverPhoto, TeamLogo.
 
