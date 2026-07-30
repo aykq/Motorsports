@@ -9,6 +9,7 @@ import { getSeriesConfig } from "@/lib/series-config";
 import { TeamLogo } from "@/components/series/TeamLogo";
 import { DriverPhoto } from "@/components/series/DriverPhoto";
 import { BackButton } from "@/components/layout/BackButton";
+import { SeriesSubNav } from "@/components/series/SeriesSubNav";
 import { cn } from "@/lib/utils";
 import type { Driver } from "@/types/series";
 import type { SeriesConfig } from "@/lib/series-config";
@@ -93,6 +94,8 @@ export function DriversContent({
         <h1 className="font-display text-2xl font-bold tracking-tight leading-tight">{config.name} — {t("title")}</h1>
         <p className="text-xs text-muted-foreground font-mono">{t("count", { count: drivers.length })}</p>
       </div>
+
+      <SeriesSubNav slug={slug} color={config.color} active="drivers" />
 
       {/* Sub-series tabs — instant client-side switch, no navigation */}
       {subSeries.length > 0 && (

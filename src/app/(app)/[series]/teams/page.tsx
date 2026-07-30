@@ -3,6 +3,7 @@ import { getSeriesConfig } from "@/lib/series-config";
 import { BackButton } from "@/components/layout/BackButton";
 import { getF1Team } from "@/lib/f1-teams";
 import { TeamLogo } from "@/components/series/TeamLogo";
+import { SeriesSubNav } from "@/components/series/SeriesSubNav";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
@@ -48,6 +49,8 @@ export default async function TeamsPage({ params }: Props) {
         <h1 className="font-display text-2xl font-bold tracking-tight leading-tight">{config.name} — {t("title")}</h1>
         <p className="text-xs text-muted-foreground font-mono">{t("season", { year })}</p>
       </div>
+
+      <SeriesSubNav slug={slug} color={config.color} active="teams" />
 
       <div className="space-y-2">
         {standings.map((s) => {

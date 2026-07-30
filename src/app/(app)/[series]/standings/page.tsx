@@ -1,6 +1,7 @@
 import { getCachedStandings } from "@/lib/cache";
 import { getSeriesConfig } from "@/lib/series-config";
 import { BackButton } from "@/components/layout/BackButton";
+import { SeriesSubNav } from "@/components/series/SeriesSubNav";
 import { getF1Team, getF1TeamByName } from "@/lib/f1-teams";
 import { getF1DriverImage } from "@/lib/adapters/f1/driver-images";
 import { TeamLogo } from "@/components/series/TeamLogo";
@@ -62,6 +63,8 @@ export default async function StandingsPage({ params, searchParams }: Props) {
         <h1 className="font-display text-2xl font-bold tracking-tight leading-tight">{config.name} — {t("title")}</h1>
         <p className="text-xs text-muted-foreground font-mono">{t("season", { year })}</p>
       </div>
+
+      <SeriesSubNav slug={slug} color={config.color} active="standings" />
 
       {subSeries.length > 0 && (
         <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">

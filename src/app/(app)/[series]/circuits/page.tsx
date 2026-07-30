@@ -1,6 +1,7 @@
 import { getCachedSchedule } from "@/lib/cache";
 import { getSeriesConfig } from "@/lib/series-config";
 import { BackButton } from "@/components/layout/BackButton";
+import { SeriesSubNav } from "@/components/series/SeriesSubNav";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { MapPin } from "lucide-react";
@@ -38,6 +39,8 @@ export default async function CircuitsListPage({ params }: Props) {
         <h1 className="font-display text-2xl font-bold tracking-tight leading-tight">{config.name} — {t("title")}</h1>
         <p className="text-xs text-muted-foreground font-mono">{t("count", { count: circuits.length })}</p>
       </div>
+
+      <SeriesSubNav slug={slug} color={config.color} active="circuits" />
 
       {circuits.length === 0 ? (
         <p className="text-center py-16 text-sm text-muted-foreground">{t("noData")}</p>

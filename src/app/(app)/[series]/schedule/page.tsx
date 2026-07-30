@@ -2,6 +2,7 @@ import { getCachedSchedule } from "@/lib/cache";
 import { getSeriesConfig } from "@/lib/series-config";
 import { RaceTimeline } from "@/components/race/RaceTimeline";
 import { BackButton } from "@/components/layout/BackButton";
+import { SeriesSubNav } from "@/components/series/SeriesSubNav";
 import { notFound } from "next/navigation";
 import { getTranslations, getLocale } from "next-intl/server";
 import type { Metadata } from "next";
@@ -66,6 +67,8 @@ export default async function SchedulePage({ params }: Props) {
         <h1 className="font-display text-2xl font-bold tracking-tight leading-tight">{config.name} — {t("title")}</h1>
         <p className="text-xs text-muted-foreground font-mono">{t("season", { year, count: races.length })}</p>
       </div>
+
+      <SeriesSubNav slug={slug} color={config.color} active="schedule" />
 
       {races.length > 0 ? (
         <RaceTimeline

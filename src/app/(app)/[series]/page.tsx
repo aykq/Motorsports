@@ -3,6 +3,7 @@ import { getSeriesConfig } from "@/lib/series-config";
 import { getF1CircuitCoords, getF1CircuitPhotoUrl } from "@/lib/circuit-data";
 import { getF1Team, getF1TeamByName } from "@/lib/f1-teams";
 import { BackButton } from "@/components/layout/BackButton";
+import { SeriesSubNav } from "@/components/series/SeriesSubNav";
 import { Countdown } from "@/components/race/Countdown";
 import { WeatherChip } from "@/components/race/WeatherChip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -94,6 +95,8 @@ export default async function SeriesPage({ params }: Props) {
           <BackButton fallbackHref="/series" label="" />
           <h1 className="font-display text-2xl font-bold tracking-tight" style={{ color: config.color }}>{config.name}</h1>
         </div>
+
+        <SeriesSubNav slug={slug} color={config.color} active="overview" />
 
         {/* Next race card */}
         {nextRace && (
