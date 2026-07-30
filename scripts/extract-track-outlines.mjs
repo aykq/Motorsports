@@ -18,9 +18,16 @@ function mapUrl(name) {
   return `https://media.formula1.com/image/upload/c_lfill,w_3392/q_auto/v1740000001/content/dam/fom-website/2018-redesign-assets/Circuit%20maps%2016x9/${name}.webp`;
 }
 
-// path "d" string'inden yaklaşık bounding-box köşegenini hesapla (M/L komutlarındaki koordinatlar)
-function pathDiagonal(d) {
-  const nums = d.match(/-?\d+(\.\d+)?/g)?.map(Number) ?? [];
+// bir "d" string'i M komutlarından ayrı alt-path'lere böler (imagetracer bir renk katmanının
+// tüm ayrık şekillerini TEK path'te birleştiriyor — arka plan dikdörtgeni + pist çizgisi + rakamlar
+// hepsi aynı "d" içinde farklı M...Z bloklarında olabiliyor, bunları ayırmadan analiz etmek yanlış)
+function splitSubpaths(d) {
+  const matches = d.match(/M[^M]*/g) ?? [];
+  return matches.map((sub) => sub.trim()).filter(Boolean);
+}
+
+function bbox(subpath) {
+  const nums = subpath.match(/-?\d+(\.\d+)?/g)?.map(Number) ?? [];
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   for (let i = 0; i < nums.length - 1; i += 2) {
     const x = nums[i];
@@ -30,7 +37,7 @@ function pathDiagonal(d) {
     if (y < minY) minY = y;
     if (y > maxY) maxY = y;
   }
-  return Math.hypot(maxX - minX, maxY - minY);
+  return { minX, minY, maxX, maxY, diagonal: Math.hypot(maxX - minX, maxY - minY) };
 }
 
 async function extractOne(circuitId, fileName) {
@@ -45,21 +52,36 @@ async function extractOne(circuitId, fileName) {
     .toBuffer({ resolveWithObject: true });
 
   const imgData = { width: info.width, height: info.height, data: new Uint8ClampedArray(data) };
-  const svgString = ImageTracer.imagedataToSVG(imgData, { ltres: 1, qtres: 1, pathomit: 8, numberofcolors: 4 });
+  const svgString = ImageTracer.imagedataToSVG(imgData, { ltres: 1, qtres: 1, pathomit: 8, numberofcolors: 6 });
 
   const pathMatches = [...svgString.matchAll(/<path[^>]*\sd="([^"]+)"/g)].map((m) => m[1]);
   if (pathMatches.length === 0) throw new Error(`no paths extracted for ${circuitId}`);
 
-  const diagonal = Math.hypot(info.width, info.height);
-  const threshold = diagonal * 0.25;
-  const candidates = pathMatches
-    .map((d) => ({ d, size: pathDiagonal(d) }))
-    .filter((p) => p.size >= threshold)
-    .sort((a, b) => b.size - a.size);
+  // Her renk katmanının "d" string'ini alt-path'lere böl, arka plan çerçevesini (resmin
+  // ~tamamını kaplayan, az köşeli basit dikdörtgen) ele, kalanlar arasında en büyük
+  // bounding-box köşegenine sahip TEK alt-path'i (pist çizgisinin kendisi olmalı) seç.
+  const allSubpaths = pathMatches.flatMap(splitSubpaths);
+  const canvasDiagonal = Math.hypot(info.width, info.height);
 
-  if (candidates.length === 0) throw new Error(`no path passed size threshold for ${circuitId} — needs manual trace`);
+  const candidates = allSubpaths
+    .map((sub) => ({ sub, box: bbox(sub) }))
+    .filter(({ sub, box }) => {
+      const spansFullCanvas =
+        box.maxX - box.minX >= info.width * 0.9 && box.maxY - box.minY >= info.height * 0.9;
+      const pointCount = (sub.match(/-?\d+(\.\d+)?/g) ?? []).length / 2;
+      const isBackgroundFrame = spansFullCanvas && pointCount <= 6;
+      return !isBackgroundFrame && Number.isFinite(box.diagonal);
+    })
+    .sort((a, b) => b.box.diagonal - a.box.diagonal);
 
-  return { viewBox: `0 0 ${info.width} ${info.height}`, path: candidates[0].d };
+  if (candidates.length === 0) throw new Error(`no usable subpath for ${circuitId} — needs manual trace`);
+
+  const threshold = canvasDiagonal * 0.2;
+  if (candidates[0].box.diagonal < threshold) {
+    throw new Error(`best candidate too small for ${circuitId} (${Math.round(candidates[0].box.diagonal)}px < ${Math.round(threshold)}px) — needs manual trace`);
+  }
+
+  return { viewBox: `0 0 ${info.width} ${info.height}`, path: candidates[0].sub };
 }
 
 async function main() {

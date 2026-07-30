@@ -57,6 +57,8 @@ News list + detay, Admin paneli, NotificationSettings, InstallPrompt.
 ### Faz 6 — Backend uyarlaması (tasarım gereksinimlerine göre)
 Her veri-güdümlü bileşen için backend hizalaması: sync adapter'lar / API route'lar / DB şeması, yeni tasarımın ihtiyaç duyduğu alanları (ör. pilot uyruğu/bayrak, ek görsel, sıralama alanları) sağlayacak şekilde güncellenir. [[project-gt3-carrera-datadriven]] notu da bu fazda değerlendirilir. Migration motorsports'un `scripts/migrate.cjs` (drizzle SQL) akışıyla.
 
+**Pist hattı extraction QA notu (2026-07-30):** 24/24 F1 pisti otomatik çıkarıldı (`scripts/extract-track-outlines.mjs`). Görsel QA'da 22'si iyi kalitede; `losail` (Qatar) belirgin şekilde zayıf çıktı (yıldız benzeri, tanınmıyor), `americas` (COTA) orta kalite. İkisi de düşük opaklıkta (0.35) watermark olarak kullanıldığı için şimdilik engel değil, ama ileride `src/lib/track-outlines.generated.ts`'de manuel düzeltme adayı (script'in başındaki "manual override" notuyla işaretlenip elle path güncellenebilir).
+
 **Bekleyen içerik sorunu (2026-07-30 tespit edildi):** `src/lib/circuit-data.ts:9-32`'deki `F1_CIRCUIT_SPECS.drsZones` sabit sayısı ve UI'daki "DRS Zones" etiketi, 2026 sezonunda gelen Active Aero kuralıyla (DRS'in yerini aldı, pilotlar artık neredeyse her yerde kullanabiliyor) kavramsal olarak eskimiş durumda. Bu fazda: ya spec'i 2026 aktif aero kurallarına göre güncelle, ya etiketi/kavramı "Active Aero" olarak yeniden adlandır, ya da anlamını yitirdiği için stat'ı tamamen kaldır. Not: pist fotoğrafları (`getF1CircuitPhotoUrl`) ve F1 resmi CDN pist haritası (`getF1CircuitMapUrl`) bu sorundan etkilenmiyor — ikisi de DRS bölgesi işaretlemesi içermiyor, sadece `drsZones` sayısal alanı etkileniyor.
 
 ### Faz 7 — Responsive QA + cila
