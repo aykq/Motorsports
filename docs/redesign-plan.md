@@ -42,8 +42,10 @@ MSHub şu an Tailwind v4 + shadcn'in **kutudan-çıkma nötr gri teması**, **te
 - UI primitive'leri yeni sisteme göre yeniden kur (button, card, badge, tabs, input, switch, sheet, avatar, separator, skeleton).
 - Uygulama kabuğu: Sidebar (masaüstü) + BottomNav (mobil) + üst bar — tüm kırılımlarda responsive.
 
-### Faz 2 — Çekirdek navigasyon + yoğun sayfalar
+### Faz 2 — Çekirdek navigasyon + yoğun sayfalar ✅ TAMAMLANDI (2026-07-31)
 Takvim/ana sayfa (CalendarClient), Seri seçici, Seri hub, Favorites, Settings, Login + pending/blocked/force-signout.
+
+**Özet:** Seri seçici + Favorites'e `SeriesGlowSurface`/seri rengi tutarlılığı getirildi. Seri hub'a sub-navigasyon (Overview/Schedule/Standings/Drivers/Teams/Circuits pill-tab) eklendi. Settings ve auth sayfaları (login/pending/blocked/force-signout) bilinçli olarak değiştirilmedi (Admin panelindeki "nötr/işlevsel alan" kararıyla tutarlı). Takvim'de yan bulgu: `toTitleCase()` yardımcı fonksiyonu "GT"/"WEC" gibi kısaltmaları "Gt"/"Wec" yapıyordu, acronym allowlist eklenerek düzeltildi (`src/lib/utils.ts`).
 
 **Settings — 2026-07-30 karar: değişiklik yok.** Admin paneliyle aynı gerekçe: nötr/işlevsel alan, seri rengi yok. Zaten kod bu şekilde (Account/Appearance/Notifications, düz `bg-card` kutuları).
 
