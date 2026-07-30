@@ -12,7 +12,8 @@
     "db:studio": "drizzle-kit studio",
     "db:migrate": "drizzle-kit migrate",
     "docker:db": "docker compose --env-file .env.local up -d db",
-    "docker:down": "docker compose --env-file .env.local down"
+    "docker:down": "docker compose --env-file .env.local down",
+    "extract:tracks": "node scripts/extract-track-outlines.mjs"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.2",
@@ -51,6 +52,8 @@
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
+    "imagetracerjs": "^1.2.6",
+    "sharp": "^0.35.3",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
