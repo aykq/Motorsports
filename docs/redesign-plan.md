@@ -47,6 +47,8 @@ Takvim/ana sayfa (CalendarClient), Seri seçici, Seri hub, Favorites, Settings, 
 
 **Login/pending/blocked/force-signout — 2026-07-30 karar: değişiklik yok.** Ambient glow + grid mockup'ı sunuldu (auth-shell.html), kullanıcı mevcut düz zeminin kalmasını tercih etti. force-signout zaten anlık redirect, görünürlüğü çok düşük, dokunulmadı.
 
+**Seri alt-navigasyonu — 2026-07-30 karar:** Hub (`/[series]`) ve 5 alt sayfa (schedule/standings/drivers/teams/circuits) arasında şu an sadece BackButton var — kardeş sayfalar arası geçiş için hub'a dönmek gerekiyor. Karar: kalıcı bir pill-tab segmented nav eklenecek (Overview/Schedule/Standings/Drivers/Teams/Circuits), ikonlu (lucide-react), aktif sekme seri renginde tint. Uygulamanın genelindeki pill/segmented dil ile tutarlı (Standings Drivers/Teams switcher, takvim seri filtre çipleri) — alt-çizgili sekme alternatifi bu yüzden elendi. Yatay scroll, `[series]/page.tsx:184`'teki mevcut ince-scrollbar utility class'ıyla aynı olacak (`[scrollbar-width:thin] [scrollbar-color:theme(colors.border)_transparent] [&::-webkit-scrollbar]:h-1 ...`). Muhtemelen paylaşılan bir `layout.tsx` ile 6 route'a ortak uygulanır. **Henüz koda dökülmedi**, implementasyon Faz 2 planına eklenecek.
+
 ### Faz 3 — Seri alt sayfaları
 Schedule, Standings, Drivers + drivers/[id], Teams + teams/[id], Circuits + circuits/[id]. Bileşenler: RaceCard, DriverPhoto, TeamLogo.
 
