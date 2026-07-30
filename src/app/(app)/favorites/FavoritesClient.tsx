@@ -103,16 +103,28 @@ function SeriesRow({
   removeLabel: string;
 }) {
   return (
-    <Card className={cn("transition-colors", isFav && "border-primary/40 bg-primary/5")}>
+    <Card
+      className="transition-colors"
+      style={
+        isFav
+          ? {
+              background: `linear-gradient(100deg, color-mix(in oklch, ${series.color} 14%, var(--card)), var(--card) 60%)`,
+              borderLeft: `3px solid ${series.color}`,
+            }
+          : undefined
+      }
+    >
       <CardContent className="flex items-center justify-between p-4">
         <Link
           href={`/${series.slug}`}
           className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
         >
-          <div
-            className="w-3 h-3 rounded-full flex-shrink-0"
-            style={{ backgroundColor: series.color }}
-          />
+          {!isFav && (
+            <div
+              className="w-3 h-3 rounded-full flex-shrink-0"
+              style={{ backgroundColor: series.color }}
+            />
+          )}
           <span className="font-medium truncate">{series.name}</span>
           {series.category && (
             <span
