@@ -104,9 +104,11 @@
   "seriesPage": {
     "nextRound": "Sonraki Tur",
     "viewDetails": "Detaylar",
+    "overview": "Genel Bakış",
     "schedule": "Takvim",
     "drivers": "Pilotlar",
     "teams": "Takımlar",
+    "circuits": "Pistler",
     "standings": "Puan Tablosu",
     "viewAll": "Tümünü Gör",
     "noData": "Henüz veri yok.",
