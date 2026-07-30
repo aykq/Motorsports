@@ -25,6 +25,7 @@ export interface SeriesCountdownInfo {
   nextRaceDate: string | null;
   nextRaceName: string | null;
   nextRaceHref: string | null;
+  nextRaceCircuitId: string | null;
   series: SeriesConfig;
 }
 
@@ -363,12 +364,12 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
             if (!sc.nextRaceDate) return null;
             const CardWrapper = sc.nextRaceHref
               ? ({ children }: { children: React.ReactNode }) => (
-                  <SeriesGlowSurface color={sc.color} as="a" href={sc.nextRaceHref!} className="p-4 space-y-3 hover:bg-accent/20 transition-colors cursor-pointer">
+                  <SeriesGlowSurface color={sc.color} circuitId={sc.nextRaceCircuitId ?? undefined} as="a" href={sc.nextRaceHref!} className="p-4 space-y-3 hover:bg-accent/20 transition-colors cursor-pointer">
                     {children}
                   </SeriesGlowSurface>
                 )
               : ({ children }: { children: React.ReactNode }) => (
-                  <SeriesGlowSurface color={sc.color} className="p-4 space-y-3">
+                  <SeriesGlowSurface color={sc.color} circuitId={sc.nextRaceCircuitId ?? undefined} className="p-4 space-y-3">
                     {children}
                   </SeriesGlowSurface>
                 );
@@ -391,6 +392,7 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
       ) : nextRace ? (
         <SeriesGlowSurface
           color={nextRace.seriesColor}
+          circuitId={nextRace.circuitId}
           as="a"
           href={`/${nextRace.seriesSlug}/races/${nextRace.round}`}
           className="group p-6 transition-[border-color] hover:border-border/0"

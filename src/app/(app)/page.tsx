@@ -47,6 +47,7 @@ export default async function CalendarPage() {
       nextRaceDate: next ? getRaceSessionDate(next).toISOString() : null,
       nextRaceName: next?.name ?? null,
       nextRaceHref: next ? `/${series.slug}/races/${next.round}` : null,
+      nextRaceCircuitId: next?.circuitId ?? null,
       series,
     };
   });
