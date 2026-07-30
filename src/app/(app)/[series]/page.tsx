@@ -352,7 +352,10 @@ function StandingsTable({ color, rows }: { color: string; rows: StandingsRow[] }
               "flex items-center px-4 py-3 hover:bg-white/5 transition-colors animate-in fade-in duration-300",
               i < rows.length - 1 ? "border-b border-border" : ""
             )}
-            style={{ animationDelay: `${i * 60}ms` }}
+            style={{
+              animationDelay: `${i * 60}ms`,
+              backgroundColor: s.position === 1 ? `color-mix(in oklch, ${color} 8%, transparent)` : undefined,
+            }}
           >
             <div
               className="w-8 font-mono text-xl font-bold leading-none"
