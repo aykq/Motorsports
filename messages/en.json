@@ -104,9 +104,11 @@
   "seriesPage": {
     "nextRound": "Next Round",
     "viewDetails": "View Details",
+    "overview": "Overview",
     "schedule": "Schedule",
     "drivers": "Drivers",
     "teams": "Teams",
+    "circuits": "Circuits",
     "standings": "Standings",
     "viewAll": "View All",
     "noData": "No data yet.",
