@@ -180,7 +180,7 @@ export default async function RaceDetailPage({ params }: Props) {
       <BackButton fallbackHref={`/${slug}/schedule`} label={t("schedule")} />
 
       {/* ── Livery header ── */}
-      <SeriesGlowSurface color={config.color} className="p-5">
+      <SeriesGlowSurface color={config.color} circuitId={race.circuitId} className="p-5">
         <div className="space-y-2">
           <div className="flex items-center gap-2 flex-wrap">
             <Link
