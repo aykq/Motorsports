@@ -131,8 +131,16 @@ async function scrapeRaceResultsPage(url: string): Promise<RawWECResult[]> {
   }
   const results: RawWECResult[] = [];
   let currentClass = "";
-  let leaderLaps = 0;
 
+  // Not.: motorsport.com'un WEC sonuç tablosunda "Sıra" (position) sütunu
+  // sınıf başına sıfırlanmıyor — Hypercar/LMP2/LMGT3 hepsi tek bir genel
+  // sıralamada (1..N). Bu yüzden tur farkına bakarak DNF tahmini yapmak
+  // (eski kod) yanlıştı: yavaş sınıftaki normal bitiren arabalar genel
+  // lider'e göre çok tur geride kaldığı için hatalı DNF işaretleniyordu.
+  // Gerçek DNF/emekli araçlar ise "Sıra" hücresinde sayı değil literal
+  // "dnf" metni taşıyor — parseInt(NaN) eski kodda satırı komple atlıyordu,
+  // yani gerçek DNF'ler sonuç listesinden tamamen kayboluyordu. Artık DNF
+  // durumu doğrudan bu hücrenin metninden okunuyor, tur-sayısı tahmini yok.
   $("table").first().find("tr").each((_, row) => {
     const $row = $(row);
     const cells = $row.find("td");
@@ -155,10 +163,14 @@ async function scrapeRaceResultsPage(url: string): Promise<RawWECResult[]> {
       }
     });
 
-    // Position must be in first cell
+    // Position must be in first cell — either a classified number, or a
+    // literal DNF/retirement marker (observed: "dnf"; also accept common
+    // variants defensively).
     const posText = $(cells[0]).text().trim();
-    const pos = parseInt(posText);
-    if (isNaN(pos) || pos < 1 || pos > 200) return;
+    const numericPos = parseInt(posText);
+    const isDnfMarker = isNaN(numericPos) && /^(dnf|ret|dsq|nc)$/i.test(posText);
+    if (isNaN(numericPos) && !isDnfMarker) return;
+    if (!isNaN(numericPos) && (numericPos < 1 || numericPos > 200)) return;
 
     // Flexible column parsing based on cell count
     const len = cells.length;
@@ -170,8 +182,6 @@ async function scrapeRaceResultsPage(url: string): Promise<RawWECResult[]> {
     const carModel = $(cells[4]).text().trim().replace(/\s+/g, " ");
     const laps = parseInt($(cells[5]).text().trim()) || 0;
 
-    if (pos === 1) leaderLaps = laps;
-
     const time = len > 6 ? $(cells[6]).text().trim() : "";
     const gapRaw = len > 7 ? $(cells[7]).text().trim() : "";
     const gap = gapRaw && gapRaw !== "0" && gapRaw !== posText ? gapRaw : null;
@@ -181,10 +191,15 @@ async function scrapeRaceResultsPage(url: string): Promise<RawWECResult[]> {
     const lastCellText = $(cells[len - 1]).text().trim();
     const points = parseFloat(lastCellText) || 0;
 
-    const dnf = leaderLaps > 0 && laps < leaderLaps - 5 && pos > 1;
+    // DNF rows have no numeric classification — slot them after the last
+    // classified car in table order (real official classification omits a
+    // position number for unclassified retirees; we still need one for the
+    // data model, so this keeps them trailing without colliding with real
+    // positions already parsed).
+    const position = isDnfMarker ? results.length + 1 : numericPos;
 
     results.push({
-      position: pos,
+      position,
       carNumber,
       carClass: currentClass,
       team,
@@ -195,7 +210,7 @@ async function scrapeRaceResultsPage(url: string): Promise<RawWECResult[]> {
       gap,
       pits,
       points,
-      dnf,
+      dnf: isDnfMarker,
     });
   });
 
