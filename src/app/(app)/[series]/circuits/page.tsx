@@ -61,7 +61,9 @@ export default async function CircuitsListPage({ params }: Props) {
                     {race.location}, {race.country}
                   </p>
                 </div>
-                <span className="font-mono text-xs text-muted-foreground shrink-0">{t("raceNumber", { round: race.round })}</span>
+                {race.round < 900 && (
+                  <span className="font-mono text-xs text-muted-foreground shrink-0">{t("raceNumber", { round: race.round })}</span>
+                )}
               </div>
             </Link>
           ))}

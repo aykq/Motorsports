@@ -123,9 +123,11 @@ function RaceRow({ race, series, isNext, locale, statusLabels }: RaceRowProps) {
     >
       <div className="min-w-0">
         <div className="flex items-baseline gap-1.5 flex-wrap">
-          <span className="text-xs text-muted-foreground font-mono shrink-0">
-            R{race.round}
-          </span>
+          {race.round < 900 && (
+            <span className="text-xs text-muted-foreground font-mono shrink-0">
+              R{race.round}
+            </span>
+          )}
           <span className="text-sm font-semibold leading-tight truncate">
             {toTitleCase(race.name)}
           </span>

@@ -59,7 +59,9 @@ export function RaceCard({ race, series, compact = false }: RaceCardProps) {
             >
               {series.shortName}
             </span>
-            <span className="font-mono text-xs text-muted-foreground">{tRace("round", { round: race.round })}</span>
+            {race.round < 900 && (
+              <span className="font-mono text-xs text-muted-foreground">{tRace("round", { round: race.round })}</span>
+            )}
           </div>
           <Badge
             variant={isLive ? "destructive" : isCompleted ? "secondary" : "outline"}

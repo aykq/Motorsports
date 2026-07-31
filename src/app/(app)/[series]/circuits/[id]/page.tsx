@@ -168,7 +168,9 @@ export default async function CircuitDetailPage({ params }: Props) {
                 <div className="rounded-lg bg-card border border-border p-4 space-y-2 hover:bg-accent/50 transition-colors cursor-pointer">
                   <div className="flex items-center justify-between">
                     <p className="font-semibold text-sm">{race.name}</p>
-                    <Badge variant="outline" className="text-xs">{t("raceNumber", { round: race.round })}</Badge>
+                    {race.round < 900 && (
+                      <Badge variant="outline" className="text-xs">{t("raceNumber", { round: race.round })}</Badge>
+                    )}
                   </div>
                   {raceSession && (
                     <p className="text-xs text-muted-foreground">
@@ -199,7 +201,9 @@ export default async function CircuitDetailPage({ params }: Props) {
                 <div className="rounded-lg bg-card border border-border p-4 space-y-2 hover:bg-accent/50 transition-colors cursor-pointer">
                   <div className="flex items-center justify-between">
                     <p className="font-semibold text-sm">{race.name}</p>
-                    <Badge variant="secondary" className="text-xs">{t("raceNumber", { round: race.round })}</Badge>
+                    {race.round < 900 && (
+                      <Badge variant="secondary" className="text-xs">{t("raceNumber", { round: race.round })}</Badge>
+                    )}
                   </div>
                   {winner && (
                     <p className="text-xs text-muted-foreground">
