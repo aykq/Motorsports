@@ -342,10 +342,10 @@ interface StandingsRow {
 function StandingsTable({ color, rows }: { color: string; rows: StandingsRow[] }) {
   return (
     <div className="bg-card rounded-xl border border-border overflow-hidden">
-        <div className="flex items-center px-4 py-2 border-b border-border font-display text-[10px] text-muted-foreground uppercase tracking-wider">
-          <div className="w-8">POS</div>
-          <div className="flex-1">NAME</div>
-          <div>PTS</div>
+        <div className="flex items-center px-4 py-2 border-b border-border font-display text-[10px] text-muted-foreground tracking-wide">
+          <div className="w-8">Pos</div>
+          <div className="flex-1">Name</div>
+          <div>Pts</div>
         </div>
         {rows.map((s, i) => (
           <Link

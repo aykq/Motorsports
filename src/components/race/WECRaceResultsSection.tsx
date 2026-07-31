@@ -61,7 +61,7 @@ function CarNumber({ num }: { num?: number | string }) {
 function ClassDivider({ label }: { label: string }) {
   return (
     <div className="flex items-center justify-center gap-2 px-3 py-1.5 bg-muted/20 border-y border-border/60">
-      <span className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground">
+      <span className="text-[10px] font-bold tracking-wide text-muted-foreground">
         {label}
       </span>
     </div>
