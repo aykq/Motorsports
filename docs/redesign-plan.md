@@ -77,7 +77,15 @@ xs→2xl tüm kırılımlar, açık+koyu tema, erişilebilirlik (focus, reduced-
 ## Kalite zemini (her fazda)
 Mobile-first responsive (sm/md/lg/xl/2xl), görünür klavye focus'u, `prefers-reduced-motion` saygısı, yeterli kontrast, i18n TR/EN korunur, tema değişiminde bozulma yok.
 
-**Not (2026-07-31, kullanıcı tekrar vurguladı):** Bu madde her sayfa/bileşen için GERÇEKTEN doğrulanmalı — sadece Faz 7'nin sonuna bırakılmayacak. Faz 0-3'te yapılan değişiklikler şu ana kadar ağırlıklı masaüstü genişliğinde (Browser pane default) doğrulandı, mobil genişlikte (375px civarı) sistematik kontrol edilmedi. Faz 3'ün geri kalanına veya Faz 4'e geçmeden önce, bugüne kadar dokunulan sayfalar (SeriesGlowSurface, SeriesSubNav, calendar kartları, favorites, standings/drivers/teams listeleri) mobil genişlikte de gözden geçirilmeli.
+**Not (2026-07-31, kullanıcı 2 kez vurguladı):** Bu madde her sayfa/bileşen için GERÇEKTEN doğrulanmalı — sadece Faz 7'nin sonuna bırakılmayacak. Faz 0-3'te yapılan değişiklikler şu ana kadar ağırlıklı masaüstü genişliğinde (Browser pane default ~800-950px) doğrulandı, diğer kırılımlar sistematik kontrol edilmedi.
+
+**Test edilecek somut kırılım seti:**
+- Mobil: 375px (iPhone SE/mini sınıfı), 390-430px (modern telefon)
+- Tablet: 768px (dikey), 1024px (yatay)
+- Masaüstü: 1280px, 1440px, 1920px
+- Yüksek çözünürlük: 2560px (1440p/QHD), 3840px (4K), 7680px (8K) — bu genişliklerde `max-w-3xl`/`max-w-2xl` gibi container sınırları olan sayfalar büyük olasılıkla sorunsuz (içerik ortada sabit genişlikte kalır), ama sidebar+içerik oranı, arka plan/gradient dolgular, tam-genişlik kullanan öğeler (SeriesGlowSurface, calendar grid) bu genişliklerde ayrıca gözle kontrol edilmeli — çok geniş boş alan veya orantısız büyüme olabilir.
+
+Faz 3'ün geri kalanına veya Faz 4'e geçmeden önce, bugüne kadar dokunulan sayfalar (SeriesGlowSurface, SeriesSubNav, calendar kartları, favorites, standings/drivers/teams listeleri) bu kırılım setinde gözden geçirilmeli.
 
 ## Doğrulama
 Her fazda: build/lint temiz → Playwright ile mobil+masaüstü (+ açık/koyu) ekran görüntüsü → onay → push → CI deploy → canlı kontrol.
