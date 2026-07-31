@@ -96,9 +96,16 @@ self.addEventListener("notificationclick", (event) => {
   const url = event.notification.data?.url ?? "/";
 
   event.waitUntil(
-    clients.matchAll({ type: "window" }).then((windowClients) => {
-      const existing = windowClients.find((c) => c.url === url && "focus" in c);
-      if (existing) return existing.focus();
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((windowClients) => {
+      // Zaten açık bir pencere varsa (hangi sayfada olursa olsun) onu bildirimin
+      // hedef URL'ine yönlendirip öne getir — sadece URL birebir eşleşiyorsa
+      // odaklanmak, uygulama farklı bir sayfada açıkken tıklamayı etkisiz kılıyordu.
+      const existing = windowClients.find((c) => "focus" in c);
+      if (existing) {
+        return ("navigate" in existing ? existing.navigate(url) : Promise.resolve(existing)).then((client) =>
+          (client ?? existing).focus()
+        );
+      }
       return clients.openWindow(url);
     })
   );
