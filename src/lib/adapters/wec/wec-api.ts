@@ -123,7 +123,10 @@ function buildStaticSchedule(season: number): Race[] {
   return calendar.map((r) => {
     const raceMs = new Date(r.date).getTime();
     const durationMatch = r.name.match(/(\d+)\s*hour/i);
-    const liveWindowMs = durationMatch ? (parseInt(durationMatch[1], 10) + 2) * 3_600_000 : 3 * 3_600_000;
+    // Not every WEC round name spells out its duration in hours (e.g. "Qatar 1812 km",
+    // "Lone Star Le Mans") — fall back to 6h (WEC's standard race length) instead of 3h,
+    // which was cutting most non-"X Hours" races over to "completed" while still running.
+    const liveWindowMs = durationMatch ? (parseInt(durationMatch[1], 10) + 2) * 3_600_000 : 6 * 3_600_000;
     const status: RaceStatus = raceMs > now ? "upcoming" : raceMs > now - liveWindowMs ? "live" : "completed";
     const coords = lookupCircuitCoords(r.circuitName);
     return {

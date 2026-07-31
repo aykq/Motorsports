@@ -63,14 +63,20 @@ async function isNotifSent(
   return !!row;
 }
 
+// Atomically claims this notification via the table's unique constraint —
+// returns true only if THIS call actually inserted the row. Call this BEFORE
+// sending the push (not after) so two overlapping cron runs can't both pass
+// the earlier isNotifSent() read and both send a duplicate push.
 async function markNotifSent(
   seriesSlug: string, season: number, round: number,
   sessionType: string, notifType: string
-): Promise<void> {
-  await db
+): Promise<boolean> {
+  const inserted = await db
     .insert(sentNotifications)
     .values({ seriesSlug, season, round, sessionType, notifType })
-    .onConflictDoNothing();
+    .onConflictDoNothing()
+    .returning({ id: sentNotifications.id });
+  return inserted.length > 0;
 }
 
 export interface NotifySessionsResult {
@@ -113,12 +119,14 @@ export async function notifySessions(): Promise<NotifySessionsResult> {
             notifType === "pre_15m" ? `${icon} ${label} 15 dakika sonra başlıyor` :
                                       `${icon} ${label} başladı!`;
 
+          const claimed = await markNotifSent(row.seriesSlug, row.season, race.round, session.type, notifType);
+          if (!claimed) continue; // another concurrent run already sent this
+
           await sendPushToSubscribers(row.seriesSlug, session.type, {
             title,
             body: `${seriesName} · ${race.name} — ${race.circuitName}`,
             url: `/${row.seriesSlug}`,
           });
-          await markNotifSent(row.seriesSlug, row.season, race.round, session.type, notifType);
           sent.push(`${tag} ${notifType}`);
         } catch (err) {
           errors.push(`${tag} ${notifType}: ${err}`);
@@ -151,7 +159,7 @@ export async function notifySessions(): Promise<NotifySessionsResult> {
               const m = race.name.match(/(\d+)\s*hour/i);
               const liveWindowMs = m
                 ? (parseInt(m[1], 10) + 2) * 60 * 60 * 1000
-                : /endurance/i.test(race.name) ? 5 * 60 * 60 * 1000 : 3 * 60 * 60 * 1000;
+                : /endurance/i.test(race.name) || /le mans/i.test(race.name) ? 5 * 60 * 60 * 1000 : 3 * 60 * 60 * 1000;
               resultsReady = elapsed > liveWindowMs;
             }
           } else {
@@ -164,12 +172,14 @@ export async function notifySessions(): Promise<NotifySessionsResult> {
 
         if (!resultsReady) continue;
 
+        const claimed = await markNotifSent(row.seriesSlug, row.season, race.round, session.type, "results");
+        if (!claimed) continue; // another concurrent run already sent this
+
         await sendPushToSubscribers(row.seriesSlug, session.type, {
           title: `${icon} ${label} Sonuçları Açıklandı`,
           body: `${seriesName} · ${race.name} — ${race.circuitName}`,
           url: `/${row.seriesSlug}/races/${race.round}`,
         });
-        await markNotifSent(row.seriesSlug, row.season, race.round, session.type, "results");
         sent.push(`${tag} results`);
       } catch (err) {
         errors.push(`${tag} results: ${err}`);
