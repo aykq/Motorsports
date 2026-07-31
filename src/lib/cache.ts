@@ -39,7 +39,7 @@ function raceLiveWindowMs(raceName: string): number {
     const hours = parseInt(hoursMatch[1], 10);
     return (hours + 2) * 60 * 60 * 1000;
   }
-  if (/endurance/i.test(raceName)) {
+  if (/endurance/i.test(raceName) || /le mans/i.test(raceName)) {
     return 5 * 60 * 60 * 1000;
   }
   return DEFAULT_LIVE_WINDOW_MS;
