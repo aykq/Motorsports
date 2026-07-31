@@ -1,4 +1,4 @@
-const CACHE_NAME = "motorsports-hub-v1";
+const CACHE_NAME = "motorsports-hub-v2";
 const STATIC_ASSETS = ["/", "/manifest.json"];
 
 // Kurulum: statik varlıkları cache'le
@@ -34,6 +34,23 @@ self.addEventListener("fetch", (event) => {
   // Next.js dahili istekler — image optimizer, static chunk'lar
   if (request.url.includes("/_next/")) return;
 
+  // Next.js RSC (React Server Component) navigasyon istekleri — tam sayfa
+  // HTML'i değil, kısmi render payload'ını taşır. Bunları normal sayfa
+  // navigasyonuyla aynı URL altında cache'lersek, geri gitme/bfcache-miss
+  // sonrası tam sayfa yüklemesi bozuk (RSC payload) içerik alabilir ve
+  // uygulama beklenmedik şekilde ana sayfaya düşebilir. SW'ya bırakma.
+  if (
+    request.headers.get("RSC") === "1" ||
+    request.headers.get("Next-Router-State-Tree") ||
+    request.headers.get("Next-Router-Prefetch")
+  ) {
+    return;
+  }
+
+  // Sadece tam sayfa navigasyonlarını (adres çubuğu/geri-ileri/link tıklama)
+  // cache'le — diğer fetch/XHR istekleri (veri, prefetch vb.) SW dışında kalsın.
+  if (request.mode !== "navigate" && request.destination !== "document") return;
+
   event.respondWith(
     fetch(request)
       .then((response) => {
@@ -43,7 +60,7 @@ self.addEventListener("fetch", (event) => {
         }
         return response;
       })
-      .catch(() => caches.match(request))
+      .catch(() => caches.match(request).then((cached) => cached ?? caches.match("/")))
   );
 });
 
