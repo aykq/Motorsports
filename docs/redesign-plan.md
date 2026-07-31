@@ -77,5 +77,7 @@ xs→2xl tüm kırılımlar, açık+koyu tema, erişilebilirlik (focus, reduced-
 ## Kalite zemini (her fazda)
 Mobile-first responsive (sm/md/lg/xl/2xl), görünür klavye focus'u, `prefers-reduced-motion` saygısı, yeterli kontrast, i18n TR/EN korunur, tema değişiminde bozulma yok.
 
+**Not (2026-07-31, kullanıcı tekrar vurguladı):** Bu madde her sayfa/bileşen için GERÇEKTEN doğrulanmalı — sadece Faz 7'nin sonuna bırakılmayacak. Faz 0-3'te yapılan değişiklikler şu ana kadar ağırlıklı masaüstü genişliğinde (Browser pane default) doğrulandı, mobil genişlikte (375px civarı) sistematik kontrol edilmedi. Faz 3'ün geri kalanına veya Faz 4'e geçmeden önce, bugüne kadar dokunulan sayfalar (SeriesGlowSurface, SeriesSubNav, calendar kartları, favorites, standings/drivers/teams listeleri) mobil genişlikte de gözden geçirilmeli.
+
 ## Doğrulama
 Her fazda: build/lint temiz → Playwright ile mobil+masaüstü (+ açık/koyu) ekran görüntüsü → onay → push → CI deploy → canlı kontrol.
