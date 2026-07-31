@@ -394,7 +394,7 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
                     />
                   )}
 
-                  <p className="text-[10px] text-muted-foreground uppercase">
+                  <p className="text-[10px] text-muted-foreground">
                     {new Date(`${day.date}T12:00:00`).toLocaleDateString(locale, {
                       weekday: "short",
                       day: "numeric",

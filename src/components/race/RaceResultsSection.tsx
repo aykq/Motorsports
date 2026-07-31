@@ -221,7 +221,7 @@ export function RaceResultsSection({
 
         <div className="rounded-lg border border-border overflow-hidden">
           {/* Header row */}
-          <div className="grid grid-cols-[2rem_1rem_1fr_2.5rem_6rem] font-display text-[11px] font-semibold uppercase tracking-wider text-muted-foreground px-3 py-2 border-b border-border bg-muted/30 gap-2">
+          <div className="grid grid-cols-[2rem_1rem_1fr_2.5rem_6rem] font-display text-[11px] font-semibold tracking-wide text-muted-foreground px-3 py-2 border-b border-border bg-muted/30 gap-2">
             <span className="text-center">{labels.colPos}</span>
             <span />
             <span className="ml-1">{labels.colDriverTeam}</span>
