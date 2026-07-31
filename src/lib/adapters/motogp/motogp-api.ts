@@ -169,11 +169,11 @@ async function fetchEventSessionTimes(eventUuid: string, categoryUuid: string): 
       } else if (type === "WUP") {
         times.practice3 = s.date;
       } else if (type === "FP") {
-        if (!times.practice1) times.practice1 = s.date;
-        else if (!times.practice2) times.practice2 = s.date;
-      } else if (type === "PR") {
-        if (!times.practice2) times.practice2 = s.date;
+        if (s.number === 1) times.practice1 ??= s.date;
         else if (!times.practice1) times.practice1 = s.date;
+        // number === 2 (Saturday FP2) intentionally dropped — PR outranks it for practice2.
+      } else if (type === "PR") {
+        times.practice2 ??= s.date;
       }
     }
   } catch { /* session fetch failed — caller uses defaults */ }
