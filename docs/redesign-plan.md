@@ -87,5 +87,7 @@ Mobile-first responsive (sm/md/lg/xl/2xl), görünür klavye focus'u, `prefers-r
 
 Faz 3'ün geri kalanına veya Faz 4'e geçmeden önce, bugüne kadar dokunulan sayfalar (SeriesGlowSurface, SeriesSubNav, calendar kartları, favorites, standings/drivers/teams listeleri) bu kırılım setinde gözden geçirilmeli.
 
+**Doğrulama (2026-07-31 tamamlandı):** 375/768/1024/1440/3840/7680px genişliklerinde, 8+ sayfada (takvim, series, favorites, seri hub, standings, drivers, teams, race detay, admin) DOM-tabanlı yatay-taşma (`document.body.scrollWidth - viewportWidth`) kontrolü yapıldı — tamamı `overflow: 0`. Sidebar↔BottomNav geçişi 768px'de (`md` breakpoint) temiz, çakışma yok. Yüksek çözünürlükte (4K/8K) içerik `max-w-3xl` ile okunur genişlikte kalıyor, kalan alan koyu arka planla doluyor (jarring boşluk yok). Ekran görüntüsü alınamadığı için görsel kontrol DOM ölçümleriyle yapıldı — pixel-seviye bir görsel QA (Playwright screenshot) ileride hâlâ faydalı olabilir ama şu an bilinen bir kırılma yok.
+
 ## Doğrulama
 Her fazda: build/lint temiz → Playwright ile mobil+masaüstü (+ açık/koyu) ekran görüntüsü → onay → push → CI deploy → canlı kontrol.
