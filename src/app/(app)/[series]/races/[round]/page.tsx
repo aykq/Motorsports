@@ -190,7 +190,9 @@ export default async function RaceDetailPage({ params }: Props) {
             >
               {config.shortName}
             </Link>
-            <span className="font-mono text-xs text-muted-foreground">{t("round", { round: race.round })}</span>
+            {race.round < 900 && (
+              <span className="font-mono text-xs text-muted-foreground">{t("round", { round: race.round })}</span>
+            )}
             <Badge
               variant={isLive ? "destructive" : isCompleted ? "secondary" : "outline"}
               className={cn("font-display uppercase tracking-wider text-[11px]", isLive && "animate-pulse")}
