@@ -152,7 +152,7 @@ async function scrapeCarreraSchedule(season: number): Promise<Race[]> {
   // HTML table / list fallback
   const events: Race[] = [];
   $("[class*='race'], [class*='event'], [class*='round'], article, .result-item").each(
-    (i, el) => {
+    (_i, el) => {
       const text = $(el).text().trim();
       if (text.length < 3) return;
       const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
@@ -160,11 +160,14 @@ async function scrapeCarreraSchedule(season: number): Promise<Race[]> {
       const dateText = lines.find((l) => /\d{2}\.\d{2}\.\d{4}/.test(l)) ?? "";
       let dateStr = `${season}-01-01`;
       if (dateText) {
-        const [d, m, y] = dateText.match(/\d{2}/g) ?? [];
-        if (d && m && y) dateStr = `20${y}-${m}-${d}`;
+        const match = dateText.match(/(\d{2})\.(\d{2})\.(\d{4})/);
+        if (match) {
+          const [, d, m, y] = match;
+          dateStr = `${y}-${m}-${d}`;
+        }
       }
       events.push({
-        round: i + 1,
+        round: events.length + 1,
         name: `Carrera Cup Deutschland - ${name}`,
         circuitId: slugify(name),
         circuitName: name,

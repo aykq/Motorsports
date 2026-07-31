@@ -60,7 +60,17 @@ self.addEventListener("fetch", (event) => {
         }
         return response;
       })
-      .catch(() => caches.match(request).then((cached) => cached ?? caches.match("/")))
+      .catch(async () => {
+        // Bu URL daha önce başarıyla ziyaret edilip cache'lenmişse onu göster.
+        const cached = await caches.match(request);
+        if (cached) return cached;
+        // Hiç cache'lenmemiş bir sayfaya (örn. mobilde arka-ileri sonrası
+        // bfcache kaçırılıp tam sayfa yenilemesi tetiklenmişse) geçici bir ağ
+        // sorunuyla ulaşılamadıysa, sessizce ana sayfaya ("/") düşme — kullanıcı
+        // nereden geldiğini kaybeder. Tarayıcının kendi "bağlantı yok" hata
+        // sayfasını göstermesine izin ver (yeniden dene butonuyla).
+        throw new Error("network-and-cache-miss");
+      })
   );
 });
 

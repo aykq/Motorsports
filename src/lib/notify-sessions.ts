@@ -5,6 +5,7 @@ import { sendPushToSubscribers } from "@/lib/push";
 import { openf1IsF1SessionFinished } from "@/lib/adapters/f1/openf1";
 import { isMScomF1RaceFinished } from "@/lib/adapters/f1/motorsport-com-scraper";
 import { getSeriesConfig } from "@/lib/series-config";
+import { recomputeRaceStatus } from "@/lib/cache";
 import type { Race } from "@/types/series";
 
 const STATUS_DRIVEN_SERIES = new Set(["motogp", "moto2", "moto3", "wec"]);
@@ -91,7 +92,7 @@ export async function notifySessions(): Promise<NotifySessionsResult> {
   const allRaces = await db.query.cachedRaces.findMany();
 
   for (const row of allRaces) {
-    const race = row.data as Race;
+    const race = recomputeRaceStatus(row.data as Race, row.seriesSlug);
 
     for (const session of (race.sessions ?? [])) {
       const sessionTime = new Date(session.date).getTime();

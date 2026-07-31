@@ -38,9 +38,9 @@ function computeStatus(raceDate: string): RaceStatus {
   const now = Date.now();
   const race = new Date(raceDate).getTime();
   const twoHours = 2 * 60 * 60 * 1000;
+  if (race > now) return "upcoming";
   if (race < now - twoHours) return "completed";
-  if (race <= now + twoHours) return "live";
-  return "upcoming";
+  return "live";
 }
 
 // ─── Circuit coordinates ──────────────────────────────────────────────────────

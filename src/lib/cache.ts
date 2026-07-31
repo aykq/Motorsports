@@ -45,7 +45,7 @@ function raceLiveWindowMs(raceName: string): number {
   return DEFAULT_LIVE_WINDOW_MS;
 }
 
-function recomputeRaceStatus(race: Race, seriesSlug?: string): Race {
+export function recomputeRaceStatus(race: Race, seriesSlug?: string): Race {
   if (race.status === "cancelled") {
     // Round 900+ → manuel iptal override (Bahrain, Suudi vb.), dokunma
     if (race.round >= 900) return race;

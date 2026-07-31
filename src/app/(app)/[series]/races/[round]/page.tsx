@@ -268,7 +268,7 @@ export default async function RaceDetailPage({ params }: Props) {
         </h2>
         <div className="overflow-x-auto -mx-4 px-4 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
           <div className="flex gap-2 pb-1">
-            {race.sessions.map((session) => {
+            {[...race.sessions].sort((a, b) => +new Date(a.date) - +new Date(b.date)).map((session) => {
               const { date, time, dayName } = formatDateTime(session.date);
               const isPast = new Date(session.date) < now;
               const isRaceSession = session.type === "race";
