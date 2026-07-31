@@ -46,15 +46,7 @@ function raceLiveWindowMs(raceName: string): number {
 }
 
 export function recomputeRaceStatus(race: Race, seriesSlug?: string): Race {
-  if (race.status === "cancelled") {
-    // Round 900+ → manuel iptal override (Bahrain, Suudi vb.), dokunma
-    if (race.round >= 900) return race;
-    // Normal round ama eski bir yarış → muhtemelen API hatası "cancelled" yazdı
-    // 1 haftadan yakın geçmişe güvenelim, eskileri zaman bazlı türetelim
-    const raceMs = new Date(race.sessions.find((s) => s.type === "race")?.date ?? race.date).getTime();
-    if (raceMs > Date.now() - 7 * 24 * 60 * 60 * 1000) return race; // son 7 gün → trust
-    // 7 günden eski "cancelled" normal yarış → zaman bazlı yeniden türet
-  }
+  if (race.status === "cancelled") return race;
   // Sonuçlar geldiyse kesin "completed" — saat penceresini geçersiz kıl
   if (race.results && race.results.length > 0) {
     return { ...race, status: "completed" };
