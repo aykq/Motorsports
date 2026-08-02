@@ -50,10 +50,17 @@ Tüm `/api/cron/*` route'ları `x-cron-secret` header'ı ister
 
 ## Haber çekimi
 
-`docker-compose.yml` içindeki `cron` servisi, 3 saatte bir
-`/api/cron/news`'e POST atar (`0 */3 * * *`). Haberlerin "otomatik güncellenmiyor"
-gibi görünmesinin sebebi budur: veri geliyor ama en fazla 3 saat gecikmeyle.
-Sıklığı artırmak için `docker-compose.yml`'deki cron ifadesi değiştirilir.
+`docker-compose.yml` içindeki `cron` servisi `/api/cron/news`'e POST atar.
+2026-08-03'te periyot 3 saatten (`0 */3 * * *`) **saatte bire** (`25 * * * *`)
+indirildi — haberlerin "otomatik güncellenmiyor" gibi görünmesinin sebebi bu
+gecikmeydi.
+
+Dakika olarak `:25` seçildi çünkü diğer işlerle çakışmıyor: notify `:x1`,
+status-refresh `:x3`, session-sync çift dakikalar, post-race sync `:15`/`:45`,
+tam sync `:00`, race-details `:20`.
+
+> Bu değişiklik deploy'da `cron` container'ının yeniden yaratılmasını gerektirir
+> (`docker compose up -d`), CI/CD zaten bunu yapıyor.
 
 ## Neden bu kadar dağınık?
 
