@@ -213,12 +213,12 @@ export default async function DriverDetailPage({ params }: Props) {
                     ) : (
                       <div className="flex items-center gap-2 shrink-0">
                         {(result.gap ?? result.time) && (
-                          <span className="text-xs text-white">
+                          <span className="text-xs text-foreground">
                             {result.gap ?? result.time}
                           </span>
                         )}
                         {result.points > 0 && (
-                          <span className="text-xs font-bold text-white">
+                          <span className="text-xs font-bold text-foreground">
                             +{result.points}p
                           </span>
                         )}

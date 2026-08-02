@@ -150,6 +150,7 @@ export interface QualifyingDriverResult {
 export interface PracticeDriverResult {
   position: number;
   driverNumber?: number;
+  driverId?: string;
   driverName: string;
   driverCode?: string;
   team?: string;

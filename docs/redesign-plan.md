@@ -56,8 +56,21 @@ Takvim/ana sayfa (CalendarClient), Seri seçici, Seri hub, Favorites, Settings, 
 ### Faz 3 — Seri alt sayfaları
 Schedule, Standings, Drivers + drivers/[id], Teams + teams/[id], Circuits + circuits/[id]. Bileşenler: RaceCard, DriverPhoto, TeamLogo.
 
+**Durum (2026-07-31, kısmen tarandı):** Liste + detay sayfaları (driver/[id], team/[id], circuit/[id]) zaten büyük ölçüde tasarım diliyle tutarlı bulundu (takım rengi hero, stat kartları, sonuç listeleri) — büyük bir redesign işi gerekmedi. DOM-tabanlı bir tarama ile (computed `text-transform:uppercase` kontrolü) CSS class grep'lerinin kaçırdığı 4 uppercase varyantı bulunup düzeltildi. Circuits listesi, Teams listesi, Standings tam sayfa, driver/team detay taranmış, temiz. **Devam edecek:** circuits detay + drivers/teams detay daha kapsamlı bakılabilir, sonra Faz 4-7'ye geçilebilir. Ayrıca not: TeamLogo bileşeni düşük çözünürlüklü görünüyor (henüz ele alınmadı, bkz. Task #15).
+
 ### Faz 4 — Yarış hafta sonu (en karmaşık)
 `races/[round]` + tüm race bileşenleri: Results/WEC/Qualifying/Practice, SessionTabs, TireStints, RaceControlSection, RaceTimeline, RaceWeatherSection, WeatherChip, Countdown, Circuit foto/layout.
+
+**1. tur (2026-08-01) tamamlandı — Explore agent taraması + 7 bulgu, hepsi işlendi:**
+1. `RaceWeatherSection`'da açık temada görünmez metin/skeleton (`text-white`/`bg-white/8`, `bg-card` üzerinde) → theme-aware token'lara geçirildi.
+2. races/[round] hero'su (`SeriesGlowSurface`, 110° gradient+streak) driver/team/circuit'in 135° gradient+köşe-glow formülünden farklıydı → races/[round] o formüle çevrildi (kullanıcı kararı: "hangisi göze daha çok hitap edecekse"). `SeriesGlowSurface` kart-grid'lerde (`/series`, takvim kartları) kalmaya devam ediyor — bilinçli ayrım: küçük kartlarda streak, büyük sayfa hero'larında sade gradient.
+3. `RaceControlSection`/`RaceWeatherSection` section header'larında `font-display` eksikti → eklendi.
+4. `WECRaceResultsSection`'da hardcoded TR fallback string (`"5 daha göster"` vb.) → `labels.loadMore`/`viewAll` tipte zorunlu yapıldı, fallback kaldırıldı.
+5. `RaceControlSection` dil seçimini `navigator.language`'dan yapıyordu → `useLocale()`'a geçirildi (TR arayüz + EN tarayıcı tutarsızlığı giderildi).
+6. `RaceResultsSection` ile `WECRaceResultsSection` arasında pozisyon rozeti/sıralama/puan tipografisi tutarsızdı → WEC'in `PositionBadge`'i F1'in daireli-arka-planlı formülüne çevrildi, `tabular-nums` her iki bileşende de standart hale getirildi.
+7. Mobil taşma şüphesi (`TireStints` `w-28`, `RaceResultsSection` `grid-cols-2`) → 375px'te ölçülüp doğrulandı, **yanlış pozitif** çıktı (truncate/min-width zaten düzgün çalışıyor), değişiklik yapılmadı.
+
+**Sırada:** Faz 4'ün geri kalanı (SessionTabs, QualifyingSection, PracticeSection, Countdown, WeatherChip, CircuitHeroPhoto/CircuitLayoutImage henüz ayrıca taranmadı) veya Faz 5-7'ye geçiş.
 
 ### Faz 5 — Haberler + Admin + PWA
 News list + detay, Admin paneli, NotificationSettings, InstallPrompt.

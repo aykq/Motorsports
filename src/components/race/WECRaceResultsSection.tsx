@@ -16,8 +16,8 @@ interface Props {
     championship: string;
     driverChampionship: string;
     teamChampionship: string;
-    loadMore?: string;
-    viewAll?: string;
+    loadMore: string;
+    viewAll: string;
   };
 }
 
@@ -35,17 +35,17 @@ function slugify(s: string): string {
 
 function PositionBadge({ pos }: { pos: number }) {
   return (
-    <span
+    <div
       className={cn(
-        "w-6 text-center font-mono font-bold tabular-nums shrink-0 text-base",
-        pos === 1 && "text-yellow-500",
-        pos === 2 && "text-zinc-400",
-        pos === 3 && "text-amber-600",
+        "w-6 h-6 rounded-full flex items-center justify-center font-mono text-xs font-bold tabular-nums shrink-0",
+        pos === 1 && "bg-yellow-500/15 text-yellow-500",
+        pos === 2 && "bg-zinc-500/15 text-zinc-400",
+        pos === 3 && "bg-amber-700/15 text-amber-600",
         pos > 3 && "text-muted-foreground"
       )}
     >
       {pos}
-    </span>
+    </div>
   );
 }
 
@@ -78,7 +78,7 @@ function StandingRow({ standing, rank }: { standing: Standing; rank: number }) {
     <div className="flex items-center gap-3 px-3 py-2 text-xs border-b border-border last:border-0">
       <span
         className={cn(
-          "w-5 text-center font-bold shrink-0",
+          "w-5 text-right font-mono font-bold tabular-nums shrink-0",
           rank === 1 && "text-yellow-500",
           rank === 2 && "text-zinc-400",
           rank === 3 && "text-amber-600",
@@ -91,7 +91,7 @@ function StandingRow({ standing, rank }: { standing: Standing; rank: number }) {
         <p className="font-medium truncate">{name}</p>
         {sub && <p className="text-muted-foreground truncate">{sub}</p>}
       </div>
-      <span className="font-bold shrink-0">{standing.points}</span>
+      <span className="font-display font-bold shrink-0">{standing.points}</span>
     </div>
   );
 }
@@ -220,8 +220,8 @@ export function WECRaceResultsSection({
 
   const hasClasses = grouped.size > 1 || (grouped.size === 1 && [...grouped.keys()][0] !== "");
   const sortedClasses = [...grouped.keys()].sort((a, b) => classOrder(a) - classOrder(b));
-  const loadMoreLabel = labels.loadMore ?? "5 daha göster";
-  const viewAllLabel = labels.viewAll ?? "Tümünü gör";
+  const loadMoreLabel = labels.loadMore;
+  const viewAllLabel = labels.viewAll;
 
   return (
     <div className="space-y-6">

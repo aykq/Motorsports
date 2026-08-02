@@ -1,4 +1,4 @@
-import type { Race, RaceDetail } from "@/types/series";
+import type { Race, RaceDetail, RaceResult, PracticeDriverResult } from "@/types/series";
 import { getCachedRaceDetail, getRaceDetailRaw, setCachedRaceDetail } from "@/lib/cache";
 import {
   jolpicaFetchPitStops,
@@ -41,6 +41,24 @@ const EMPTY_DETAIL: RaceDetail = {
   practice3Results: [],
 };
 
+function buildNumberToDriverIdMap(sources: RaceResult[]): Map<number, string> {
+  const map = new Map<number, string>();
+  for (const r of sources) {
+    if (r.driverNumber != null) map.set(r.driverNumber, r.driverId);
+  }
+  return map;
+}
+
+function attachDriverIds(
+  results: PracticeDriverResult[],
+  numberToDriverId: Map<number, string>
+): PracticeDriverResult[] {
+  return results.map((r) => ({
+    ...r,
+    driverId: r.driverNumber != null ? numberToDriverId.get(r.driverNumber) : undefined,
+  }));
+}
+
 export function isActiveRaceWeekend(race: Race): boolean {
   const now = Date.now();
   const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
@@ -73,13 +91,25 @@ export async function getRaceDetail(
   // Sprint hafta sonu ama sprintComplete yoksa → sprint sonuçları hiç çekilmemiş → re-fetch
   const hasSprintSession = race.sessions.some((s) => s.type === "sprint");
   const missingSprintResults = isCompleted && slug === "f1" && hasSprintSession && cached !== null && !cached.sprintComplete;
+  // Yarışta olan bir practice session'ın sonucu boşsa → hiç çekilmemiş → re-fetch
+  const missingPracticeData =
+    isCompleted &&
+    slug === "f1" &&
+    cached !== null &&
+    race.sessions.some(
+      (s) =>
+        (s.type === "practice1" && (cached.practice1Results ?? []).length === 0) ||
+        (s.type === "practice2" && (cached.practice2Results ?? []).length === 0) ||
+        (s.type === "practice3" && (cached.practice3Results ?? []).length === 0)
+    );
   const cacheValid =
     cached !== null &&
     cached.qualifyingResults !== undefined &&
     (!isCompleted || cached.raceControlFetched === true) &&
     !recentCompletedWithoutEvents &&
     !missingStintsData &&
-    !missingSprintResults;
+    !missingSprintResults &&
+    !missingPracticeData;
   if (cacheValid) return cached;
 
   if (slug !== "f1") return EMPTY_DETAIL;
@@ -163,9 +193,20 @@ export async function syncRaceDetails(
       // Fetch existing raw detail upfront — used for translation check and preserving completion flags
       const rawDetail = await getRaceDetailRaw(slug, season, race.round);
 
+      // Yarışta olan bir practice session'ın sonucu boşsa → hiç çekilmemiş → tam yenilemeye düş
+      const missingPracticeData =
+        isCompleted &&
+        rawDetail !== null &&
+        race.sessions.some(
+          (s) =>
+            (s.type === "practice1" && (rawDetail.practice1Results ?? []).length === 0) ||
+            (s.type === "practice2" && (rawDetail.practice2Results ?? []).length === 0) ||
+            (s.type === "practice3" && (rawDetail.practice3Results ?? []).length === 0)
+        );
+
       // Tamamlanmış yarış ve zaten tam veri varsa → sadece çeviri kontrol et (API fetch yapma)
       if (isCompleted) {
-        if (rawDetail?.raceControlFetched === true && rawDetail.raceControl.length > 0) {
+        if (rawDetail?.raceControlFetched === true && rawDetail.raceControl.length > 0 && !missingPracticeData) {
           const needsTr =
             rawDetail.raceControl.length > 0 &&
             (!rawDetail.raceControlTr?.length ||
@@ -257,6 +298,11 @@ export async function syncActiveSessionData(
 
   if (!activeSessions.length) return;
 
+  const numberToDriverId = buildNumberToDriverIdMap([
+    ...(race.results ?? []),
+    ...(existing.sprintResults ?? []),
+  ]);
+
   const of1Types = new Set(["practice1", "practice2", "practice3", "race", "sprint"]);
   const of1Sessions = activeSessions.filter((s) => of1Types.has(s.type));
   const sessionKeyMap =
@@ -274,7 +320,7 @@ export async function syncActiveSessionData(
         const sessionKey = sessionKeyMap.get(type);
         if (!sessionKey) continue;
 
-        const results = await fetchOpenF1PracticeResults(sessionKey);
+        const results = attachDriverIds(await fetchOpenF1PracticeResults(sessionKey), numberToDriverId);
         if (type === "practice1") { updated.practice1Results = results; if (results.length >= 15) updated.practice1Complete = true; }
         if (type === "practice2") { updated.practice2Results = results; if (results.length >= 15) updated.practice2Complete = true; }
         if (type === "practice3") { updated.practice3Results = results; if (results.length >= 15) updated.practice3Complete = true; }
@@ -470,6 +516,12 @@ async function fetchF1RaceDetail(
     qualifyingResult.status === "fulfilled" ? qualifyingResult.value : [];
   const q3Count = qualifyingResults.filter((r) => r.q3).length;
 
+  const sprintResultsForMap = sprintResult.status === "fulfilled" ? sprintResult.value : [];
+  const numberToDriverId = buildNumberToDriverIdMap([
+    ...(race.results ?? []),
+    ...sprintResultsForMap,
+  ]);
+
   return {
     pitStops: enrichedPitStops,
     tireStints: stintsResult.status === "fulfilled" ? stintsResult.value : [],
@@ -485,9 +537,9 @@ async function fetchF1RaceDetail(
       sprintResult.status === "fulfilled" ? sprintResult.value : [],
     sprintComplete:
       sprintResult.status === "fulfilled" && sprintResult.value.length >= 18 ? true : undefined,
-    practice1Results: fp1Result.status === "fulfilled" ? fp1Result.value : [],
-    practice2Results: fp2Result.status === "fulfilled" ? fp2Result.value : [],
-    practice3Results: fp3Result.status === "fulfilled" ? fp3Result.value : [],
+    practice1Results: attachDriverIds(fp1Result.status === "fulfilled" ? fp1Result.value : [], numberToDriverId),
+    practice2Results: attachDriverIds(fp2Result.status === "fulfilled" ? fp2Result.value : [], numberToDriverId),
+    practice3Results: attachDriverIds(fp3Result.status === "fulfilled" ? fp3Result.value : [], numberToDriverId),
     raceControlFetched: isCompleted,
     stintsFetched: isCompleted,
   };

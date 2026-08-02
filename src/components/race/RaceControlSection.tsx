@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Languages } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import type { RaceControlEvent } from "@/types/series";
 
 interface Props {
@@ -13,17 +13,13 @@ interface Props {
 
 export function RaceControlSection({ events, eventsTr }: Props) {
   const t = useTranslations("racePage");
-  const [lang, setLang] = useState<"en" | "tr">("en");
-
-  useEffect(() => {
-    const browserLang = navigator.language.toLowerCase();
-    if (browserLang.startsWith("tr")) setLang("tr");
-  }, []);
+  const locale = useLocale();
+  const [lang, setLang] = useState<"en" | "tr">(locale === "tr" ? "tr" : "en");
 
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <h2 className="text-xs font-semibold text-muted-foreground tracking-wide">
+        <h2 className="font-display text-xs font-semibold text-muted-foreground tracking-wide">
           {t("raceEvents")}
         </h2>
         <div className="flex items-center gap-1 rounded-full border border-border p-0.5">
