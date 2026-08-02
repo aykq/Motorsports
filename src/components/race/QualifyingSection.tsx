@@ -21,7 +21,7 @@ function SegmentHeader({ label, accent }: { label: string; accent?: "gold" }) {
       "flex items-center px-3 py-1.5 border-b border-border",
       accent === "gold" ? "bg-yellow-500/5" : "bg-muted/30"
     )}>
-      <span className="text-[10px] font-semibold text-muted-foreground tracking-wide">
+      <span className="font-display text-[10px] font-semibold text-muted-foreground tracking-wide">
         {label}
       </span>
     </div>
@@ -50,7 +50,7 @@ function QualifyingRow({
     >
       <div
         className={cn(
-          "w-6 h-6 rounded-full flex items-center justify-center font-mono text-xs font-bold shrink-0 self-center mx-auto",
+          "w-6 h-6 rounded-full flex items-center justify-center font-mono text-xs font-bold tabular-nums shrink-0 self-center mx-auto",
           result.position === 1 && "bg-yellow-500/15 text-yellow-500",
           result.position === 2 && "bg-zinc-500/15 text-zinc-400",
           result.position === 3 && "bg-amber-700/15 text-amber-600",

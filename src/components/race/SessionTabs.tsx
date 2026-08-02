@@ -78,7 +78,7 @@ export function SessionTabs({
   return (
     <div className="space-y-4">
       {/* Segmented tab bar */}
-      <div className="overflow-x-auto -mx-4 px-4">
+      <div className="overflow-x-auto -mx-4 px-4 [scrollbar-width:thin] [scrollbar-color:theme(colors.border)_transparent]">
         <div className="inline-flex items-center gap-0.5 bg-muted/70 p-1 rounded-xl min-w-max">
           {tabs.map((tab) => (
             <button
@@ -107,6 +107,7 @@ export function SessionTabs({
             sessionLabel={activeTab.fullLabel}
             results={practiceData[active] ?? []}
             labels={practiceLabels}
+            slug={slug}
           />
         )}
 

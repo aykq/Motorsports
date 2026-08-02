@@ -6,6 +6,7 @@ import {
   Droplets, Wind,
 } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
+import { cn } from "@/lib/utils";
 import type { RaceSession, RaceStatus } from "@/types/series";
 
 interface DayForecast {
@@ -290,8 +291,8 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="space-y-1.5">
-                <div className="h-2.5 w-12 bg-white/8 rounded" />
-                <div className="h-5 w-14 bg-white/8 rounded" />
+                <div className="h-2.5 w-12 bg-muted rounded" />
+                <div className="h-5 w-14 bg-muted rounded" />
               </div>
             ))}
           </div>
@@ -299,10 +300,10 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
         <div className="grid grid-cols-3 gap-2 animate-pulse">
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="rounded-lg border border-border bg-card p-2.5 flex flex-col items-center gap-1.5">
-              <div className="h-2.5 w-12 bg-white/8 rounded" />
-              <div className="w-6 h-6 rounded-full bg-white/8" />
-              <div className="h-4 w-8 bg-white/8 rounded" />
-              <div className="h-2.5 w-14 bg-white/8 rounded" />
+              <div className="h-2.5 w-12 bg-muted rounded" />
+              <div className="w-6 h-6 rounded-full bg-muted" />
+              <div className="h-4 w-8 bg-muted rounded" />
+              <div className="h-2.5 w-14 bg-muted rounded" />
             </div>
           ))}
         </div>
@@ -429,11 +430,14 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
                       {daySessions.map((s) => (
                         <span
                           key={s.type}
-                          className="text-[9px] px-1.5 py-0.5 rounded"
+                          className={cn(
+                            "text-[9px] px-1.5 py-0.5 rounded",
+                            s.type !== "race" && "bg-muted text-muted-foreground/70"
+                          )}
                           style={
                             s.type === "race"
                               ? { backgroundColor: `${accentColor}30`, color: accentColor }
-                              : { backgroundColor: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.45)" }
+                              : undefined
                           }
                         >
                           {tTab(s.type)}
@@ -457,7 +461,7 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
 function SectionHeader() {
   const tWeather = useTranslations("weather");
   return (
-    <h2 className="text-xs font-semibold text-muted-foreground tracking-wide">
+    <h2 className="font-display text-xs font-semibold text-muted-foreground tracking-wide">
       {tWeather("title")}
     </h2>
   );

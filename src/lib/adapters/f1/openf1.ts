@@ -26,7 +26,7 @@ const OpenF1DriverSchema = z.object({
   team_name: z.string().optional(),
   team_colour: z.string().optional(),
   headshot_url: z.string().nullable().optional(),
-  country_code: z.string().optional(),
+  country_code: z.string().nullable().optional(),
   session_key: z.number(),
   meeting_key: z.number(),
 });

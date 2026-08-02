@@ -75,13 +75,24 @@ export default async function CircuitDetailPage({ params }: Props) {
       : null;
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-      <BackButton fallbackHref={`/${slug}/circuits`} label={t("title")} />
+    <div className="max-w-2xl mx-auto space-y-6 pb-8">
+      <div className="px-4 pt-6">
+        <BackButton fallbackHref={`/${slug}/circuits`} label={t("title")} />
+      </div>
 
-      {/* ── Header ── */}
-      <div className="space-y-2">
-        <h1 className="font-display text-2xl font-bold tracking-tight leading-tight">{circuit.name}</h1>
-        <div className="flex items-center justify-between gap-2 flex-wrap">
+      {/* ── Hero Banner ── */}
+      <div
+        className="relative px-6 py-8 overflow-hidden space-y-2"
+        style={{
+          background: `linear-gradient(135deg, ${config.color}40 0%, ${config.color}10 50%, transparent 100%)`,
+        }}
+      >
+        <div
+          className="absolute -right-8 -top-8 w-40 h-40 rounded-full opacity-10 blur-2xl"
+          style={{ backgroundColor: config.color }}
+        />
+        <h1 className="relative font-display text-2xl font-bold tracking-tight leading-tight">{circuit.name}</h1>
+        <div className="relative flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <MapPin className="w-4 h-4 shrink-0" />
             <span>{circuit.location}, {circuit.country}</span>
@@ -100,6 +111,7 @@ export default async function CircuitDetailPage({ params }: Props) {
         </div>
       </div>
 
+      <div className="px-4 space-y-6">
       {/* ── Circuit Layout Image ── */}
       {layoutUrl && <CircuitLayoutImage src={layoutUrl} alt={circuit.name} />}
 
@@ -217,6 +229,7 @@ export default async function CircuitDetailPage({ params }: Props) {
           })}
         </section>
       )}
+      </div>
     </div>
   );
 }
