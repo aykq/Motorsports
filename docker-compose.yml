@@ -61,7 +61,7 @@ services:
       - internal
     command: >
       sh -c "
-        echo '0 */3 * * * wget -qO- --header=\"x-cron-secret: $$CRON_SECRET\" --post-data=\"\" $$APP_URL/api/cron/news' | crontab - &&
+        echo '25 * * * * wget -qO- --header=\"x-cron-secret: $$CRON_SECRET\" --post-data=\"\" $$APP_URL/api/cron/news' | crontab - &&
         crond -f -l 6
       "
 
