@@ -22,6 +22,8 @@ export async function POST(request: Request) {
     })
   );
 
-  revalidateTag("news", {});
+  // "max" → stale-while-revalidate. Boş obje ({}) geçmek tavsiye edilen kullanım
+  // değil; expire tanımsız kaldığı için invalidation güvenilir çalışmıyordu.
+  revalidateTag("news", "max");
   return NextResponse.json({ ok: true, results });
 }

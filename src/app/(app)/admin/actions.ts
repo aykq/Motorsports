@@ -3,7 +3,7 @@
 import { db } from "@/db";
 import { cachedRaceDetails, cachedRaces, cachedDrivers, notificationLog } from "@/db/schema";
 import { eq, and, desc } from "drizzle-orm";
-import { revalidateTag } from "next/cache";
+import { updateTag } from "next/cache";
 import { syncSeries } from "@/lib/sync";
 import { sendPushToSubscribers } from "@/lib/push";
 import { requireAdmin } from "@/lib/admin-guard";
@@ -141,7 +141,9 @@ export async function syncNewsAction(): Promise<{ ok: boolean; message: string }
     }
   });
   await cleanAllNewsContent();
-  revalidateTag("news", {});
+  // Server Action → updateTag: kullanıcı "Güncelle"ye bastığında bayat içerik
+  // değil, kendi tetiklediği taze veriyi görsün (read-your-own-writes).
+  updateTag("news");
   return { ok: true, message: lines.join("\n") };
 }
 

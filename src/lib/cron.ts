@@ -1,3 +1,7 @@
+// SADECE LOCAL GELİŞTİRME. Production'da bu dosya yüklenmez (bkz.
+// instrumentation.ts) — orada zamanlama sunucudaki crontab + cron container'ı
+// üzerinden /api/cron/* route'larına yapılır. Buraya yeni bir iş eklersen
+// prod'da da çalışması için karşılık gelen route'u ve crontab satırını ekle.
 import cron from "node-cron";
 import { syncSeries, syncScheduleOnly } from "@/lib/sync";
 import { isActiveRaceWeekend, syncActiveSessionData, syncRaceDetails } from "@/lib/race-detail";
@@ -175,7 +179,7 @@ cron.schedule(
     });
     const cleanedCount = await cleanAllNewsContent();
     if (cleanedCount > 0) console.log(`[cron] news content cleaned: ${cleanedCount} items`);
-    revalidateTag("news", {});
+    revalidateTag("news", "max");
     console.log("[cron] news fetch finished");
   },
   { timezone: "UTC" }
