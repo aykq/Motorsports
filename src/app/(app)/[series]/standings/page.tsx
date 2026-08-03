@@ -147,7 +147,7 @@ export default async function StandingsPage({ params, searchParams }: Props) {
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="font-mono font-bold text-sm tabular-nums">{s.points} <span className="text-muted-foreground font-normal text-xs">pts</span></p>
+                    <p className="font-mono font-bold text-sm tabular-nums">{s.points} <span className="text-muted-foreground font-normal text-xs">{t("pointsAbbr")}</span></p>
                     {s.wins > 0 && (
                       <p className="text-xs text-muted-foreground">{t("wins", { count: s.wins })}</p>
                     )}
@@ -197,7 +197,7 @@ export default async function StandingsPage({ params, searchParams }: Props) {
                     )}
                   </div>
                   <div className="text-right shrink-0">
-                    <Badge variant="secondary" className="font-bold">{s.points} pts</Badge>
+                    <Badge variant="secondary" className="font-bold">{s.points} {t("pointsAbbr")}</Badge>
                     {s.wins > 0 && (
                       <p className="text-xs text-muted-foreground mt-0.5">{t("wins", { count: s.wins })}</p>
                     )}

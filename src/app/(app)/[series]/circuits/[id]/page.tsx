@@ -7,7 +7,7 @@ import { notFound } from "next/navigation";
 import { MapPin, Zap, ExternalLink } from "lucide-react";
 import { BackButton } from "@/components/layout/BackButton";
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 import type { Metadata } from "next";
 
 interface Props {
@@ -40,7 +40,11 @@ export default async function CircuitDetailPage({ params }: Props) {
   const config = getSeriesConfig(slug);
   if (!config || !config.available) notFound();
 
-  const t = await getTranslations("circuitsPage");
+  const [t, locale] = await Promise.all([
+    getTranslations("circuitsPage"),
+    getLocale(),
+  ]);
+  const dateLocale = locale === "tr" ? "tr-TR" : "en-US";
   const year = new Date().getFullYear();
   const { races } = await getCachedSchedule(slug, year);
 
@@ -186,7 +190,7 @@ export default async function CircuitDetailPage({ params }: Props) {
                   </div>
                   {raceSession && (
                     <p className="text-xs text-muted-foreground">
-                      {new Date(raceSession.date).toLocaleDateString("tr-TR", {
+                      {new Date(raceSession.date).toLocaleDateString(dateLocale, {
                         day: "numeric",
                         month: "long",
                         year: "numeric",

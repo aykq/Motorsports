@@ -140,7 +140,8 @@
     "drivers": "Drivers",
     "teams": "Teams",
     "noData": "No standings data yet.",
-    "wins": "{count} win(s)"
+    "wins": "{count} win(s)",
+    "pointsAbbr": "pts"
   },
   "driversPage": {
     "title": "Drivers",

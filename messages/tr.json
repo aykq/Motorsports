@@ -140,7 +140,8 @@
     "drivers": "Sürücüler",
     "teams": "Takımlar",
     "noData": "Henüz puan verisi yok.",
-    "wins": "{count} galibiyet"
+    "wins": "{count} galibiyet",
+    "pointsAbbr": "puan"
   },
   "driversPage": {
     "title": "Pilotlar",
