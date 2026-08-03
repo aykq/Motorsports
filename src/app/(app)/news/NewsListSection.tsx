@@ -3,22 +3,24 @@
 import { useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { getSeriesConfig } from "@/lib/series-config";
 import type { NewsItem } from "@/lib/cache";
 
-function timeAgo(date: Date | null): string {
+function timeAgo(date: Date | null, t: ReturnType<typeof useTranslations>): string {
   if (!date) return "";
   const diff = Date.now() - date.getTime();
   const m = Math.floor(diff / 60000);
-  if (m < 1) return "şimdi";
-  if (m < 60) return `${m}dk`;
+  if (m < 1) return t("timeJustNow");
+  if (m < 60) return t("timeMinutes", { m });
   const h = Math.floor(m / 60);
-  if (h < 24) return `${h}s`;
-  return `${Math.floor(h / 24)}g`;
+  if (h < 24) return t("timeHours", { h });
+  return t("timeDays", { d: Math.floor(h / 24) });
 }
 
 export function NewsListSection({ news }: { news: NewsItem[] }) {
+  const t = useTranslations("newsPage");
   const prevIdsRef = useRef<Set<string>>(new Set());
 
   // Determine new items before updating the ref (runs during render, before useEffect)
@@ -64,7 +66,7 @@ export function NewsListSection({ news }: { news: NewsItem[] }) {
                     {seriesName}
                   </span>
                   <span className="font-mono text-[10px] text-muted-foreground">
-                    {timeAgo(item.publishedAt)}
+                    {timeAgo(item.publishedAt, t)}
                   </span>
                 </div>
                 <p className="text-sm font-semibold leading-snug line-clamp-2">{item.title}</p>

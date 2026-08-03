@@ -6,7 +6,7 @@ import { getTranslations, getLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import { ExternalLink, User, CalendarDays, Camera } from "lucide-react";
+import { ExternalLink, User, CalendarDays } from "lucide-react";
 import type { ContentBlock, ResultRow } from "@/lib/scrapers/motorsportNews";
 
 // SVG src gibi "//cdn.../cf/gb-2.svg" → 🇬🇧
@@ -57,8 +57,11 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const item = await getCachedNewsById(id);
-  return { title: item?.title ?? "Haber" };
+  const [item, t] = await Promise.all([
+    getCachedNewsById(id),
+    getTranslations("newsPage"),
+  ]);
+  return { title: item?.title ?? t("newsFallbackTitle") };
 }
 
 function formatDate(date: Date | null, locale: string): string {
@@ -214,8 +217,7 @@ export default async function NewsDetailPage({ params }: Props) {
                       loading="lazy"
                     />
                     {block.caption && (
-                      <figcaption className="flex items-start gap-1 mt-1.5 px-0.5">
-                        <Camera className="w-2.5 h-2.5 shrink-0 mt-[1px] text-muted-foreground/40" />
+                      <figcaption className="mt-1.5 px-0.5">
                         <span className="text-[10px] leading-snug text-muted-foreground/50 italic tracking-wide">
                           {block.caption}
                         </span>
@@ -231,7 +233,7 @@ export default async function NewsDetailPage({ params }: Props) {
             })}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">İçerik yüklenemedi.</p>
+          <p className="text-sm text-muted-foreground">{t("contentUnavailable")}</p>
         )}
 
         {/* Source link */}

@@ -14,7 +14,18 @@
     "readMore": "Read More",
     "by": "By",
     "source": "View Source",
-    "back": "News"
+    "back": "News",
+    "newsFallbackTitle": "News",
+    "contentUnavailable": "Content unavailable.",
+    "timeJustNow": "now",
+    "timeMinutes": "{m}m",
+    "timeHours": "{h}h",
+    "timeDays": "{d}d"
+  },
+  "newsSync": {
+    "idle": "Refresh",
+    "pending": "Refreshing...",
+    "success": "Updated"
   },
   "calendar": {
     "title": "Calendar",
@@ -298,7 +309,6 @@
     "driverCache": "Clear driver cache",
     "driverCacheHint": "After clearing the cache, sync the related series.",
     "news": "News",
-    "syncNews": "Sync News",
     "subDistribution": "Subscription distribution",
     "noSubs": "No subscriptions yet.",
     "notifSent": "Notifications sent",

@@ -3,7 +3,7 @@ import { requireAdmin } from "@/lib/admin-guard";
 import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
 import { NewsListSection } from "./NewsListSection";
-import { NewsSyncButton } from "./NewsSyncButton";
+import { NewsSyncButton } from "@/components/news/NewsSyncButton";
 
 export const metadata: Metadata = { title: "Haberler" };
 

@@ -4,7 +4,7 @@ import { SeriesHeroSkeleton, DriverCardSkeleton, StandingsListSkeleton } from "@
 export default function SeriesLoading() {
   return (
     <div className="pb-24">
-      <div className="max-w-2xl mx-auto px-4 flex flex-col gap-4 pt-4">
+      <div className="max-w-3xl mx-auto px-4 flex flex-col gap-4 pt-4">
         <div className="flex items-center gap-2 -ml-2">
           <Skeleton className="w-8 h-8 rounded-lg" />
           <Skeleton className="h-6 w-32" />
