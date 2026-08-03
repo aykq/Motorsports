@@ -112,6 +112,10 @@ Her veri-güdümlü bileşen için backend hizalaması: sync adapter'lar / API r
 ### Faz 7 — Responsive QA + cila
 xs→2xl tüm kırılımlar, açık+koyu tema, erişilebilirlik (focus, reduced-motion, kontrast), performans, PWA. Her faz sonunda Playwright ekran görüntüsü + canlı gözden geçirme.
 
+**1. tur (2026-08-04) — Faz 4(2.tur)/5/6'da dokunulan yüzeylerin regresyon taraması:** 07-31'deki responsive QA turu bu fazlardan önceydi, o yüzden bu turda dokunulan sayfalar ayrıca tarandı: `races/[round]` (SessionTabs/PracticeSection/QualifyingSection), `news`, `news/[id]`, `admin` (Sync tab), `circuits/[id]` (yeni İptal bölümü + First Grand Prix kartı), `standings`, `schedule`. DOM-tabanlı yatay-taşma kontrolü (`scrollWidth - innerWidth`) 375/390/768/1024/1440/1920/2560/3840px'te, **hem açık hem koyu temada** — hepsi `overflow: 0`. Açık temada görsel spot-check (circuits/bahrain İptal bölümü, races/11 FP1 tablosu, admin Sync tab News butonu) — kontrast/okunabilirlik sorunu yok. Console'da sadece OpenF1 hava durumu API'sinin rate-limit hataları (429/404) var, `WeatherChip` zaten `null` dönüp sessizce gizleniyor, uygulama hatası değil.
+
+**Devam edecek:** erişilebilirlik (focus-visible, prefers-reduced-motion, kontrast oranı ölçümü), performans (Lighthouse/Core Web Vitals), PWA kontrolü henüz yapılmadı.
+
 ### Backlog — pist sayfası zenginleştirme (henüz fazlandırılmadı, 2026-08-03/04 not edildi)
 Kullanıcının circuit-detay sayfası için fikirleri, ileride bir faza (muhtemelen ayrı bir "Faz 8") dahil edilecek:
 1. **Pist tarihçesi/hikayesi** — bir pistin geçmişi, önemli olaylar, tarihi bağlam güzel bir UI içinde sunulacak (yeni bir bölüm, circuit-detay sayfasına eklenecek).
