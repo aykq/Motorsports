@@ -180,6 +180,7 @@
     "raceDistance": "Yarış mesafesi {distance} km",
     "lapRecord": "Pist rekoru: {time} — {driver} ({year})",
     "thisSeason": "Bu Sezon ({year})",
+    "latestRace": "Son Yarış ({year})",
     "winner": "Kazanan",
     "fastestLap": "En Hızlı",
     "winnerLabel": "Kazanan:",

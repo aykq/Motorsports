@@ -23,12 +23,19 @@ export const dynamic = "force-dynamic";
 
 interface Props {
   params: Promise<{ series: string; round: string }>;
+  searchParams: Promise<{ year?: string }>;
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+function resolveYear(yearParam: string | undefined): number {
+  const parsed = yearParam ? parseInt(yearParam) : NaN;
+  return Number.isFinite(parsed) ? parsed : new Date().getFullYear();
+}
+
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { series: slug, round } = await params;
+  const { year: yearParam } = await searchParams;
   const config = getSeriesConfig(slug);
-  const year = new Date().getFullYear();
+  const year = resolveYear(yearParam);
   const race = await getCachedRaceByRound(slug, year, parseInt(round));
   if (!race) {
     const { races } = await getCachedSchedule(slug, year);
@@ -38,8 +45,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return { title: `${race.name} — ${config?.name ?? slug}` };
 }
 
-export default async function RaceDetailPage({ params }: Props) {
+export default async function RaceDetailPage({ params, searchParams }: Props) {
   const { series: slug, round: roundStr } = await params;
+  const { year: yearParam } = await searchParams;
   const config = getSeriesConfig(slug);
   if (!config || !config.available) notFound();
 
@@ -51,7 +59,8 @@ export default async function RaceDetailPage({ params }: Props) {
   const dateLocale = locale === "tr" ? "tr-TR" : "en-US";
 
   const round = parseInt(roundStr);
-  const year = new Date().getFullYear();
+  const year = resolveYear(yearParam);
+  const isCurrentYear = year === new Date().getFullYear();
 
   let race = await getCachedRaceByRound(slug, year, round);
   if (!race) {
@@ -61,7 +70,9 @@ export default async function RaceDetailPage({ params }: Props) {
   if (!race) notFound();
 
   // Tamamlanmış yarış ama sonuç yok → ilgili kaynaktan çek + cache'e yaz
-  if (race.status === "completed" && !race.results?.length) {
+  // Geçmiş sezonlar için canlı fetch yapılmıyor — backfill edilen veri zaten
+  // tam olmalı, eksikse kaynak (Jolpica/scraper) da muhtemelen sonuç vermez.
+  if (isCurrentYear && race.status === "completed" && !race.results?.length) {
     if (slug === "f1") {
       const freshResults = await jolpicaFetchRaceResults(year, round);
       if (freshResults.length) {

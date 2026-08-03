@@ -128,12 +128,21 @@ xs→2xl tüm kırılımlar, açık+koyu tema, erişilebilirlik (focus, reduced-
 
 **Performans/Core Web Vitals ölçümü — kullanıcı kararı (2026-08-04):** `redesign/vision` main'e merge edilip production'a deploy edildikten SONRA, gerçek production ortamında ölçülecek. Yerel `next build && next start` yerine bu tercih edildi çünkü gerçek sunucu donanımı + gerçek ağ gecikmesi + Cloudflare tunnel katmanı, local prod-build'den daha temsili sonuç verir (local'de loopback ağı sonuçları yapay iyi gösterir). Lighthouse `--only-categories=performance` ile mshub.aykq.org.tr üzerinde koşulacak.
 
-### Backlog — pist sayfası zenginleştirme (henüz fazlandırılmadı, 2026-08-03/04 not edildi)
-Kullanıcının circuit-detay sayfası için fikirleri, ileride bir faza (muhtemelen ayrı bir "Faz 8") dahil edilecek:
-1. **Pist tarihçesi/hikayesi** — bir pistin geçmişi, önemli olaylar, tarihi bağlam güzel bir UI içinde sunulacak (yeni bir bölüm, circuit-detay sayfasına eklenecek).
-2. **O pistteki tüm geçmiş yarışların sonuçları** — şu an sadece "Bu Sezonun En İyileri" (mevcut yıl) ve "Geçmiş Yarışlar" (round listesi) var; kullanıcı bir yarışa tıkladığında o yarışın `races/[round]` detay sayfasına yönlendirilecek (muhtemelen zaten kısmen var — `completedRaces.map(...)` zaten `Link href={`/${slug}/races/${race.round}`}` kullanıyor, ama "tüm geçmiş yıllar" değil sadece mevcut yılın schedule cache'i kapsıyor — çok yıllı geçmiş veri gerekebilir).
-3. **2026 takviminde olmayan ama daha önce yarış yapılmış pistler** (ör. Imola) için de tam sayfa: bilgiler + şema + hikaye + önemli detaylar. Şu an bu pistler `getCachedSchedule(slug, year)` sadece mevcut yılı çektiği için sayfaya hiç ulaşılamıyor (404) — bu, circuit sayfalarının veri kaynağının "mevcut yıl takvimi" yerine "tüm zamanların pist listesi"ne genişletilmesini gerektirir (backend/routing değişikliği, sadece statik veri eklemekle olmaz).
-4. **Pist görselleri büyütülecek** (2026-08-04 not edildi) — `CircuitLayoutImage` şu an küçük gösteriliyor, görseldeki detaylar (viraj numaraları, sektör/overtake bölgesi etiketleri) okunmuyor. Circuit-detay sayfasında görsel alanı büyütülmeli.
+### Faz 8 — Pist sayfası zenginleştirme (2026-08-04'te başlandı)
+Kullanıcının circuit-detay sayfası için 4 fikri:
+
+**✅ #4 TAMAMLANDI — Pist görselleri büyütüldü.** `CircuitLayoutImage`'daki sabit `h-40` (160px) kaldırıldı, `aspect-video` (gerçek 1252×704 kaynak oranına yakın) ile değiştirildi — artık viraj numaraları/overtake etiketleri okunuyor. Mobil+masaüstü canlı doğrulandı.
+
+**✅ #2 ve #3 TAMAMLANDI — çok yıllı pist geçmişi + takvim-dışı pistler.** Beklenenden basit çıktı: `getCachedSchedule(slug, season)` zaten `season` parametreli, sorun sadece hiç geçmiş sezonun senkronize edilmemiş olmasıydı (DB sorgusuyla doğrulandı: sadece 2026 vardı). Kullanıcı kararıyla 2021-2025 F1 sezonları `syncScheduleOnly` ile bir kerelik backfill edildi (Imola dahil 4/5 sezonda göründü, 2023 gerçekten iptal edilmişti — Emilia-Romagna sel baskını, veri doğru). Eski satırlar asla silinmediği için gelecekte otomatik birikmeye devam edecek, ekstra cron gerekmiyor.
+- `circuits/[id]/page.tsx`: artık `currentYear-5..currentYear` aralığındaki tüm sezonları paralel çekip `circuitId`'ye göre filtreleyip tarihe göre sıralıyor (`fetchCircuitRacesAllYears` helper'ı). Imola gibi pistler artık 404 vermiyor.
+- "Bu Sezonun En İyileri" başlığı artık yıl-duyarlı: gerçekten mevcut sezonsa "Bu Sezon (2026)", değilse "Son Yarış ({yıl})" (yeni `latestRace` çeviri anahtarı).
+- "Geçmiş Yarışlar" listesine yıl rozeti eklendi (round numaraları yıllar arası çakışabildiği için React key de `{yıl}-{round}` oldu).
+- **`races/[round]/page.tsx`'e `?year=` query param desteği eklendi** — daha önce sayfa hep `new Date().getFullYear()` kullanıyordu, geçmiş yıl linkleri yanlış/mevcut yılın verisini gösterirdi. Artık circuit sayfasındaki geçmiş yarış linkleri `/${slug}/races/${round}?year=${yıl}` formatında; parametre yoksa mevcut yıla düşüyor (geriye dönük uyumlu, mevcut linkler değişmedi). Sadece mevcut yıl için "sonuç eksikse canlı kaynaktan çek" fallback'i çalışıyor (geçmiş sezonlar için gereksiz/verimsiz olurdu).
+- Canlı doğrulandı: Imola artık tam sayfa gösteriyor (2021/2022/2024/2025, gerçek sonuçlarla), 2021 Emilia Romagna GP linkine tıklayınca doğru yıl/yarış verisi geliyor (Verstappen kazandı — gerçek tarihle eşleşiyor). `tsc`/`eslint` temiz, 375-1440px'te taşma yok.
+
+> **⚠️ BEKLEYEN AKSİYON (production):** 2021-2025 backfill verisi şu an sadece **local dev DB'de**. Kod merge+deploy edildiğinde production DB'sinde bu sezonlar hâlâ yok olacak — aynı backfill (`syncScheduleOnly("f1", year)` for 2021-2025) production'da da bir kerelik çalıştırılmalı, yoksa circuit sayfaları prod'da sadece mevcut yılı gösterir (kırılmaz, sadece backlog'un faydası eksik kalır).
+
+**Sırada #1 — Pist tarihçesi/hikayesi.** Bir pistin geçmişi, önemli olaylar, tarihi bağlam güzel bir UI içinde sunulacak. İçerik kaynağı henüz belirlenmedi (Wikipedia özeti mi, elle yazılmış kısa metinler mi, vs.) — kullanıcıyla netleştirilecek.
 
 ---
 
