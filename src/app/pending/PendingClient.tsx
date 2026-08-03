@@ -88,7 +88,7 @@ export function PendingClient({ hasSession, userId, userName, userEmail }: Pendi
   }, [hasSession, userId, router]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+    <main className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm space-y-8 text-center">
         <div className="space-y-2">
           <div className="flex justify-center">
@@ -131,6 +131,6 @@ export function PendingClient({ hasSession, userId, userName, userEmail }: Pendi
           {t("signOut")}
         </Button>
       </div>
-    </div>
+    </main>
   );
 }

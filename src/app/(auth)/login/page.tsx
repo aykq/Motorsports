@@ -31,7 +31,7 @@ export default async function LoginPage({
   const isDev = process.env.NODE_ENV === "development";
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+    <main className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm space-y-8">
         <div className="text-center space-y-2">
           <div className="flex justify-center items-baseline gap-0.5">
@@ -101,6 +101,6 @@ export default async function LoginPage({
           )}
         </div>
       </div>
-    </div>
+    </main>
   );
 }

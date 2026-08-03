@@ -57,7 +57,7 @@ export function BlockedClient({ userEmail, userName }: BlockedClientProps) {
   }, [router]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+    <main className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm space-y-8 text-center">
         <div className="flex justify-center">
           <span className="font-display text-4xl font-bold tracking-tight text-brand">MS</span>
@@ -85,6 +85,6 @@ export function BlockedClient({ userEmail, userName }: BlockedClientProps) {
           )}
         </div>
       </div>
-    </div>
+    </main>
   );
 }
