@@ -110,6 +110,12 @@ Her veri-güdümlü bileşen için backend hizalaması: sync adapter'lar / API r
 ### Faz 7 — Responsive QA + cila
 xs→2xl tüm kırılımlar, açık+koyu tema, erişilebilirlik (focus, reduced-motion, kontrast), performans, PWA. Her faz sonunda Playwright ekran görüntüsü + canlı gözden geçirme.
 
+### Backlog — pist sayfası zenginleştirme (henüz fazlandırılmadı, 2026-08-03 not edildi)
+Kullanıcının circuit-detay sayfası için 3 yeni fikri, ileride bir faza (muhtemelen Faz 6'nın devamı veya ayrı bir "Faz 8") dahil edilecek:
+1. **Pist tarihçesi/hikayesi** — bir pistin geçmişi, önemli olaylar, tarihi bağlam güzel bir UI içinde sunulacak (yeni bir bölüm, circuit-detay sayfasına eklenecek).
+2. **O pistteki tüm geçmiş yarışların sonuçları** — şu an sadece "Bu Sezonun En İyileri" (mevcut yıl) ve "Geçmiş Yarışlar" (round listesi) var; kullanıcı bir yarışa tıkladığında o yarışın `races/[round]` detay sayfasına yönlendirilecek (muhtemelen zaten kısmen var — `completedRaces.map(...)` zaten `Link href={`/${slug}/races/${race.round}`}` kullanıyor, ama "tüm geçmiş yıllar" değil sadece mevcut yılın schedule cache'i kapsıyor — çok yıllı geçmiş veri gerekebilir).
+3. **2026 takviminde olmayan ama daha önce yarış yapılmış pistler** (ör. Imola) için de tam sayfa: bilgiler + şema + hikaye + önemli detaylar. Şu an bu pistler `getCachedSchedule(slug, year)` sadece mevcut yılı çektiği için sayfaya hiç ulaşılamıyor (404) — bu, circuit sayfalarının veri kaynağının "mevcut yıl takvimi" yerine "tüm zamanların pist listesi"ne genişletilmesini gerektirir (backend/routing değişikliği, sadece statik veri eklemekle olmaz).
+
 ---
 
 ## Kalite zemini (her fazda)
