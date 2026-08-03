@@ -46,6 +46,13 @@ Tüm `/api/cron/*` route'ları `x-cron-secret` header'ı ister
 
 # F1 yarış detayı backfill — tam sync'ten 20 dk sonra
 20 0,6,12,18 * * * curl -s -X POST http://localhost:3000/api/cron/race-details -H "x-cron-secret: $SECRET" >> /var/log/motorsports-sync.log 2>&1
+
+# --- Aşağıdaki 2026-08-04'te eklendi ---
+
+# F1 pist verisi (uzunluk/tur/pist rekoru/görsel) — f1.com'un 23 pist sayfasını
+# tek tek scrape ediyor (~500ms aralıklarla), bu yüzden günde bir yeterli —
+# 6 saatlik tam sync'e dahil edilmedi (hem yavaş hem f1.com'u gereksiz taramak istemiyoruz).
+35 5 * * * curl -s -X POST http://localhost:3000/api/cron/circuit-data -H "x-cron-secret: $SECRET" >> /var/log/motorsports-sync.log 2>&1
 ```
 
 ## Haber çekimi

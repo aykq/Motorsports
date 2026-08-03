@@ -181,3 +181,13 @@ export interface RaceDetail {
   raceDataComplete?: boolean;
   sprintComplete?: boolean;
 }
+
+// f1.com'un pist sayfasından scrape edilen veri — bkz. src/lib/adapters/f1/circuit-scraper.ts
+export interface ScrapedCircuitData {
+  lengthKm: number | null;
+  officialLaps: number | null;
+  raceDistanceKm: number | null;
+  firstGrandPrix: number | null;
+  fastestLap: { time: string; driver: string; year: number } | null;
+  trackImageUrl: string | null;
+}

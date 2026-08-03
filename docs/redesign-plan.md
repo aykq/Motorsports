@@ -142,7 +142,15 @@ Kullanıcının circuit-detay sayfası için 4 fikri:
 
 > **⚠️ BEKLEYEN AKSİYON (production):** 2021-2025 backfill verisi şu an sadece **local dev DB'de**. Kod merge+deploy edildiğinde production DB'sinde bu sezonlar hâlâ yok olacak — aynı backfill (`syncScheduleOnly("f1", year)` for 2021-2025) production'da da bir kerelik çalıştırılmalı, yoksa circuit sayfaları prod'da sadece mevcut yılı gösterir (kırılmaz, sadece backlog'un faydası eksik kalır).
 
-**Sırada #1 — Pist tarihçesi/hikayesi.** Bir pistin geçmişi, önemli olaylar, tarihi bağlam güzel bir UI içinde sunulacak. İçerik kaynağı henüz belirlenmedi (Wikipedia özeti mi, elle yazılmış kısa metinler mi, vs.) — kullanıcıyla netleştirilecek.
+**Sırada #1 — Pist tarihçesi/hikayesi.** Bir pistin geçmişi, önemli olaylar, tarihi bağlam güzel bir UI içinde sunulacak. İçerik kaynağı henüz belirlenmedi (Wikipedia özeti mi, elle yazılmış kısa metinler mi, vs.) — kullanıcıyla netleştirilecek. Not: f1.com pist sayfalarındaki "About" bölümünde hazır Soru-Cevap içeriği var (`<summary>Pist ne zaman inşa edildi?</summary>`), scraper araştırması sırasında keşfedildi — bu içerik #1 için kaynak olarak değerlendirilebilir.
+
+**✅ Ek altyapı işi (2026-08-04, kullanıcı fark etti) — statik pist verisinden canlı scraper'a geçiş.** Kullanıcının haklı tespiti: `circuit-data.ts`'deki 2026-08-03'te elle araştırılan veriler (uzunluk/tur/pist rekoru/görsel) statikti — f1.com sezon ilerledikçe (özellikle 2026 Active Aero kuralıyla pist düzenleri gerçekten değişti) sayfalarını güncelleyecek, statik veri zamanla eskiyecekti. Çözüm:
+- **Yeni scraper** (`src/lib/adapters/f1/circuit-scraper.ts`, cheerio ile): f1.com'un pist sayfası HTML'i tamamen server-rendered (`curl` ile doğrulandı, headless browser gerekmiyor) — `<dl><dt>/<dd></dl>` yapısından Circuit Length/First Grand Prix/Number of Laps/Fastest lap/Race Distance ve `<img src>`'den pist görseli URL'i güvenilir şekilde parse ediliyor.
+- **Yeni DB tablosu** `cached_circuit` (drizzle migration `0006_hesitant_juggernaut.sql`) — `cachedDrivers` ile aynı desen (season-scoped değil, her sync'te en güncel veriyle upsert).
+- **`getF1CircuitInfo()`** (circuit-data.ts) — DB'deki taze veriyi statik seed'in üzerine alan-alan bindirir; DB'de hiç veri yoksa (yeni pist, scraper henüz çalışmadı, veya slug haritasında yok — ör. Bahrain/Jeddah/Imola) sorunsuz statik seed'e düşer.
+- **Ayrı, düşük sıklıkta cron** (`/api/cron/circuit-data`, günde bir, `docs/cron-setup.md`'ye eklendi) — kullanıcı kararıyla mevcut 6 saatlik tam sync'e dahil edilmedi (23 sayfayı taramak zaman alıyor, f1.com'u sık taramak istemiyoruz).
+- **Test sonucu:** local'de 23/23 pist başarıyla scrape edildi, sıfır hata; sonuçlar dünkü elle-araştırılan verilerle karşılaştırıldığında birebir örtüşüyor (çapraz doğrulama) — hatta görsel slug'ları da (`melbourne`, `austin`, `catalunya` vb.) benim elle curl ile bulduklarımla birebir aynı çıktı, çünkü scraper gerçek `<img src>`'i okuyor, slug tahmin etmiyor.
+- **Bekleyen (kullanıcı fikri, henüz uygulanmadı):** Admin panelindeki tek "F1 Sync" butonunu alt kategorilere bölme fikri (Drivers/Standings/Circuits/Sync All gibi) — kullanıcı olumlu, ayrı bir takip işi olarak planlanıyor.
 
 ---
 

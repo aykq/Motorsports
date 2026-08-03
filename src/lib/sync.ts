@@ -6,8 +6,10 @@ import {
   setCachedSchedule,
   setCachedStandings,
   setCachedDrivers,
+  setCachedCircuitData,
 } from "@/lib/cache";
 import { syncRaceDetails } from "@/lib/race-detail";
+import { F1_RACE_URL_SLUGS, scrapeF1CircuitData } from "@/lib/adapters/f1/circuit-scraper";
 import type { Race, Driver } from "@/types/series";
 
 const MOTO_SERIES = new Set(["motogp", "moto2", "moto3"]);
@@ -163,4 +165,46 @@ export async function syncSeries(slug: string, season: number): Promise<SyncResu
   }
 
   return { slug, season, racesCount, driversCount, raceDetailsSynced, errors };
+}
+
+const CIRCUIT_SCRAPE_DELAY_MS = 500;
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export interface CircuitSyncResult {
+  synced: number;
+  skipped: number;
+  errors: string[];
+}
+
+/**
+ * f1.com'un pist sayfalarını (Circuit Length/Laps/Race Distance/Fastest Lap/görsel)
+ * tek tek scrape edip cached_circuit tablosuna yazar. Sadece F1 için — diğer
+ * serilerde bu veri kaynağı yok. Ayrı, düşük sıklıkta bir cron job'dan tetiklenmesi
+ * amaçlanıyor (bkz. docs/cron-setup.md), 6 saatlik tam sync'e dahil değil —
+ * 23 sayfayı taramak zaman alıyor ve f1.com'u sık taramak istemiyoruz.
+ */
+export async function syncCircuitData(season: number): Promise<CircuitSyncResult> {
+  const circuitIds = Object.keys(F1_RACE_URL_SLUGS);
+  const errors: string[] = [];
+  let synced = 0;
+  let skipped = 0;
+
+  for (const circuitId of circuitIds) {
+    try {
+      const data = await scrapeF1CircuitData(circuitId, season);
+      if (data) {
+        await setCachedCircuitData("f1", circuitId, data);
+        synced++;
+      } else {
+        skipped++;
+      }
+    } catch (err) {
+      errors.push(`${circuitId}: ${err}`);
+    }
+    await sleep(CIRCUIT_SCRAPE_DELAY_MS);
+  }
+
+  return { synced, skipped, errors };
 }

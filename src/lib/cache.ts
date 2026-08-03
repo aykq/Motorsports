@@ -1,9 +1,9 @@
 import { cache } from "react";
 import { unstable_cache } from "next/cache";
 import { db } from "@/db";
-import { cachedRaces, cachedStandings, cachedDrivers, cachedRaceDetails, cachedNews } from "@/db/schema";
+import { cachedRaces, cachedStandings, cachedDrivers, cachedRaceDetails, cachedNews, cachedCircuits } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
-import type { Race, Standing, Driver, StandingType, RaceDetail } from "@/types/series";
+import type { Race, Standing, Driver, StandingType, RaceDetail, ScrapedCircuitData } from "@/types/series";
 import { getF1DriverImage } from "@/lib/adapters/f1/driver-images";
 
 function resolveDriverImage(slug: string, driver: Driver): string | undefined {
@@ -195,6 +195,39 @@ export async function setCachedDrivers(
     )
     .onConflictDoUpdate({
       target: [cachedDrivers.seriesSlug, cachedDrivers.driverId],
+      set: {
+        data: sql`excluded.data`,
+        fetchedAt: sql`now()`,
+      },
+    });
+}
+
+// ─── Circuits (scraped specs/görsel — bkz. circuit-scraper.ts) ────────────────
+
+export const getCachedCircuitData = cache(async (
+  slug: string,
+  circuitId: string
+): Promise<ScrapedCircuitData | null> => {
+  const row = await db.query.cachedCircuits.findFirst({
+    where: and(eq(cachedCircuits.seriesSlug, slug), eq(cachedCircuits.circuitId, circuitId)),
+  });
+  return row ? (row.data as ScrapedCircuitData) : null;
+});
+
+export async function setCachedCircuitData(
+  slug: string,
+  circuitId: string,
+  data: ScrapedCircuitData
+): Promise<void> {
+  await db
+    .insert(cachedCircuits)
+    .values({
+      seriesSlug: slug,
+      circuitId,
+      data: data as unknown as Record<string, unknown>,
+    })
+    .onConflictDoUpdate({
+      target: [cachedCircuits.seriesSlug, cachedCircuits.circuitId],
       set: {
         data: sql`excluded.data`,
         fetchedAt: sql`now()`,
