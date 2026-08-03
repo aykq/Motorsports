@@ -1,4 +1,4 @@
-import { getCachedSchedule } from "@/lib/cache";
+import { getCachedScheduleMultiYear } from "@/lib/cache";
 import { getSeriesConfig } from "@/lib/series-config";
 import { getF1CircuitInfo } from "@/lib/circuit-data";
 import { CircuitLayoutImage } from "@/components/race/CircuitLayoutImage";
@@ -9,24 +9,15 @@ import { BackButton } from "@/components/layout/BackButton";
 import Link from "next/link";
 import { getTranslations, getLocale } from "next-intl/server";
 import type { Metadata } from "next";
-import type { Race } from "@/types/series";
-
-// Pistin kaç yıl geriye giden geçmişini gösterelim — 2026-08-04'te 2021-2025
-// F1 backfill edildi (bkz. sohbet geçmişi), diğer seriler henüz sadece mevcut yılı kapsıyor.
-const HISTORY_YEARS_BACK = 5;
+import type { RaceWithYear } from "@/types/series";
 
 interface Props {
   params: Promise<{ series: string; id: string }>;
 }
 
-type RaceWithYear = Race & { raceYear: number };
-
 async function fetchCircuitRacesAllYears(slug: string, id: string): Promise<RaceWithYear[]> {
-  const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: HISTORY_YEARS_BACK + 1 }, (_, i) => currentYear - i);
-  const results = await Promise.all(years.map((y) => getCachedSchedule(slug, y)));
-  return results
-    .flatMap((r, i) => r.races.map((race) => ({ ...race, raceYear: years[i] })))
+  const races = await getCachedScheduleMultiYear(slug);
+  return races
     .filter((r) => r.circuitId === id)
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 }

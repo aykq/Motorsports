@@ -1,4 +1,4 @@
-import { getCachedDrivers, getCachedSchedule, getCachedStandings } from "@/lib/cache";
+import { getCachedDrivers, getCachedScheduleMultiYear, getCachedStandings } from "@/lib/cache";
 import { getSeriesConfig } from "@/lib/series-config";
 import { getF1Team, getF1TeamByName } from "@/lib/f1-teams";
 import { getMotoGPTeam, getMotoGPTeamByName } from "@/lib/motogp-teams";
@@ -20,7 +20,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     getTranslations("driversPage"),
   ]);
   const driver = drivers.find((d) => d.id === id);
-  return { title: driver ? `${driver.firstName} ${driver.lastName}` : t("pilot") };
+  if (driver) return { title: `${driver.firstName} ${driver.lastName}` };
+
+  const races = await getCachedScheduleMultiYear(slug);
+  const historicalName = races
+    .flatMap((r) => r.results ?? [])
+    .find((res) => res.driverId === id)?.driverName;
+  return { title: historicalName ?? t("pilot") };
 }
 
 function positionBadge(pos: number, status: string) {
@@ -64,12 +70,12 @@ export default async function DriverDetailPage({ params }: Props) {
   const t = await getTranslations("driversPage");
   const year = new Date().getFullYear();
   const subSeries = config.subSeries ?? [];
-  const [{ drivers: mainDrivers }, subDriverResults, { standings: driverStandings }, { races }] =
+  const [{ drivers: mainDrivers }, subDriverResults, { standings: driverStandings }, races] =
     await Promise.all([
       getCachedDrivers(slug),
       Promise.all(subSeries.map((s) => getCachedDrivers(s))),
       getCachedStandings(slug, year, "driver"),
-      getCachedSchedule(slug, year),
+      getCachedScheduleMultiYear(slug),
     ]);
 
   const allDrivers = [
@@ -77,9 +83,32 @@ export default async function DriverDetailPage({ params }: Props) {
     ...subDriverResults.flatMap((r) => r.drivers),
   ];
 
-  const driver =
+  let driver =
     allDrivers.find((d) => d.id === id) ??
     driverStandings.find((s) => s.driver?.id === id)?.driver;
+
+  // Mevcut kadroda/güncel standings'te yok — emekli olmuş veya takım değiştirmiş
+  // olabilir. Geçmiş sezonların yarış sonuçlarından minimal bir profil kur,
+  // sayfa 404 vermek yerine elimizdeki veriyle gösterilsin.
+  if (!driver) {
+    const historicalResult = races
+      .flatMap((r) => r.results ?? [])
+      .find((res) => res.driverId === id);
+    if (historicalResult) {
+      const nameParts = historicalResult.driverName.trim().split(/\s+/);
+      const lastName = nameParts.pop() ?? historicalResult.driverName;
+      driver = {
+        id,
+        firstName: nameParts.join(" "),
+        lastName,
+        code: historicalResult.driverCode,
+        number: historicalResult.driverNumber,
+        nationality: "",
+        team: historicalResult.team,
+        teamId: historicalResult.teamId,
+      };
+    }
+  }
   if (!driver) notFound();
 
   const standing = driverStandings.find((s) => s.driver?.id === id);
@@ -98,7 +127,7 @@ export default async function DriverDetailPage({ params }: Props) {
       race: r,
       result: r.results!.find((res) => res.driverId === id)!,
     }))
-    .sort((a, b) => b.race.round - a.race.round);
+    .sort((a, b) => new Date(b.race.date).getTime() - new Date(a.race.date).getTime());
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 pb-8">
@@ -189,7 +218,7 @@ export default async function DriverDetailPage({ params }: Props) {
         {raceResults.length > 0 && (
           <section className="space-y-2">
             <h2 className="font-display text-xs font-semibold text-muted-foreground tracking-wide">
-              {t("raceResults", { year })}
+              {t("raceResults")}
             </h2>
             <div className="space-y-1.5">
               {raceResults.map(({ race, result }) => {
@@ -200,11 +229,12 @@ export default async function DriverDetailPage({ params }: Props) {
                 const isDNF = !isFinished;
                 return (
                   <Link
-                    key={race.round}
-                    href={`/${slug}/races/${race.round}`}
+                    key={`${race.raceYear}-${race.round}`}
+                    href={`/${slug}/races/${race.round}?year=${race.raceYear}`}
                     className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-card border border-border text-sm hover:bg-accent/50 transition-colors"
                   >
                     {positionBadge(result.position, result.status)}
+                    <span className="text-xs text-muted-foreground font-mono shrink-0">{race.raceYear}</span>
                     <span className="flex-1 truncate">{race.name}</span>
                     {isDNF ? (
                       <span className="text-xs shrink-0 text-red-400 font-semibold">

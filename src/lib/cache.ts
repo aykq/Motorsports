@@ -3,7 +3,7 @@ import { unstable_cache } from "next/cache";
 import { db } from "@/db";
 import { cachedRaces, cachedStandings, cachedDrivers, cachedRaceDetails, cachedNews, cachedCircuits } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
-import type { Race, Standing, Driver, StandingType, RaceDetail, ScrapedCircuitData } from "@/types/series";
+import type { Race, RaceWithYear, Standing, Driver, StandingType, RaceDetail, ScrapedCircuitData } from "@/types/series";
 import { getF1DriverImage } from "@/lib/adapters/f1/driver-images";
 
 function resolveDriverImage(slug: string, driver: Driver): string | undefined {
@@ -90,6 +90,18 @@ export const getCachedSchedule = cache(async (
   const fresh = isFresh(rows[rows.length - 1].fetchedAt);
   return { races: rows.map((r) => recomputeRaceStatus(r.data as Race, r.seriesSlug)), fresh };
 });
+
+// Backfill edilen geçmiş sezonları (bkz. sohbet geçmişi, 2026-08-04 — F1 için
+// 2021-2025) mevcut yılla birlikte döner. Sync/cron her zaman sadece mevcut yılı
+// çeker — bu fonksiyon sadece OKUMA amaçlı, geçmiş veriyi asla tetiklemez.
+const HISTORY_YEARS_BACK = 5;
+
+export async function getCachedScheduleMultiYear(slug: string): Promise<RaceWithYear[]> {
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: HISTORY_YEARS_BACK + 1 }, (_, i) => currentYear - i);
+  const results = await Promise.all(years.map((y) => getCachedSchedule(slug, y)));
+  return results.flatMap((r, i) => r.races.map((race) => ({ ...race, raceYear: years[i] })));
+}
 
 export async function setCachedSchedule(
   slug: string,
