@@ -182,6 +182,8 @@ export interface RaceDetail {
   sprintComplete?: boolean;
 }
 
+export type RaceWithYear = Race & { raceYear: number };
+
 // f1.com'un pist sayfasından scrape edilen veri — bkz. src/lib/adapters/f1/circuit-scraper.ts
 export interface ScrapedCircuitData {
   lengthKm: number | null;
