@@ -79,51 +79,45 @@ export function getF1CircuitLayoutUrl(circuitId: string): string | null {
   return `https://media.formula1.com/image/upload/f_auto/q_auto/v1677244985/content/dam/fom-website/2018-redesign-assets/Track%20icons%204x3/${slug}.png`;
 }
 
-// F1 media CDN official circuit maps 16x9 (Jolpica circuit ID → filename stem)
-const F1_CIRCUIT_MAP_NAMES: Record<string, string> = {
-  bahrain:       "Bahrain_Circuit",
-  jeddah:        "Saudi_Arabia_Circuit",
-  albert_park:   "Australia_Circuit",
-  suzuka:        "Japan_Circuit",
-  shanghai:      "China_Circuit",
-  miami:         "Miami_Circuit",
-  imola:         "Emilia_Romagna_Circuit",
-  monaco:        "Monaco_Circuit",
-  villeneuve:    "Canada_Circuit",
-  catalunya:     "Spain_Circuit",
-  red_bull_ring: "Austria_Circuit",
-  silverstone:   "Great_Britain_Circuit",
-  hungaroring:   "Hungary_Circuit",
-  spa:           "Belgium_Circuit",
-  zandvoort:     "Netherlands_Circuit",
-  monza:         "Italy_Circuit",
-  baku:          "Baku_Circuit",
-  marina_bay:    "Singapore_Circuit",
-  americas:      "USA_Circuit",
-  rodriguez:     "Mexico_Circuit",
-  interlagos:    "Brazil_Circuit",
-  las_vegas:     "Las_Vegas_Circuit",
-  losail:        "Qatar_Circuit",
-  yas_marina:    "Abu_Dhabi_Circuit",
-};
-
-// 2026'da yeni eklenen pistler eski "Circuit maps 16x9" setinde yok (henüz oluşturulmamış),
-// sadece yeni "2026/track/...detailed" CDN yolunda mevcut — bkz. curl doğrulaması 2026-08-03.
+// F1 media CDN 2026 pist görselleri (Jolpica circuit ID → CDN slug).
+// 2026-08-03'te eski "Circuit maps 16x9" setinden (content/dam/.../2018-redesign-assets/...)
+// buna geçildi: eski set hâlâ 200 dönüyor ama görseldeki etiketler "DRS Detection Zone" gibi
+// artık yanlış terminolojiyi taşıyor (2026 Active Aero kuralıyla DRS kavramı kalktı);
+// yeni CDN yolundaki görseller "Overtake Detection/Activation" ile güncel. Her circuitId
+// curl ile tek tek doğrulandı (bkz. sohbet geçmişi) — tüm slug'lar pist/şehir adı, ülke adı değil.
 const F1_CIRCUIT_MAP_SLUGS_2026: Record<string, string> = {
-  madring: "madrid",
-  sepang: "kualalumpur",
+  bahrain:       "sakhir",
+  jeddah:        "jeddah",
+  albert_park:   "melbourne",
+  suzuka:        "suzuka",
+  shanghai:      "shanghai",
+  miami:         "miami",
+  monaco:        "montecarlo",
+  villeneuve:    "montreal",
+  catalunya:     "catalunya",
+  red_bull_ring: "spielberg",
+  silverstone:   "silverstone",
+  hungaroring:   "hungaroring",
+  spa:           "spafrancorchamps",
+  zandvoort:     "zandvoort",
+  monza:         "monza",
+  baku:          "baku",
+  marina_bay:    "singapore",
+  americas:      "austin",
+  rodriguez:     "mexicocity",
+  interlagos:    "interlagos",
+  las_vegas:     "lasvegas",
+  losail:        "lusail",
+  yas_marina:    "yasmarina",
+  madring:       "madrid",
+  sepang:        "kualalumpur",
+  // imola: 2026 takviminde yok, yeni CDN'de karşılığı doğrulanmadı — eski asset de kalmadı, null döner.
 };
 
 export function getF1CircuitMapUrl(circuitId: string): string | null {
-  const name = F1_CIRCUIT_MAP_NAMES[circuitId];
-  if (name) {
-    return `https://media.formula1.com/image/upload/c_lfill,w_3392/q_auto/v1740000001/content/dam/fom-website/2018-redesign-assets/Circuit%20maps%2016x9/${name}.webp`;
-  }
-  const slug2026 = F1_CIRCUIT_MAP_SLUGS_2026[circuitId];
-  if (slug2026) {
-    return `https://media.formula1.com/image/upload/c_fit,h_704/q_auto/v1740000001/common/f1/2026/track/2026track${slug2026}detailed.webp`;
-  }
-  return null;
+  const slug = F1_CIRCUIT_MAP_SLUGS_2026[circuitId];
+  if (!slug) return null;
+  return `https://media.formula1.com/image/upload/c_fit,h_704/q_auto/v1740000001/common/f1/2026/track/2026track${slug}detailed.webp`;
 }
 
 // Jolpica circuit ID → [lat, lng]
