@@ -180,6 +180,7 @@
     "raceDistance": "Race distance {distance} km",
     "lapRecord": "Lap record: {time} — {driver} ({year})",
     "thisSeason": "This Season ({year})",
+    "latestRace": "Latest Race ({year})",
     "winner": "Winner",
     "fastestLap": "Fastest Lap",
     "winnerLabel": "Winner:",

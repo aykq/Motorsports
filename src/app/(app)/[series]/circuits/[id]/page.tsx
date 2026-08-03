@@ -9,20 +9,36 @@ import { BackButton } from "@/components/layout/BackButton";
 import Link from "next/link";
 import { getTranslations, getLocale } from "next-intl/server";
 import type { Metadata } from "next";
+import type { Race } from "@/types/series";
+
+// Pistin kaç yıl geriye giden geçmişini gösterelim — 2026-08-04'te 2021-2025
+// F1 backfill edildi (bkz. sohbet geçmişi), diğer seriler henüz sadece mevcut yılı kapsıyor.
+const HISTORY_YEARS_BACK = 5;
 
 interface Props {
   params: Promise<{ series: string; id: string }>;
 }
 
+type RaceWithYear = Race & { raceYear: number };
+
+async function fetchCircuitRacesAllYears(slug: string, id: string): Promise<RaceWithYear[]> {
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: HISTORY_YEARS_BACK + 1 }, (_, i) => currentYear - i);
+  const results = await Promise.all(years.map((y) => getCachedSchedule(slug, y)));
+  return results
+    .flatMap((r, i) => r.races.map((race) => ({ ...race, raceYear: years[i] })))
+    .filter((r) => r.circuitId === id)
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { series: slug, id } = await params;
-  const year = new Date().getFullYear();
   const config = getSeriesConfig(slug);
-  const [{ races }, t] = await Promise.all([
-    getCachedSchedule(slug, year),
+  const [circuitRaces, t] = await Promise.all([
+    fetchCircuitRacesAllYears(slug, id),
     getTranslations("circuitsPage"),
   ]);
-  const race = races.find((r) => r.circuitId === id);
+  const race = circuitRaces[0];
   return { title: race ? `${race.circuitName} — ${config?.name ?? slug}` : t("circuit") };
 }
 
@@ -46,12 +62,8 @@ export default async function CircuitDetailPage({ params }: Props) {
     getLocale(),
   ]);
   const dateLocale = locale === "tr" ? "tr-TR" : "en-US";
-  const year = new Date().getFullYear();
-  const { races } = await getCachedSchedule(slug, year);
-
-  const circuitRaces = races
-    .filter((r) => r.circuitId === id)
-    .sort((a, b) => b.round - a.round);
+  const currentYear = new Date().getFullYear();
+  const circuitRaces = await fetchCircuitRacesAllYears(slug, id);
 
   if (circuitRaces.length === 0) notFound();
 
@@ -150,11 +162,13 @@ export default async function CircuitDetailPage({ params }: Props) {
         </section>
       )}
 
-      {/* ── Bu Sezonun En İyileri ── */}
+      {/* ── Bu Sezonun / Son Yarışın En İyileri ── */}
       {(fastestLapResult || raceWinner) && (
         <section className="space-y-2">
           <h2 className="font-display text-xs font-semibold text-muted-foreground tracking-wide">
-            {t("thisSeason", { year })}
+            {latestCompleted.raceYear === currentYear
+              ? t("thisSeason", { year: currentYear })
+              : t("latestRace", { year: latestCompleted.raceYear })}
           </h2>
           <div className="rounded-lg border border-border overflow-hidden">
             {raceWinner && (
@@ -191,7 +205,7 @@ export default async function CircuitDetailPage({ params }: Props) {
           {upcomingRaces.map((race) => {
             const raceSession = race.sessions.find((s) => s.type === "race");
             return (
-              <Link key={race.round} href={`/${slug}/races/${race.round}`}>
+              <Link key={`${race.raceYear}-${race.round}`} href={`/${slug}/races/${race.round}?year=${race.raceYear}`}>
                 <div className="rounded-lg bg-card border border-border p-4 space-y-2 hover:bg-accent/50 transition-colors cursor-pointer">
                   <div className="flex items-center justify-between">
                     <p className="font-semibold text-sm">{race.name}</p>
@@ -224,7 +238,7 @@ export default async function CircuitDetailPage({ params }: Props) {
           {cancelledRaces.map((race) => {
             const raceSession = race.sessions.find((s) => s.type === "race");
             return (
-              <div key={race.round} className="rounded-lg bg-card border border-border p-4 space-y-2 opacity-60">
+              <div key={`${race.raceYear}-${race.round}`} className="rounded-lg bg-card border border-border p-4 space-y-2 opacity-60">
                 <div className="flex items-center justify-between">
                   <p className="font-semibold text-sm">{race.name}</p>
                   <Badge variant="outline" className="text-xs">{raceStatusT("cancelled")}</Badge>
@@ -253,13 +267,16 @@ export default async function CircuitDetailPage({ params }: Props) {
           {completedRaces.map((race) => {
             const winner = race.results?.[0];
             return (
-              <Link key={race.round} href={`/${slug}/races/${race.round}`}>
+              <Link key={`${race.raceYear}-${race.round}`} href={`/${slug}/races/${race.round}?year=${race.raceYear}`}>
                 <div className="rounded-lg bg-card border border-border p-4 space-y-2 hover:bg-accent/50 transition-colors cursor-pointer">
                   <div className="flex items-center justify-between">
                     <p className="font-semibold text-sm">{race.name}</p>
-                    {race.round < 900 && (
-                      <Badge variant="secondary" className="text-xs">{t("raceNumber", { round: race.round })}</Badge>
-                    )}
+                    <span className="flex items-center gap-1.5 shrink-0">
+                      <span className="font-mono text-xs text-muted-foreground">{race.raceYear}</span>
+                      {race.round < 900 && (
+                        <Badge variant="secondary" className="text-xs">{t("raceNumber", { round: race.round })}</Badge>
+                      )}
+                    </span>
                   </div>
                   {winner && (
                     <p className="text-xs text-muted-foreground">
