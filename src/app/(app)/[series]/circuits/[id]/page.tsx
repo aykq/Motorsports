@@ -128,12 +128,21 @@ export default async function CircuitDetailPage({ params }: Props) {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <StatCard label={t("length")} value={`${specs.lengthKm} km`} />
             <StatCard label={t("corners")} value={specs.corners} />
-            <StatCard label={t("drsZones")} value={specs.drsZones} />
+            <StatCard label={t("firstGrandPrix")} value={specs.firstGrandPrix ?? "—"} />
             <StatCard label={t("lapCount")} value={totalLaps ?? "—"} />
           </div>
-          {totalLaps && (
+          {specs.raceDistanceKm && (
             <p className="text-xs text-muted-foreground text-right">
-              {t("raceDistance", { distance: (specs.lengthKm * totalLaps).toFixed(1) })}
+              {t("raceDistance", { distance: specs.raceDistanceKm.toFixed(1) })}
+            </p>
+          )}
+          {specs.fastestLap && (
+            <p className="text-xs text-muted-foreground text-right font-mono">
+              {t("lapRecord", {
+                time: specs.fastestLap.time,
+                driver: specs.fastestLap.driver,
+                year: specs.fastestLap.year,
+              })}
             </p>
           )}
         </section>
