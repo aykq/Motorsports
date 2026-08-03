@@ -40,8 +40,9 @@ export default async function CircuitDetailPage({ params }: Props) {
   const config = getSeriesConfig(slug);
   if (!config || !config.available) notFound();
 
-  const [t, locale] = await Promise.all([
+  const [t, raceStatusT, locale] = await Promise.all([
     getTranslations("circuitsPage"),
+    getTranslations("raceStatus"),
     getLocale(),
   ]);
   const dateLocale = locale === "tr" ? "tr-TR" : "en-US";
@@ -64,7 +65,8 @@ export default async function CircuitDetailPage({ params }: Props) {
   };
 
   const completedRaces = circuitRaces.filter((r) => r.status === "completed");
-  const upcomingRaces = circuitRaces.filter((r) => r.status !== "completed");
+  const upcomingRaces = circuitRaces.filter((r) => r.status === "upcoming" || r.status === "live");
+  const cancelledRaces = circuitRaces.filter((r) => r.status === "cancelled");
 
   const specs = slug === "f1" ? getF1CircuitSpecs(id) : null;
   const layoutUrl = slug === "f1" ? getF1CircuitMapUrl(id) : null;
@@ -208,6 +210,35 @@ export default async function CircuitDetailPage({ params }: Props) {
                   )}
                 </div>
               </Link>
+            );
+          })}
+        </section>
+      )}
+
+      {/* ── İptal Edilen Yarışlar ── */}
+      {cancelledRaces.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="font-display text-xs font-semibold text-muted-foreground tracking-wide">
+            {raceStatusT("cancelled")}
+          </h2>
+          {cancelledRaces.map((race) => {
+            const raceSession = race.sessions.find((s) => s.type === "race");
+            return (
+              <div key={race.round} className="rounded-lg bg-card border border-border p-4 space-y-2 opacity-60">
+                <div className="flex items-center justify-between">
+                  <p className="font-semibold text-sm">{race.name}</p>
+                  <Badge variant="outline" className="text-xs">{raceStatusT("cancelled")}</Badge>
+                </div>
+                {raceSession && (
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(raceSession.date).toLocaleDateString(dateLocale, {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    })}
+                  </p>
+                )}
+              </div>
             );
           })}
         </section>
