@@ -1,6 +1,6 @@
 import { getCachedSchedule } from "@/lib/cache";
 import { getSeriesConfig } from "@/lib/series-config";
-import { getF1CircuitSpecs, getF1CircuitMapUrl } from "@/lib/circuit-data";
+import { getF1CircuitInfo } from "@/lib/circuit-data";
 import { CircuitLayoutImage } from "@/components/race/CircuitLayoutImage";
 import { Badge } from "@/components/ui/badge";
 import { notFound } from "next/navigation";
@@ -80,8 +80,7 @@ export default async function CircuitDetailPage({ params }: Props) {
   const upcomingRaces = circuitRaces.filter((r) => r.status === "upcoming" || r.status === "live");
   const cancelledRaces = circuitRaces.filter((r) => r.status === "cancelled");
 
-  const specs = slug === "f1" ? getF1CircuitSpecs(id) : null;
-  const layoutUrl = slug === "f1" ? getF1CircuitMapUrl(id) : null;
+  const { specs, mapUrl: layoutUrl } = slug === "f1" ? await getF1CircuitInfo(id) : { specs: null, mapUrl: null };
   const latestCompleted = completedRaces[0];
   const totalLaps = latestCompleted?.results?.[0]?.laps ?? specs?.officialLaps;
   const fastestLapResult = latestCompleted?.results?.find((r) => r.fastestLap);

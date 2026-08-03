@@ -141,6 +141,22 @@ export const cachedDrivers = pgTable(
   (t) => [uniqueIndex("cached_driver_series_driver").on(t.seriesSlug, t.driverId)]
 );
 
+// f1.com'dan scrape edilen pist özellikleri (uzunluk, tur sayısı, pist rekoru, pist görseli)
+// season-scoped değil — her sync'te en güncel bilinen veriyle upsert edilir
+export const cachedCircuits = pgTable(
+  "cached_circuit",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    seriesSlug: text("series_slug").notNull(),
+    circuitId: text("circuit_id").notNull(),
+    data: jsonb("data").notNull(),
+    fetchedAt: timestamp("fetched_at").defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex("cached_circuit_series_circuit").on(t.seriesSlug, t.circuitId)]
+);
+
 export const cachedRaceDetails = pgTable(
   "cached_race_detail",
   {

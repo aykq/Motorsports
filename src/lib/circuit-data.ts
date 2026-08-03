@@ -1,3 +1,5 @@
+import { getCachedCircuitData } from "@/lib/cache";
+
 export interface CircuitSpecs {
   lengthKm: number;
   corners: number;
@@ -43,6 +45,36 @@ const F1_CIRCUIT_SPECS: Record<string, CircuitSpecs> = {
 
 export function getF1CircuitSpecs(circuitId: string): CircuitSpecs | null {
   return F1_CIRCUIT_SPECS[circuitId] ?? null;
+}
+
+/**
+ * cached_circuit'teki (f1.com'dan periyodik scrape edilen, bkz. circuit-scraper.ts)
+ * en güncel veriyi statik seed'in (F1_CIRCUIT_SPECS/getF1CircuitMapUrl) üzerine
+ * alan-alan bindirir. Scraper hiç çalışmadıysa veya bir alanı çekemediyse seed
+ * değeri kullanılır — sayfa hiçbir zaman bomboş kalmaz.
+ */
+export async function getF1CircuitInfo(
+  circuitId: string
+): Promise<{ specs: CircuitSpecs | null; mapUrl: string | null }> {
+  const scraped = await getCachedCircuitData("f1", circuitId);
+  const seed = getF1CircuitSpecs(circuitId);
+  const seedMapUrl = getF1CircuitMapUrl(circuitId);
+
+  if (!scraped) return { specs: seed, mapUrl: seedMapUrl };
+
+  const specs: CircuitSpecs | null =
+    seed || scraped.lengthKm
+      ? {
+          lengthKm: scraped.lengthKm ?? seed?.lengthKm ?? 0,
+          corners: seed?.corners ?? 0,
+          officialLaps: scraped.officialLaps ?? seed?.officialLaps,
+          raceDistanceKm: scraped.raceDistanceKm ?? seed?.raceDistanceKm,
+          firstGrandPrix: scraped.firstGrandPrix ?? seed?.firstGrandPrix,
+          fastestLap: scraped.fastestLap ?? seed?.fastestLap,
+        }
+      : null;
+
+  return { specs, mapUrl: scraped.trackImageUrl ?? seedMapUrl };
 }
 
 // F1 media CDN circuit layout icons 4x3 (Jolpica circuit ID → CDN slug)
