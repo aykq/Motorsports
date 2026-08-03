@@ -13,7 +13,7 @@ export function CircuitLayoutImage({ src, alt }: CircuitLayoutImageProps) {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-32 rounded-lg bg-card border border-border text-muted-foreground">
+      <div className="flex items-center justify-center aspect-video rounded-lg bg-card border border-border text-muted-foreground">
         <MapPin className="w-8 h-8 opacity-30" />
       </div>
     );
@@ -24,7 +24,7 @@ export function CircuitLayoutImage({ src, alt }: CircuitLayoutImageProps) {
     <img
       src={src}
       alt={alt}
-      className="w-full h-40 object-contain rounded-lg bg-card border border-border p-3"
+      className="w-full aspect-video object-contain rounded-lg bg-card border border-border p-3"
       onError={() => setError(true)}
     />
   );
