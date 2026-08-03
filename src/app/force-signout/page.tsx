@@ -13,8 +13,8 @@ export default function ForceSignoutPage() {
   }, []);
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
+    <main className="min-h-screen flex items-center justify-center">
       <p className="text-sm text-muted-foreground">{t("loading")}</p>
-    </div>
+    </main>
   );
 }

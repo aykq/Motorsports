@@ -114,7 +114,17 @@ xs→2xl tüm kırılımlar, açık+koyu tema, erişilebilirlik (focus, reduced-
 
 **1. tur (2026-08-04) — Faz 4(2.tur)/5/6'da dokunulan yüzeylerin regresyon taraması:** 07-31'deki responsive QA turu bu fazlardan önceydi, o yüzden bu turda dokunulan sayfalar ayrıca tarandı: `races/[round]` (SessionTabs/PracticeSection/QualifyingSection), `news`, `news/[id]`, `admin` (Sync tab), `circuits/[id]` (yeni İptal bölümü + First Grand Prix kartı), `standings`, `schedule`. DOM-tabanlı yatay-taşma kontrolü (`scrollWidth - innerWidth`) 375/390/768/1024/1440/1920/2560/3840px'te, **hem açık hem koyu temada** — hepsi `overflow: 0`. Açık temada görsel spot-check (circuits/bahrain İptal bölümü, races/11 FP1 tablosu, admin Sync tab News butonu) — kontrast/okunabilirlik sorunu yok. Console'da sadece OpenF1 hava durumu API'sinin rate-limit hataları (429/404) var, `WeatherChip` zaten `null` dönüp sessizce gizleniyor, uygulama hatası değil.
 
-**Devam edecek:** erişilebilirlik (focus-visible, prefers-reduced-motion, kontrast oranı ölçümü), performans (Lighthouse/Core Web Vitals), PWA kontrolü henüz yapılmadı.
+**2. tur (2026-08-04) — erişilebilirlik + PWA + Lighthouse:**
+- **focus-visible**: Sidebar/Button/Input/Tabs/Badge/Switch primitive'leri zaten `outline-none focus-visible:ring-2` deseniyle doğru kurulmuş. Playwright ile klavye-Tab testi yapıldı, `:focus-visible` gerçekten tetikleniyor ve halka görünür (ekran görüntüsüyle doğrulandı). İlk otomatik test turu yanlış pozitif verdi (settle-delay eksikliği), tekrar kontrol edilip düzeltildi — halüsinasyon riskine karşı bulgu raporlamadan önce doğrulama pratiğine örnek.
+- **prefers-reduced-motion**: `globals.css`'te zaten global bir override var (`animation-duration: 0.01ms !important` vb.), `page.emulateMedia({reducedMotion:'reduce'})` ile canlı doğrulandı, çalışıyor.
+- **PWA**: `manifest.json` geçerli JSON, 8 ikon dosyası da mevcut, service worker canlıda `activated` durumunda kayıtlı. Sorun yok.
+- **Lighthouse (a11y/best-practices/SEO) çalıştırıldı, 2 gerçek bug bulunup düzeltildi:**
+  1. `src/app/layout.tsx`'teki global `viewport` config'inde `maximumScale: 1, userScalable: false` vardı — pinch-zoom'u **tüm uygulamada** kapatıyordu (WCAG 1.4.4 ihlali, düşük görüşlü kullanıcılar zoom yapamıyordu). Kaldırıldı.
+  2. `/login`, `/pending`, `/blocked`, `/force-signout` sayfalarının hiçbirinde `<main>` landmark yoktu (en dıştaki `<div>` `<main>`'e çevrildi, görsel değişiklik yok). Not: Lighthouse ana sayfayı (`/`) auth olmadan taradığı için otomatik `/login`'e yönlendi, bulgu aslında bu 4 auth-yardımcı sayfa içindi.
+  3. `robots.txt` yoktu (istek 404/HTML dönüyordu) → `src/app/robots.ts` eklendi, `Disallow: /` (uygulama tamamen auth-gated, indexlenmemeli — bu yüzden Lighthouse SEO skoru "is-crawlable" ile 91→63 düştü, bu **kasıtlı ve doğru**, regresyon değil).
+  - Accessibility skoru: **92 → 100**. Best-practices: 100 (değişmedi). `valid-source-maps` uyarısı sadece Turbopack dev-mode'un vendor chunk'larıyla ilgili, prod build'i yansıtmıyor, aksiyon alınmadı.
+
+**Devam edecek:** kontrast oranı manuel ölçümü (Lighthouse a11y 100 olduğu için düşük öncelik), performans/Core Web Vitals (dev-mode sayıları prod'u yansıtmadığı için gerçek build üzerinde ölçülmeli).
 
 ### Backlog — pist sayfası zenginleştirme (henüz fazlandırılmadı, 2026-08-03/04 not edildi)
 Kullanıcının circuit-detay sayfası için fikirleri, ileride bir faza (muhtemelen ayrı bir "Faz 8") dahil edilecek:
