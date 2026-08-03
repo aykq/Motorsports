@@ -1,6 +1,6 @@
 export default function NewsDetailLoading() {
   return (
-    <div className="max-w-2xl mx-auto pb-24 animate-pulse">
+    <div className="max-w-3xl mx-auto pb-24 animate-pulse">
       <div className="px-4 pt-4">
         <div className="h-8 w-24 bg-muted rounded" />
       </div>

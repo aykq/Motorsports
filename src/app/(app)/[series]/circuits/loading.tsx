@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function CircuitsLoading() {
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 space-y-5">
+    <div className="max-w-3xl mx-auto px-4 py-6 space-y-5">
       <div className="space-y-1">
         <Skeleton className="h-5 w-24" />
         <Skeleton className="h-6 w-48" />

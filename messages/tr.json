@@ -14,7 +14,18 @@
     "readMore": "Devamını Oku",
     "by": "Yazar:",
     "source": "Kaynağa Git",
-    "back": "Haberler"
+    "back": "Haberler",
+    "newsFallbackTitle": "Haber",
+    "contentUnavailable": "İçerik yüklenemedi.",
+    "timeJustNow": "şimdi",
+    "timeMinutes": "{m}dk",
+    "timeHours": "{h}s",
+    "timeDays": "{d}g"
+  },
+  "newsSync": {
+    "idle": "Güncelle",
+    "pending": "Güncelleniyor...",
+    "success": "Güncellendi"
   },
   "calendar": {
     "title": "Takvim",
@@ -298,7 +309,6 @@
     "driverCache": "Driver cache temizle",
     "driverCacheHint": "Cache temizledikten sonra ilgili seriyi sync et.",
     "news": "Haberler",
-    "syncNews": "Haberleri Sync Et",
     "subDistribution": "Abonelik dağılımı",
     "noSubs": "Henüz abonelik yok.",
     "notifSent": "Gönderilen bildirim",

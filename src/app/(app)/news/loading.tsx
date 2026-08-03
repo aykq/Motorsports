@@ -1,6 +1,6 @@
 export default function NewsLoading() {
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 pb-24">
+    <div className="max-w-3xl mx-auto px-4 py-6 pb-24">
       <div className="h-8 w-32 bg-muted rounded animate-pulse mb-4" />
       <div className="flex flex-col gap-2">
         {Array.from({ length: 8 }).map((_, i) => (
