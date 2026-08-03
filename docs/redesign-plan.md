@@ -56,7 +56,17 @@ Takvim/ana sayfa (CalendarClient), Seri seçici, Seri hub, Favorites, Settings, 
 ### Faz 3 — Seri alt sayfaları
 Schedule, Standings, Drivers + drivers/[id], Teams + teams/[id], Circuits + circuits/[id]. Bileşenler: RaceCard, DriverPhoto, TeamLogo.
 
-**Durum (2026-07-31, kısmen tarandı):** Liste + detay sayfaları (driver/[id], team/[id], circuit/[id]) zaten büyük ölçüde tasarım diliyle tutarlı bulundu (takım rengi hero, stat kartları, sonuç listeleri) — büyük bir redesign işi gerekmedi. DOM-tabanlı bir tarama ile (computed `text-transform:uppercase` kontrolü) CSS class grep'lerinin kaçırdığı 4 uppercase varyantı bulunup düzeltildi. Circuits listesi, Teams listesi, Standings tam sayfa, driver/team detay taranmış, temiz. **Devam edecek:** circuits detay + drivers/teams detay daha kapsamlı bakılabilir, sonra Faz 4-7'ye geçilebilir. Ayrıca not: TeamLogo bileşeni düşük çözünürlüklü görünüyor (henüz ele alınmadı, bkz. Task #15).
+**Durum (2026-07-31, kısmen tarandı):** Liste + detay sayfaları (driver/[id], team/[id], circuit/[id]) zaten büyük ölçüde tasarım diliyle tutarlı bulundu (takım rengi hero, stat kartları, sonuç listeleri) — büyük bir redesign işi gerekmedi. DOM-tabanlı bir tarama ile (computed `text-transform:uppercase` kontrolü) CSS class grep'lerinin kaçırdığı 4 uppercase varyantı bulunup düzeltildi. Circuits listesi, Teams listesi, Standings tam sayfa, driver/team detay taranmış, temiz. Ayrıca not: TeamLogo bileşeni düşük çözünürlüklü görünüyor (henüz ele alınmadı, bkz. Task #15).
+
+**✅ TAMAMLANDI (2026-08-03) — kapsamlı detay-sayfa taraması:** `circuits/[id]`, `drivers/[id]`, `teams/[id]`, `DriversContent.tsx`, `circuits/page.tsx`, `teams/page.tsx`, `schedule/page.tsx` tek tek okunup denetlendi. 2 gerçek bug bulundu ve düzeltildi:
+1. `circuits/[id]/page.tsx` yaklaşan yarış tarihini koşulsuz `"tr-TR"` ile formatlıyordu (RaceControlSection'ın Faz 4'te düzeltilen `navigator.language` hatasıyla aynı sınıf) → `getLocale()`'a bağlandı.
+2. `standings/page.tsx`'te sürücü/takım puan rozetlerinde hardcoded İngilizce `"pts"` metni her zaman gösteriliyordu (TR arayüzde bile) → `standingsPage.pointsAbbr` çeviri anahtarı eklendi (TR: "puan", EN: "pts").
+
+Tümü `tsc --noEmit`/`eslint` temiz, Playwright ile canlı doğrulandı (standings rozetleri "pts", Zandvoort sayfası "August 23, 2026" gösteriyor).
+
+**Yanlış alarm (düzeltilip geri alındı):** `schedule/page.tsx`'teki `RaceTimeline`'ın "şimdi" ayracına `raceStatusT("completed")` ("Tamamlandı") bağlıydı; kullanılmayan `schedulePage.now` ("— Şimdi —") anahtarına bakıp bunu bug sandım ve değiştirdim. Kullanıcı haklı olarak şüphelenip tekrar kontrol etmemi istedi — `CalendarClient.tsx`'teki (ana Takvim sayfası) birebir aynı "now-marker" ayracı da kasıtlı olarak `nowLabel={t("completed")}` kullanıyor, yani "Tamamlandı" etiketi upcoming/past ayracı için **kurulu, tutarlı bir örüntü** — "now" anahtarı muhtemelen kullanılmayan/artık bir çeviri. Değişiklik geri alındı, `schedulePage.now` anahtarına dokunulmadı (silinmesi ayrı bir karar, sorulmadan yapılmadı).
+
+**Bulunan ama kasıtlı olarak dokunulmayan (kullanıcıya soruldu):** Yarış-detayı bileşenleri (QualifyingSection/PracticeSection/TireStints) pozisyon renklerinde `yellow-500/zinc-400/amber-600` ailesini kullanırken, profil sayfaları (driver/[id]'nin `positionBadge`, teams/[id]'nin `positionClass`) `yellow-400/zinc-300/orange-400` ailesini kullanıyor — iki grup kendi içinde tutarlı ama birbirinden farklı. Faz 4'teki F1/WEC birleştirmesi gibi tüm uygulamada tek renk ailesine indirmek mümkün ama 4 dosyayı etkileyen bir tercih meselesi, otomatik düzeltilmedi.
 
 ### Faz 4 — Yarış hafta sonu (en karmaşık)
 `races/[round]` + tüm race bileşenleri: Results/WEC/Qualifying/Practice, SessionTabs, TireStints, RaceControlSection, RaceTimeline, RaceWeatherSection, WeatherChip, Countdown, Circuit foto/layout.
@@ -70,7 +80,9 @@ Schedule, Standings, Drivers + drivers/[id], Teams + teams/[id], Circuits + circ
 6. `RaceResultsSection` ile `WECRaceResultsSection` arasında pozisyon rozeti/sıralama/puan tipografisi tutarsızdı → WEC'in `PositionBadge`'i F1'in daireli-arka-planlı formülüne çevrildi, `tabular-nums` her iki bileşende de standart hale getirildi.
 7. Mobil taşma şüphesi (`TireStints` `w-28`, `RaceResultsSection` `grid-cols-2`) → 375px'te ölçülüp doğrulandı, **yanlış pozitif** çıktı (truncate/min-width zaten düzgün çalışıyor), değişiklik yapılmadı.
 
-**Sırada:** Faz 4'ün geri kalanı (SessionTabs, QualifyingSection, PracticeSection, Countdown, WeatherChip, CircuitHeroPhoto/CircuitLayoutImage henüz ayrıca taranmadı) veya Faz 5-7'ye geçiş.
+**2. tur (2026-08-02/03) — SessionTabs/QualifyingSection/PracticeSection ek düzeltmeler:** Kullanıcı isteğiyle PracticeSection'dan gap-ratio çizgileri, mor şimşek (Zap) ikonu ve sağ üst "en hızlı tur" rozeti kaldırıldı; FP tablolarındaki pilot isimleri Qualifying/Race tablolarıyla tutarlı şekilde tıklanabilir hale getirildi (driver sayfasına link). Ayrıca bu süreçte kritik bir backend bug bulunup düzeltildi: F1 practice (FP1/2/3) sonuçları `country_code` alanındaki bir Zod şema uyuşmazlığı yüzünden hiç çekilmiyordu (bkz. commit geçmişi / `src/lib/adapters/f1/openf1.ts`).
+
+**✅ TAMAMLANDI (2026-08-03) — kalan bileşenler tarandı:** `Countdown.tsx`, `WeatherChip.tsx`, `CircuitHeroPhoto.tsx`, `CircuitLayoutImage.tsx`, `TireStints.tsx`, `RaceTimeline.tsx` tek tek okunup denetlendi — hepsi zaten tutarlı (font-display/tabular-nums doğru, locale `getLocale()`'a bağlı, hardcoded string yok, tema-bağımsız renk sorunu yok). Faz 4 bu turla kapandı.
 
 ### Faz 5 — Haberler + Admin + PWA
 News list + detay, Admin paneli, NotificationSettings, InstallPrompt.
