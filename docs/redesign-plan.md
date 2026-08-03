@@ -124,7 +124,9 @@ xs→2xl tüm kırılımlar, açık+koyu tema, erişilebilirlik (focus, reduced-
   3. `robots.txt` yoktu (istek 404/HTML dönüyordu) → `src/app/robots.ts` eklendi, `Disallow: /` (uygulama tamamen auth-gated, indexlenmemeli — bu yüzden Lighthouse SEO skoru "is-crawlable" ile 91→63 düştü, bu **kasıtlı ve doğru**, regresyon değil).
   - Accessibility skoru: **92 → 100**. Best-practices: 100 (değişmedi). `valid-source-maps` uyarısı sadece Turbopack dev-mode'un vendor chunk'larıyla ilgili, prod build'i yansıtmıyor, aksiyon alınmadı.
 
-**Devam edecek:** kontrast oranı manuel ölçümü (Lighthouse a11y 100 olduğu için düşük öncelik), performans/Core Web Vitals (dev-mode sayıları prod'u yansıtmadığı için gerçek build üzerinde ölçülmeli).
+**Devam edecek:** kontrast oranı manuel ölçümü (Lighthouse a11y 100 olduğu için düşük öncelik).
+
+**Performans/Core Web Vitals ölçümü — kullanıcı kararı (2026-08-04):** `redesign/vision` main'e merge edilip production'a deploy edildikten SONRA, gerçek production ortamında ölçülecek. Yerel `next build && next start` yerine bu tercih edildi çünkü gerçek sunucu donanımı + gerçek ağ gecikmesi + Cloudflare tunnel katmanı, local prod-build'den daha temsili sonuç verir (local'de loopback ağı sonuçları yapay iyi gösterir). Lighthouse `--only-categories=performance` ile mshub.aykq.org.tr üzerinde koşulacak.
 
 ### Backlog — pist sayfası zenginleştirme (henüz fazlandırılmadı, 2026-08-03/04 not edildi)
 Kullanıcının circuit-detay sayfası için fikirleri, ileride bir faza (muhtemelen ayrı bir "Faz 8") dahil edilecek:
