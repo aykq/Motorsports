@@ -4,7 +4,14 @@ import { db } from "@/db";
 import { cachedRaceDetails, cachedRaces, cachedDrivers, notificationLog } from "@/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { updateTag } from "next/cache";
-import { syncSeries } from "@/lib/sync";
+import {
+  syncSeries,
+  syncScheduleOnly,
+  syncDriverStandingsOnly,
+  syncTeamStandingsOnly,
+  syncDriversOnly,
+  syncCircuitData,
+} from "@/lib/sync";
 import { sendPushToSubscribers } from "@/lib/push";
 import { requireAdmin } from "@/lib/admin-guard";
 import { fetchAndCacheNews, cleanAllNewsContent } from "@/lib/scrapers/motorsportNews";
@@ -27,6 +34,64 @@ export async function syncSeriesAction(slug: string): Promise<{ ok: boolean; mes
       details: result.raceDetailsSynced,
     });
     return { ok: true, message: msg };
+  } catch (err) {
+    return { ok: false, message: String(err) };
+  }
+}
+
+// ── Kategori-bazlı F1 sync butonları (admin panel) — hepsi sadece mevcut yılı
+// çeker, geçmiş sezonlara asla dokunmaz.
+
+export async function syncF1ScheduleAction(): Promise<{ ok: boolean; message: string }> {
+  await checkAdmin();
+  try {
+    await syncScheduleOnly("f1", new Date().getFullYear());
+    const t = await getTranslations("admin");
+    return { ok: true, message: t("toastSyncCount", { count: 1 }) };
+  } catch (err) {
+    return { ok: false, message: String(err) };
+  }
+}
+
+export async function syncF1DriverStandingsAction(): Promise<{ ok: boolean; message: string }> {
+  await checkAdmin();
+  try {
+    const count = await syncDriverStandingsOnly("f1", new Date().getFullYear());
+    const t = await getTranslations("admin");
+    return { ok: true, message: t("toastSyncCount", { count }) };
+  } catch (err) {
+    return { ok: false, message: String(err) };
+  }
+}
+
+export async function syncF1TeamStandingsAction(): Promise<{ ok: boolean; message: string }> {
+  await checkAdmin();
+  try {
+    const count = await syncTeamStandingsOnly("f1", new Date().getFullYear());
+    const t = await getTranslations("admin");
+    return { ok: true, message: t("toastSyncCount", { count }) };
+  } catch (err) {
+    return { ok: false, message: String(err) };
+  }
+}
+
+export async function syncF1DriversAction(): Promise<{ ok: boolean; message: string }> {
+  await checkAdmin();
+  try {
+    const count = await syncDriversOnly("f1", new Date().getFullYear());
+    const t = await getTranslations("admin");
+    return { ok: true, message: t("toastSyncCount", { count }) };
+  } catch (err) {
+    return { ok: false, message: String(err) };
+  }
+}
+
+export async function syncF1CircuitsAction(): Promise<{ ok: boolean; message: string }> {
+  await checkAdmin();
+  try {
+    const result = await syncCircuitData(new Date().getFullYear());
+    const t = await getTranslations("admin");
+    return { ok: true, message: t("toastCircuitSync", { synced: result.synced, skipped: result.skipped }) };
   } catch (err) {
     return { ok: false, message: String(err) };
   }
