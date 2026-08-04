@@ -36,7 +36,7 @@
     "completed": "Finished",
     "cancelled": "Cancelled",
     "nextRace": "Next Race",
-    "now": "— Now —",
+    "now": "Now",
     "noUpcoming": "No upcoming races found.",
     "noData": "No data available for this series."
   },
@@ -85,7 +85,7 @@
     }
   },
   "login": {
-    "tagline": "F1, WEC, MotoGP and more — all in one place",
+    "tagline": "F1, WEC, MotoGP and more, all in one place",
     "googleSignIn": "Sign in with Google",
     "magicLink": "Send Magic Link",
     "emailPlaceholder": "email@example.com",
@@ -131,7 +131,7 @@
     "upcoming": "Upcoming ({count})",
     "completed": "Completed ({count})",
     "noData": "No schedule data yet.",
-    "now": "— Now —",
+    "now": "Now",
     "nextRace": "Next"
   },
   "standingsPage": {
@@ -179,7 +179,7 @@
     "firstGrandPrix": "First Grand Prix",
     "lapCount": "Laps",
     "raceDistance": "Race distance {distance} km",
-    "lapRecord": "Lap record: {time} — {driver} ({year})",
+    "lapRecord": "Lap record: {time} · {driver} ({year})",
     "thisSeason": "This Season ({year})",
     "latestRace": "Latest Race ({year})",
     "winner": "Winner",
@@ -217,8 +217,8 @@
     "colGap": "Gap",
     "colLap": "Lap",
     "qualifyingResults": "Qualifying Results",
-    "q2Eliminated": "Q2 — Eliminated",
-    "q1Eliminated": "Q1 — Eliminated",
+    "q2Eliminated": "Q2: Eliminated",
+    "q1Eliminated": "Q1: Eliminated",
     "loadMore": "Show more",
     "viewAll": "Show all",
     "winsLabel": "W"
@@ -372,6 +372,6 @@
     "toastNotifFailed": ", {failed} failed",
     "toastDriverCacheCleared": "{slug} driver cache cleared ({count} records)",
     "toastNewsItem": "{slug}: {urls} URLs, +{inserted} new, {skipped} existing",
-    "toastNewsError": "{slug}: ERROR — {error}"
+    "toastNewsError": "{slug}: ERROR ({error})"
   }
 }
