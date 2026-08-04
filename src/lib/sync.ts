@@ -110,6 +110,34 @@ export async function syncScheduleOnly(slug: string, season: number): Promise<vo
   await setCachedSchedule(slug, season, racesWithCancelled);
 }
 
+// ── Admin panelindeki kategori-bazlı sync butonları için: her biri tek bir veri
+// türünü, sadece verilen sezon için tazeler. Geçmiş sezonlar buraya asla otomatik
+// bağlanmaz — sadece elle çalıştırılan bir kerelik backfill script'leriyle girer.
+
+export async function syncDriverStandingsOnly(slug: string, season: number): Promise<number> {
+  const adapter = getAdapter(slug);
+  if (!adapter) return 0;
+  const standings = await adapter.fetchStandings(season, "driver");
+  await setCachedStandings(slug, season, "driver", standings);
+  return standings.length;
+}
+
+export async function syncTeamStandingsOnly(slug: string, season: number): Promise<number> {
+  const adapter = getAdapter(slug);
+  if (!adapter) return 0;
+  const standings = await adapter.fetchStandings(season, "team");
+  await setCachedStandings(slug, season, "team", standings);
+  return standings.length;
+}
+
+export async function syncDriversOnly(slug: string, season: number): Promise<number> {
+  const adapter = getAdapter(slug);
+  if (!adapter) return 0;
+  const drivers = await downloadDriverImages(await adapter.fetchDrivers(season), slug);
+  await setCachedDrivers(slug, drivers);
+  return drivers.length;
+}
+
 export async function syncSeries(slug: string, season: number): Promise<SyncResult> {
   const adapter = getAdapter(slug);
   if (!adapter) throw new Error(`Unknown series: ${slug}`);
