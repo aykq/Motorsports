@@ -40,7 +40,7 @@ export const WIKIPEDIA_CIRCUIT_TITLES: Record<string, string> = {
   americas: "Circuit of the Americas",
   rodriguez: "Autódromo Hermanos Rodríguez",
   interlagos: "Interlagos Circuit",
-  las_vegas: "Las Vegas Strip Circuit",
+  vegas: "Las Vegas Strip Circuit", // Jolpica'nın circuitId'si "vegas" (las_vegas değil)
   losail: "Lusail International Circuit",
   yas_marina: "Yas Marina Circuit",
   madring: "Madring",
@@ -72,7 +72,7 @@ export const F1_CIRCUITS_COM_SLUGS: Record<string, string> = {
   americas: "circuit-of-the-americas",
   rodriguez: "autodromo-hermanos-rodriguez",
   interlagos: "interlagos-circuit",
-  las_vegas: "las-vegas-strip-circuit",
+  vegas: "las-vegas-strip-circuit",
   losail: "lusail-international-circuit",
   yas_marina: "yas-marina-circuit",
   madring: "madring",

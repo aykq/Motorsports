@@ -35,7 +35,7 @@ const F1_CIRCUIT_SPECS: Record<string, CircuitSpecs> = {
   americas:       { lengthKm: 5.513, corners: 20, officialLaps: 56, raceDistanceKm: 308.405, firstGrandPrix: 2012, fastestLap: { time: "1:36.169", driver: "Charles Leclerc", year: 2019 } },
   rodriguez:      { lengthKm: 4.304, corners: 17, officialLaps: 71, raceDistanceKm: 305.354, firstGrandPrix: 1963, fastestLap: { time: "1:17.774", driver: "Valtteri Bottas", year: 2021 } },
   interlagos:     { lengthKm: 4.309, corners: 15, officialLaps: 71, raceDistanceKm: 305.879, firstGrandPrix: 1973, fastestLap: { time: "1:10.540", driver: "Valtteri Bottas", year: 2018 } },
-  las_vegas:      { lengthKm: 6.201, corners: 17, officialLaps: 50, raceDistanceKm: 309.958, firstGrandPrix: 2023, fastestLap: { time: "1:33.365", driver: "Max Verstappen", year: 2025 } },
+  vegas:          { lengthKm: 6.201, corners: 17, officialLaps: 50, raceDistanceKm: 309.958, firstGrandPrix: 2023, fastestLap: { time: "1:33.365", driver: "Max Verstappen", year: 2025 } }, // Jolpica'nın kendi circuitId'si "vegas" (las_vegas değil) — anahtar buna göre düzeltildi
   losail:         { lengthKm: 5.419, corners: 16, officialLaps: 57, raceDistanceKm: 308.611, firstGrandPrix: 2021, fastestLap: { time: "1:22.384", driver: "Lando Norris", year: 2024 } },
   yas_marina:     { lengthKm: 5.281, corners: 16, officialLaps: 58, raceDistanceKm: 306.183, firstGrandPrix: 2009, fastestLap: { time: "1:25.637", driver: "Kevin Magnussen", year: 2024 } },
   // 2026'da yeni: Madrid (round 14, ilk kez), Sepang (round 16, "Bahrain GP in Malaysia" adıyla)
@@ -100,7 +100,7 @@ const F1_CIRCUIT_LAYOUT_SLUGS: Record<string, string> = {
   americas:      "usa",
   rodriguez:     "mexico",
   interlagos:    "brazil",
-  las_vegas:     "las_vegas",
+  vegas:         "las_vegas",
   losail:        "qatar",
   yas_marina:    "abu_dhabi",
 };
@@ -138,7 +138,7 @@ const F1_CIRCUIT_MAP_SLUGS_2026: Record<string, string> = {
   americas:      "austin",
   rodriguez:     "mexicocity",
   interlagos:    "interlagos",
-  las_vegas:     "lasvegas",
+  vegas:         "lasvegas",
   losail:        "lusail",
   yas_marina:    "yasmarina",
   madring:       "madrid",
@@ -175,7 +175,7 @@ const F1_CIRCUIT_COORDS: Record<string, [number, number]> = {
   americas:      [30.1328,  -97.6411],
   rodriguez:     [19.4042,  -99.0907],
   interlagos:    [-23.7036, -46.6997],
-  las_vegas:     [36.1147, -115.1728],
+  vegas:         [36.1147, -115.1728],
   losail:        [25.4900,   51.4542],
   yas_marina:    [24.4672,   54.6031],
   madring:       [40.4653,  -3.6153],
@@ -210,7 +210,7 @@ const F1_CIRCUIT_PHOTOS: Record<string, string> = {
   americas:      "/f1/circuits/us-gp.webp",
   rodriguez:     "/f1/circuits/mexico.webp",
   interlagos:    "/f1/circuits/sao-paulo.webp",
-  las_vegas:     "/f1/circuits/las-vegas.webp",
+  vegas:         "/f1/circuits/las-vegas.webp",
   losail:        "/f1/circuits/qatar.webp",
   yas_marina:    "/f1/circuits/abu-dhabi.webp",
 };
