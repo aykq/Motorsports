@@ -231,45 +231,53 @@ export async function syncCircuitData(season: number): Promise<CircuitSyncResult
   for (const circuitId of circuitIds) {
     try {
       const existing = await getCachedCircuitData("f1", circuitId);
+      const hasLiveSpecsSource = Boolean(F1_RACE_URL_SLUGS[circuitId]);
 
-      const specsData = F1_RACE_URL_SLUGS[circuitId]
+      const specsData = hasLiveSpecsSource
         ? await scrapeF1CircuitData(circuitId, season)
         : null;
 
       // No f1.com page for this circuit (dropped from the calendar, or never had one) —
-      // fall back to Wikipedia's infobox for length/corners/lap record.
+      // fall back to Wikipedia's infobox for length/corners/lap record. Off-calendar circuits
+      // are frozen in time (their Wikipedia data won't meaningfully change), so once we've
+      // captured it once we stop re-fetching on every sync — only the current-calendar
+      // circuits (which DO get fresh f1.com data each time) are worth re-checking.
+      const needsWikiSpecsBackfill = !hasLiveSpecsSource && existing?.lengthKm == null;
       const wikiSpecs =
-        !F1_RACE_URL_SLUGS[circuitId] && WIKIPEDIA_CIRCUIT_TITLES[circuitId]
+        needsWikiSpecsBackfill && WIKIPEDIA_CIRCUIT_TITLES[circuitId]
           ? await scrapeWikipediaCircuitSpecs(WIKIPEDIA_CIRCUIT_TITLES[circuitId])
           : null;
 
       let history = existing?.history ?? null;
-      try {
-        const historyScrape = await scrapeCircuitHistory(circuitId);
-        if (historyScrape) {
-          if (historyScrape.sourceHash !== history?.sourceHash) {
-            const summary = await summarizeCircuitHistory(historyScrape.circuitName, historyScrape.rawText);
-            if (summary) {
-              history = {
-                tr: summary.tr,
-                en: summary.en,
-                sourceHash: historyScrape.sourceHash,
-                links: historyScrape.links,
-                updatedAt: new Date().toISOString(),
-              };
-            } else {
-              errors.push(`${circuitId}: history summarize failed (Gemini)`);
-              history = history ? { ...history, links: historyScrape.links } : null;
+      const needsHistoryCheck = hasLiveSpecsSource || existing?.history == null;
+      if (needsHistoryCheck) {
+        try {
+          const historyScrape = await scrapeCircuitHistory(circuitId);
+          if (historyScrape) {
+            if (historyScrape.sourceHash !== history?.sourceHash) {
+              const summary = await summarizeCircuitHistory(historyScrape.circuitName, historyScrape.rawText);
+              if (summary) {
+                history = {
+                  tr: summary.tr,
+                  en: summary.en,
+                  sourceHash: historyScrape.sourceHash,
+                  links: historyScrape.links,
+                  updatedAt: new Date().toISOString(),
+                };
+              } else {
+                errors.push(`${circuitId}: history summarize failed (Gemini)`);
+                history = history ? { ...history, links: historyScrape.links } : null;
+              }
+            } else if (history) {
+              // Hash unchanged implies history is already set (see condition above —
+              // sourceHash only matches an existing value when one exists), but TS can't
+              // narrow through the optional-chaining comparison, so guard explicitly.
+              history = { ...history, links: historyScrape.links };
             }
-          } else if (history) {
-            // Hash unchanged implies history is already set (see condition above —
-            // sourceHash only matches an existing value when one exists), but TS can't
-            // narrow through the optional-chaining comparison, so guard explicitly.
-            history = { ...history, links: historyScrape.links };
           }
+        } catch (err) {
+          errors.push(`${circuitId}: history scrape failed — ${err}`);
         }
-      } catch (err) {
-        errors.push(`${circuitId}: history scrape failed — ${err}`);
       }
 
       const merged: ScrapedCircuitData = {
