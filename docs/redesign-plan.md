@@ -170,6 +170,16 @@ Kapsam plandan büyüdü, kullanıcı sorularıyla ortaya çıkan 4 ek iş de ay
 
 ---
 
+### Faz 9 — Backlog (2026-08-04'te not edildi, kullanıcı "sırayla ilerleyeceğiz" dedi)
+
+1. **News sayfası otomatik yenileme.** `/news` sayfası, `/login` sayfasındaki gibi F5 gerekmeden kendini yenileyen bir mekanizmaya sahip olmalı. Önce login sayfasının şu an tam olarak nasıl yenilendiği (polling mi, revalidation mı, SSE mi) incelenmeli.
+2. **Haber içeriği uyuşmazlığı — muhtemel scraper bug'ı.** `http://localhost:3000/news/a9f9e34a-9ac4-4b3d-981a-9640b70213ac` sayfasındaki içerik, kaynak `https://tr.motorsport.com/f1/news/cota-ve-silverstonedan-gizemli-paylasim-guclerimizi-birlestiriyoruz/10844019/` sayfasının içeriğiyle uyuşmuyor. Kök neden araştırılmalı (`motorsportNews.ts` scraper'ı) — yanlış URL eşleşmesi mi, yanlış içerik bloğu mu parse ediliyor, yoksa cache'te eski/başka bir habere mi karışmış? Diğer haberlerde de sistemik mi yoksa izole bir vaka mı, örnekleme ile kontrol edilmeli.
+3. **Sürücü detay sayfası — yarış listesi tasarımı.** `drivers/[id]/page.tsx`'teki çok-yıllı yarış sonuçları listesi (Faz 6'da eklendi) tüm yarışları alt alta diziyor, sayfa çok uzuyor. Daha iyi bir bilgi mimarisi gerekiyor (yıla göre gruplama+daraltma, sekme, sayfalama gibi seçenekler değerlendirilebilir).
+4. **Em dash temizliği — uygulama geneli.** Kod tabanındaki tüm kullanıcıya görünen metinler (i18n JSON'ları, hardcoded string'ler, Gemini'nin ürettiği pist tarihçesi metinleri, scrape edilen haber içerikleri) taranıp em dash (—) karakterleri kaldırılmalı/değiştirilmeli — kullanıcının gerekçesi: insanlar günlük yazıda em dash kullanmaz, yapay/robotik görünüyor. Geniş kapsamlı bir tarama gerektiriyor, kapsam netleştirilmeli (statik metinler mi, DB'deki dinamik içerik mi, ikisi de mi — DB içeriği için tek seferlik migration mı yoksa görüntüleme anında mı temizlenecek).
+5. **Circuit history dil toggle'ı.** 2026-08-04'te eklenen "Pist Tarihçesi" kartı şu an sadece uygulamanın genel `locale`'ine göre TR/EN metin gösteriyor (bkz. `getF1CircuitHistory(circuitId, locale)`, `circuit-data.ts`). Kullanıcı isteği: uygulama arayüzü İngilizce olsa bile, kullanıcı tarihçe metnini istediği dilde (TR/EN) okuyabilmeli — karta bağımsız bir dil toggle'ı eklenmeli (uygulama genel dilinden ayrı).
+
+---
+
 ## Kalite zemini (her fazda)
 Mobile-first responsive (sm/md/lg/xl/2xl), görünür klavye focus'u, `prefers-reduced-motion` saygısı, yeterli kontrast, i18n TR/EN korunur, tema değişiminde bozulma yok.
 
