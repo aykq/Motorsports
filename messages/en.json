@@ -152,7 +152,8 @@
     "ranking": "Ranking",
     "points": "Points",
     "wins": "Wins",
-    "raceResults": "Race Results"
+    "raceResults": "Race Results",
+    "raceCount": "{count} races"
   },
   "teamsPage": {
     "title": "Teams",
