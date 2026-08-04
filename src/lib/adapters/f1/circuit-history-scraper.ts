@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import * as cheerio from "cheerio";
 
 const TIMEOUT_MS = 15_000;
 
@@ -105,4 +106,84 @@ async function fetchWikipediaHistoryText(title: string): Promise<string | null> 
   } catch {
     return null;
   }
+}
+
+const F1_CIRCUITS_UA = "Mozilla/5.0 (compatible; motorsports-hub/1.0)";
+const HISTORY_SECTION_SELECTORS = ["#overview", "#corners", "#iconic", "#history"];
+const MAX_LINKS = 5;
+
+async function fetchF1CircuitsComHistory(
+  slug: string
+): Promise<{ text: string; links: { url: string; label: string }[] } | null> {
+  try {
+    const res = await fetchWithTimeout(`https://f1-circuits.com/circuits/${slug}`, F1_CIRCUITS_UA);
+    if (!res.ok) return null;
+    const html = await res.text();
+    const $ = cheerio.load(html);
+
+    const textParts: string[] = [];
+    const links: { url: string; label: string }[] = [];
+    const seenUrls = new Set<string>();
+
+    for (const selector of HISTORY_SECTION_SELECTORS) {
+      const $section = $(selector);
+      if ($section.length === 0) continue;
+
+      $section.find("h2, h3, p").each((_, el) => {
+        const text = $(el).text().trim();
+        if (text) textParts.push(text);
+      });
+
+      $section.find("a[href^='http']").each((_, el) => {
+        const href = $(el).attr("href");
+        if (!href || seenUrls.has(href)) return;
+        try {
+          if (new URL(href).hostname === "f1-circuits.com") return;
+        } catch {
+          return;
+        }
+        seenUrls.add(href);
+        const label = $(el).attr("aria-label")?.trim() || $(el).text().trim() || href;
+        links.push({ url: href, label });
+      });
+    }
+
+    const text = textParts.join("\n\n").trim();
+    return text ? { text, links: links.slice(0, MAX_LINKS) } : null;
+  } catch {
+    return null;
+  }
+}
+
+export interface ScrapedCircuitHistory {
+  circuitName: string;
+  rawText: string;
+  sourceHash: string;
+  links: { url: string; label: string }[];
+}
+
+export async function scrapeCircuitHistory(circuitId: string): Promise<ScrapedCircuitHistory | null> {
+  const wikiTitle = WIKIPEDIA_CIRCUIT_TITLES[circuitId];
+  const f1cSlug = F1_CIRCUITS_COM_SLUGS[circuitId];
+  if (!wikiTitle && !f1cSlug) return null;
+
+  const [wikiText, f1cResult] = await Promise.all([
+    wikiTitle ? fetchWikipediaHistoryText(wikiTitle) : Promise.resolve(null),
+    f1cSlug ? fetchF1CircuitsComHistory(f1cSlug) : Promise.resolve(null),
+  ]);
+
+  const parts: string[] = [];
+  if (wikiText) parts.push(wikiText);
+  if (f1cResult?.text) parts.push(f1cResult.text);
+  if (parts.length === 0) return null;
+
+  const normalized = parts.join("\n\n---\n\n").replace(/\s+/g, " ").trim();
+  const sourceHash = crypto.createHash("sha256").update(normalized).digest("hex");
+
+  return {
+    circuitName: wikiTitle ?? f1cSlug!.replace(/-/g, " "),
+    rawText: normalized,
+    sourceHash,
+    links: f1cResult?.links ?? [],
+  };
 }
