@@ -186,7 +186,9 @@
     "winnerLabel": "Winner:",
     "upcoming": "Upcoming",
     "pastRaces": "Past Races",
-    "raceNumber": "Race {round}"
+    "raceNumber": "Race {round}",
+    "historyTitle": "Circuit History",
+    "relatedLinks": "Related Links"
   },
   "racePage": {
     "round": "Race {round}",
