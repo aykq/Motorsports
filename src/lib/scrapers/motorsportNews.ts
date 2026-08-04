@@ -39,8 +39,11 @@ function fixUrl(url: string | undefined): string | null {
   return null;
 }
 
-const SHARE_PATTERN =
-  /paylaş|kopyala|tweetle|pinterest|viber|linkedin|facebook|whatsapp|tercih edilen kaynak|ne görmek istersiniz/i;
+// Marka adı kökleri (paylaş/kopyala/tweetle vb.) kasıtlı olarak burada değil:
+// paylaşım butonu metinleri <span>/<button> içinde yaşıyor, extractBlocks() sadece <p>
+// topluyor, bu yüzden hiçbir zaman gerçek eşleşme sağlamıyorlardı — sadece "paylaşarak"
+// gibi normal Türkçe çekimli kelimeleri içeren gerçek paragrafları yanlışlıkla siliyorlardı.
+const SHARE_PATTERN = /tercih edilen kaynak|ne görmek istersiniz/i;
 
 // Author names are short; anything containing these is a bloated container, not a name
 const AUTHOR_GARBAGE =
@@ -170,6 +173,9 @@ function extractBlocks($: cheerio.CheerioAPI): ContentBlock[] {
 
     // Skip elements nested inside a result table container
     if (!$el.is("div.ms-result-table") && $el.closest("div.ms-result-table").length > 0) return;
+
+    // Skip elements nested inside the reader-survey promo widget
+    if ($el.closest("msnt-survey-promo").length > 0) return;
 
     if ($el.is("p")) {
       const text = $el.text().trim();
