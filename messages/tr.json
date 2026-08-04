@@ -152,7 +152,8 @@
     "ranking": "Sıralama",
     "points": "Puan",
     "wins": "Galibiyet",
-    "raceResults": "Yarış Sonuçları"
+    "raceResults": "Yarış Sonuçları",
+    "raceCount": "{count} yarış"
   },
   "teamsPage": {
     "title": "Takımlar",

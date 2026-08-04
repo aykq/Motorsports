@@ -5,6 +5,7 @@ import { getMotoGPTeam, getMotoGPTeamByName } from "@/lib/motogp-teams";
 import { notFound } from "next/navigation";
 import { BackButton } from "@/components/layout/BackButton";
 import { DriverPhoto } from "@/components/series/DriverPhoto";
+import { DriverRaceResultsSection } from "./DriverRaceResultsSection";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
@@ -27,39 +28,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .flatMap((r) => r.results ?? [])
     .find((res) => res.driverId === id)?.driverName;
   return { title: historicalName ?? t("pilot") };
-}
-
-function positionBadge(pos: number, status: string) {
-  const isDNF = status !== "Finished" && !/^\+/.test(status) && status !== "";
-  if (isDNF)
-    return (
-      <span className="w-10 text-center text-xs font-bold px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/30 shrink-0">
-        DNF
-      </span>
-    );
-  if (pos === 1)
-    return (
-      <span className="w-10 text-center text-xs font-black px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 shrink-0">
-        P1
-      </span>
-    );
-  if (pos === 2)
-    return (
-      <span className="w-10 text-center text-xs font-black px-1.5 py-0.5 rounded bg-zinc-400/20 text-zinc-300 border border-zinc-400/30 shrink-0">
-        P2
-      </span>
-    );
-  if (pos === 3)
-    return (
-      <span className="w-10 text-center text-xs font-black px-1.5 py-0.5 rounded bg-orange-600/20 text-orange-400 border border-orange-600/30 shrink-0">
-        P3
-      </span>
-    );
-  return (
-    <span className="w-10 text-center text-xs font-bold shrink-0 text-muted-foreground">
-      P{pos}
-    </span>
-  );
 }
 
 export default async function DriverDetailPage({ params }: Props) {
@@ -215,51 +183,7 @@ export default async function DriverDetailPage({ params }: Props) {
         )}
 
         {/* ── Race Results ── */}
-        {raceResults.length > 0 && (
-          <section className="space-y-2">
-            <h2 className="font-display text-xs font-semibold text-muted-foreground tracking-wide">
-              {t("raceResults")}
-            </h2>
-            <div className="space-y-1.5">
-              {raceResults.map(({ race, result }) => {
-                const isFinished =
-                  result.status === "Finished" || /^\+/.test(result.status) || result.status === "";
-                const isDNS =
-                  result.status === "Did not start" || result.status === "DNS";
-                const isDNF = !isFinished;
-                return (
-                  <Link
-                    key={`${race.raceYear}-${race.round}`}
-                    href={`/${slug}/races/${race.round}?year=${race.raceYear}`}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-card border border-border text-sm hover:bg-accent/50 transition-colors"
-                  >
-                    {positionBadge(result.position, result.status)}
-                    <span className="text-xs text-muted-foreground font-mono shrink-0">{race.raceYear}</span>
-                    <span className="flex-1 truncate">{race.name}</span>
-                    {isDNF ? (
-                      <span className="text-xs shrink-0 text-red-400 font-semibold">
-                        {isDNS ? "DNS" : "DNF"}
-                      </span>
-                    ) : (
-                      <div className="flex items-center gap-2 shrink-0">
-                        {(result.gap ?? result.time) && (
-                          <span className="text-xs text-foreground">
-                            {result.gap ?? result.time}
-                          </span>
-                        )}
-                        {result.points > 0 && (
-                          <span className="text-xs font-bold text-foreground">
-                            +{result.points}p
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </Link>
-                );
-              })}
-            </div>
-          </section>
-        )}
+        <DriverRaceResultsSection slug={slug} raceResults={raceResults} />
       </div>
     </div>
   );
