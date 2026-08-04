@@ -200,5 +200,6 @@ export interface ScrapedCircuitData {
   firstGrandPrix: number | null;
   fastestLap: { time: string; driver: string; year: number } | null;
   trackImageUrl: string | null;
+  corners?: number | null;
   history?: CircuitHistoryData | null;
 }
