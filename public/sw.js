@@ -1,7 +1,6 @@
 const CACHE_NAME = "motorsports-hub-v2";
 const STATIC_ASSETS = ["/", "/manifest.json"];
 
-// Kurulum: statik varlıkları cache'le
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
@@ -9,7 +8,6 @@ self.addEventListener("install", (event) => {
   self.skipWaiting();
 });
 
-// Aktivasyon: eski cache'leri temizle
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
@@ -21,11 +19,9 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-// Fetch: network-first, fallback cache
 self.addEventListener("fetch", (event) => {
   const { request } = event;
 
-  // API isteklerini cache'leme
   if (request.url.includes("/api/")) return;
 
   // Cross-origin istekleri (CDN görseller vb.) — SW'ya bırakma, tarayıcı doğrudan yönetsin
@@ -34,11 +30,8 @@ self.addEventListener("fetch", (event) => {
   // Next.js dahili istekler — image optimizer, static chunk'lar
   if (request.url.includes("/_next/")) return;
 
-  // Next.js RSC (React Server Component) navigasyon istekleri — tam sayfa
-  // HTML'i değil, kısmi render payload'ını taşır. Bunları normal sayfa
-  // navigasyonuyla aynı URL altında cache'lersek, geri gitme/bfcache-miss
-  // sonrası tam sayfa yüklemesi bozuk (RSC payload) içerik alabilir ve
-  // uygulama beklenmedik şekilde ana sayfaya düşebilir. SW'ya bırakma.
+  // RSC navigasyon istekleri gerçek HTML değil kısmi payload taşır — sayfa
+  // URL'i altında cache'lenirse geri-navigasyonda bozuk içerik gösterebilir.
   if (
     request.headers.get("RSC") === "1" ||
     request.headers.get("Next-Router-State-Tree") ||
@@ -61,20 +54,15 @@ self.addEventListener("fetch", (event) => {
         return response;
       })
       .catch(async () => {
-        // Bu URL daha önce başarıyla ziyaret edilip cache'lenmişse onu göster.
         const cached = await caches.match(request);
         if (cached) return cached;
-        // Hiç cache'lenmemiş bir sayfaya (örn. mobilde arka-ileri sonrası
-        // bfcache kaçırılıp tam sayfa yenilemesi tetiklenmişse) geçici bir ağ
-        // sorunuyla ulaşılamadıysa, sessizce ana sayfaya ("/") düşme — kullanıcı
-        // nereden geldiğini kaybeder. Tarayıcının kendi "bağlantı yok" hata
-        // sayfasını göstermesine izin ver (yeniden dene butonuyla).
+        // Cache'lenmemiş sayfaya ağ hatasıyla ulaşılamazsa "/" a sessizce
+        // düşme — tarayıcının kendi çevrimdışı hata sayfasını göstermesine izin ver.
         throw new Error("network-and-cache-miss");
       })
   );
 });
 
-// Push bildirim al
 self.addEventListener("push", (event) => {
   const data = event.data?.json() ?? {};
   const { title = "Motorsports Hub", body = "", url = "/" } = data;
@@ -90,16 +78,13 @@ self.addEventListener("push", (event) => {
   );
 });
 
-// Bildirime tıklama
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const url = event.notification.data?.url ?? "/";
 
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((windowClients) => {
-      // Zaten açık bir pencere varsa (hangi sayfada olursa olsun) onu bildirimin
-      // hedef URL'ine yönlendirip öne getir — sadece URL birebir eşleşiyorsa
-      // odaklanmak, uygulama farklı bir sayfada açıkken tıklamayı etkisiz kılıyordu.
+      // Açık pencere varsa (hangi sayfada olursa olsun) hedef URL'e yönlendirip öne getir.
       const existing = windowClients.find((c) => "focus" in c);
       if (existing) {
         return ("navigate" in existing ? existing.navigate(url) : Promise.resolve(existing)).then((client) =>

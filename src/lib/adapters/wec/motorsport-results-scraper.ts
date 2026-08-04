@@ -132,15 +132,9 @@ async function scrapeRaceResultsPage(url: string): Promise<RawWECResult[]> {
   const results: RawWECResult[] = [];
   let currentClass = "";
 
-  // Not.: motorsport.com'un WEC sonuç tablosunda "Sıra" (position) sütunu
-  // sınıf başına sıfırlanmıyor — Hypercar/LMP2/LMGT3 hepsi tek bir genel
-  // sıralamada (1..N). Bu yüzden tur farkına bakarak DNF tahmini yapmak
-  // (eski kod) yanlıştı: yavaş sınıftaki normal bitiren arabalar genel
-  // lider'e göre çok tur geride kaldığı için hatalı DNF işaretleniyordu.
-  // Gerçek DNF/emekli araçlar ise "Sıra" hücresinde sayı değil literal
-  // "dnf" metni taşıyor — parseInt(NaN) eski kodda satırı komple atlıyordu,
-  // yani gerçek DNF'ler sonuç listesinden tamamen kayboluyordu. Artık DNF
-  // durumu doğrudan bu hücrenin metninden okunuyor, tur-sayısı tahmini yok.
+  // "Sıra" sütunu sınıf başına sıfırlanmıyor (Hypercar/LMP2/LMGT3 tek genel
+  // sıralamada), bu yüzden tur farkından DNF tahmini güvenilmez. Gerçek
+  // DNF/emekli araçlar bu hücrede sayı yerine literal "dnf" metni taşır.
   $("table").first().find("tr").each((_, row) => {
     const $row = $(row);
     const cells = $row.find("td");
@@ -191,11 +185,7 @@ async function scrapeRaceResultsPage(url: string): Promise<RawWECResult[]> {
     const lastCellText = $(cells[len - 1]).text().trim();
     const points = parseFloat(lastCellText) || 0;
 
-    // DNF rows have no numeric classification — slot them after the last
-    // classified car in table order (real official classification omits a
-    // position number for unclassified retirees; we still need one for the
-    // data model, so this keeps them trailing without colliding with real
-    // positions already parsed).
+    // DNF rows carry no position number — slot them after the last classified car.
     const position = isDnfMarker ? results.length + 1 : numericPos;
 
     results.push({
