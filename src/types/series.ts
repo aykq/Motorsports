@@ -184,6 +184,14 @@ export interface RaceDetail {
 
 export type RaceWithYear = Race & { raceYear: number };
 
+export interface CircuitHistoryData {
+  tr: string;
+  en: string;
+  sourceHash: string;
+  links: { url: string; label: string }[];
+  updatedAt: string; // ISO timestamp
+}
+
 // f1.com'un pist sayfasından scrape edilen veri — bkz. src/lib/adapters/f1/circuit-scraper.ts
 export interface ScrapedCircuitData {
   lengthKm: number | null;
@@ -192,4 +200,5 @@ export interface ScrapedCircuitData {
   firstGrandPrix: number | null;
   fastestLap: { time: string; driver: string; year: number } | null;
   trackImageUrl: string | null;
+  history?: CircuitHistoryData | null;
 }
