@@ -48,7 +48,7 @@ export const F1_RACE_URL_SLUGS: Record<string, string> = {
   americas: "united-states",
   rodriguez: "mexico",
   interlagos: "brazil",
-  las_vegas: "las-vegas",
+  vegas: "las-vegas", // Jolpica'nın circuitId'si "vegas" (las_vegas değil)
   losail: "qatar",
   yas_marina: "united-arab-emirates",
 };
