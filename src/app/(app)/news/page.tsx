@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/admin-guard";
 import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
 import { NewsListSection } from "./NewsListSection";
+import { NewsAutoRefresh } from "./NewsAutoRefresh";
 import { NewsSyncButton } from "@/components/news/NewsSyncButton";
 
 export const metadata: Metadata = { title: "Haberler" };
@@ -17,6 +18,7 @@ export default async function NewsPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 pb-24">
+      <NewsAutoRefresh />
       <div className="flex items-center justify-between mb-5">
         <h1 className="font-display text-3xl font-bold tracking-tight leading-tight">{t("title")}</h1>
         {isAdmin && <NewsSyncButton />}
