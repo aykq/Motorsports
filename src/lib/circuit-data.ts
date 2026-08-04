@@ -85,6 +85,20 @@ export async function getF1CircuitInfo(
   return { specs, mapUrl: scraped.trackImageUrl ?? seedMapUrl };
 }
 
+export async function getF1CircuitHistory(
+  circuitId: string,
+  locale: string
+): Promise<{ text: string; links: { url: string; label: string }[] } | null> {
+  const scraped = await getCachedCircuitData("f1", circuitId);
+  const history = scraped?.history;
+  if (!history) return null;
+
+  const text = locale === "tr" ? history.tr : history.en;
+  if (!text) return null;
+
+  return { text, links: history.links };
+}
+
 // F1 media CDN circuit layout icons 4x3 (Jolpica circuit ID → CDN slug)
 const F1_CIRCUIT_LAYOUT_SLUGS: Record<string, string> = {
   bahrain:       "bahrain",

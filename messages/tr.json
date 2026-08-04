@@ -186,7 +186,9 @@
     "winnerLabel": "Kazanan:",
     "upcoming": "Yaklaşan",
     "pastRaces": "Geçmiş Yarışlar",
-    "raceNumber": "Yarış {round}"
+    "raceNumber": "Yarış {round}",
+    "historyTitle": "Pist Tarihçesi",
+    "relatedLinks": "İlgili Bağlantılar"
   },
   "racePage": {
     "round": "Yarış {round}",
