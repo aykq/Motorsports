@@ -91,9 +91,9 @@ export const getCachedSchedule = cache(async (
   return { races: rows.map((r) => recomputeRaceStatus(r.data as Race, r.seriesSlug)), fresh };
 });
 
-// Backfill edilen geçmiş sezonları (bkz. sohbet geçmişi, 2026-08-04 — F1 için
-// 2021-2025) mevcut yılla birlikte döner. Sync/cron her zaman sadece mevcut yılı
-// çeker — bu fonksiyon sadece OKUMA amaçlı, geçmiş veriyi asla tetiklemez.
+// Backfill edilen geçmiş sezonları mevcut yılla birlikte döner. Sync/cron her
+// zaman sadece mevcut yılı çeker — bu fonksiyon sadece OKUMA amaçlı, geçmiş
+// veriyi asla tetiklemez.
 const HISTORY_YEARS_BACK = 5;
 
 export async function getCachedScheduleMultiYear(slug: string): Promise<RaceWithYear[]> {
