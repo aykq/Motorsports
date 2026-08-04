@@ -7,10 +7,13 @@ import {
   setCachedStandings,
   setCachedDrivers,
   setCachedCircuitData,
+  getCachedCircuitData,
 } from "@/lib/cache";
 import { syncRaceDetails } from "@/lib/race-detail";
 import { F1_RACE_URL_SLUGS, scrapeF1CircuitData } from "@/lib/adapters/f1/circuit-scraper";
-import type { Race, Driver } from "@/types/series";
+import { WIKIPEDIA_CIRCUIT_TITLES, scrapeCircuitHistory } from "@/lib/adapters/f1/circuit-history-scraper";
+import { summarizeCircuitHistory } from "@/lib/gemini";
+import type { Race, Driver, ScrapedCircuitData } from "@/types/series";
 
 const MOTO_SERIES = new Set(["motogp", "moto2", "moto3"]);
 
@@ -214,16 +217,71 @@ export interface CircuitSyncResult {
  * 23 sayfayı taramak zaman alıyor ve f1.com'u sık taramak istemiyoruz.
  */
 export async function syncCircuitData(season: number): Promise<CircuitSyncResult> {
-  const circuitIds = Object.keys(F1_RACE_URL_SLUGS);
+  const circuitIds = Array.from(
+    new Set([...Object.keys(F1_RACE_URL_SLUGS), ...Object.keys(WIKIPEDIA_CIRCUIT_TITLES)])
+  );
   const errors: string[] = [];
   let synced = 0;
   let skipped = 0;
 
   for (const circuitId of circuitIds) {
     try {
-      const data = await scrapeF1CircuitData(circuitId, season);
-      if (data) {
-        await setCachedCircuitData("f1", circuitId, data);
+      const existing = await getCachedCircuitData("f1", circuitId);
+
+      const specsData = F1_RACE_URL_SLUGS[circuitId]
+        ? await scrapeF1CircuitData(circuitId, season)
+        : null;
+
+      let history = existing?.history ?? null;
+      try {
+        const historyScrape = await scrapeCircuitHistory(circuitId);
+        if (historyScrape) {
+          if (historyScrape.sourceHash !== history?.sourceHash) {
+            const summary = await summarizeCircuitHistory(historyScrape.circuitName, historyScrape.rawText);
+            if (summary) {
+              history = {
+                tr: summary.tr,
+                en: summary.en,
+                sourceHash: historyScrape.sourceHash,
+                links: historyScrape.links,
+                updatedAt: new Date().toISOString(),
+              };
+            } else {
+              errors.push(`${circuitId}: history summarize failed (Gemini)`);
+              history = history ? { ...history, links: historyScrape.links } : null;
+            }
+          } else if (history) {
+            // Hash unchanged implies history is already set (see condition above —
+            // sourceHash only matches an existing value when one exists), but TS can't
+            // narrow through the optional-chaining comparison, so guard explicitly.
+            history = { ...history, links: historyScrape.links };
+          }
+        }
+      } catch (err) {
+        errors.push(`${circuitId}: history scrape failed — ${err}`);
+      }
+
+      const merged: ScrapedCircuitData = {
+        lengthKm: specsData?.lengthKm ?? existing?.lengthKm ?? null,
+        officialLaps: specsData?.officialLaps ?? existing?.officialLaps ?? null,
+        raceDistanceKm: specsData?.raceDistanceKm ?? existing?.raceDistanceKm ?? null,
+        firstGrandPrix: specsData?.firstGrandPrix ?? existing?.firstGrandPrix ?? null,
+        fastestLap: specsData?.fastestLap ?? existing?.fastestLap ?? null,
+        trackImageUrl: specsData?.trackImageUrl ?? existing?.trackImageUrl ?? null,
+        history,
+      };
+
+      const hasAnyData =
+        merged.lengthKm !== null ||
+        merged.officialLaps !== null ||
+        merged.raceDistanceKm !== null ||
+        merged.firstGrandPrix !== null ||
+        merged.fastestLap !== null ||
+        merged.trackImageUrl !== null ||
+        merged.history != null;
+
+      if (hasAnyData) {
+        await setCachedCircuitData("f1", circuitId, merged);
         synced++;
       } else {
         skipped++;
