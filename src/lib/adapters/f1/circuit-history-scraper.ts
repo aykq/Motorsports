@@ -46,6 +46,14 @@ export const WIKIPEDIA_CIRCUIT_TITLES: Record<string, string> = {
   madring: "Madring",
   sepang: "Sepang International Circuit",
   bahrain: "Bahrain International Circuit",
+  // Dropped from the calendar after 2021-2022 (COVID-era substitutes / Russia sanctions /
+  // France dropped) but still present in our 2021-2025 schedule backfill — added 2026-08-04
+  // so their circuit detail pages get history too. No f1-circuits.com entry for any of these
+  // (that site only covers the current calendar) — Wikipedia-only, handled gracefully.
+  portimao: "Algarve International Circuit",
+  ricard: "Circuit Paul Ricard",
+  sochi: "Sochi Autodrom", // Wikipedia renamed the article to "Sirius Autodrom" — resolved via redirects=1 below
+  istanbul: "Istanbul Park",
 };
 
 // circuitId → f1-circuits.com URL slug. Verified live (curl, 2026-08-04) — all 200 OK.
@@ -93,7 +101,10 @@ function extractWikipediaLedeAndFirstSection(fullText: string): string | null {
 
 async function fetchWikipediaHistoryText(title: string): Promise<string | null> {
   try {
-    const url = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext=1&titles=${encodeURIComponent(title)}&format=json`;
+    // redirects=1: some article titles get renamed (e.g. "Sochi Autodrom" → "Sirius Autodrom"
+    // after 2022) — without this, a stale title returns an empty extract instead of an error,
+    // which would otherwise silently look like "no history" for that circuit.
+    const url = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext=1&redirects=1&titles=${encodeURIComponent(title)}&format=json`;
     const res = await fetchWithTimeout(url, WIKIPEDIA_UA);
     if (!res.ok) return null;
 
