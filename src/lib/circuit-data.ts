@@ -74,7 +74,7 @@ export async function getF1CircuitInfo(
     seed || scraped.lengthKm
       ? {
           lengthKm: scraped.lengthKm ?? seed?.lengthKm ?? 0,
-          corners: seed?.corners ?? 0,
+          corners: scraped.corners ?? seed?.corners ?? 0,
           officialLaps: scraped.officialLaps ?? seed?.officialLaps,
           raceDistanceKm: scraped.raceDistanceKm ?? seed?.raceDistanceKm,
           firstGrandPrix: scraped.firstGrandPrix ?? seed?.firstGrandPrix,

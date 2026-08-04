@@ -11,7 +11,11 @@ import {
 } from "@/lib/cache";
 import { syncRaceDetails } from "@/lib/race-detail";
 import { F1_RACE_URL_SLUGS, scrapeF1CircuitData } from "@/lib/adapters/f1/circuit-scraper";
-import { WIKIPEDIA_CIRCUIT_TITLES, scrapeCircuitHistory } from "@/lib/adapters/f1/circuit-history-scraper";
+import {
+  WIKIPEDIA_CIRCUIT_TITLES,
+  scrapeCircuitHistory,
+  scrapeWikipediaCircuitSpecs,
+} from "@/lib/adapters/f1/circuit-history-scraper";
 import { summarizeCircuitHistory } from "@/lib/gemini";
 import type { Race, Driver, ScrapedCircuitData } from "@/types/series";
 
@@ -232,6 +236,13 @@ export async function syncCircuitData(season: number): Promise<CircuitSyncResult
         ? await scrapeF1CircuitData(circuitId, season)
         : null;
 
+      // No f1.com page for this circuit (dropped from the calendar, or never had one) —
+      // fall back to Wikipedia's infobox for length/corners/lap record.
+      const wikiSpecs =
+        !F1_RACE_URL_SLUGS[circuitId] && WIKIPEDIA_CIRCUIT_TITLES[circuitId]
+          ? await scrapeWikipediaCircuitSpecs(WIKIPEDIA_CIRCUIT_TITLES[circuitId])
+          : null;
+
       let history = existing?.history ?? null;
       try {
         const historyScrape = await scrapeCircuitHistory(circuitId);
@@ -262,12 +273,13 @@ export async function syncCircuitData(season: number): Promise<CircuitSyncResult
       }
 
       const merged: ScrapedCircuitData = {
-        lengthKm: specsData?.lengthKm ?? existing?.lengthKm ?? null,
+        lengthKm: specsData?.lengthKm ?? wikiSpecs?.lengthKm ?? existing?.lengthKm ?? null,
         officialLaps: specsData?.officialLaps ?? existing?.officialLaps ?? null,
         raceDistanceKm: specsData?.raceDistanceKm ?? existing?.raceDistanceKm ?? null,
         firstGrandPrix: specsData?.firstGrandPrix ?? existing?.firstGrandPrix ?? null,
-        fastestLap: specsData?.fastestLap ?? existing?.fastestLap ?? null,
+        fastestLap: specsData?.fastestLap ?? wikiSpecs?.fastestLap ?? existing?.fastestLap ?? null,
         trackImageUrl: specsData?.trackImageUrl ?? existing?.trackImageUrl ?? null,
+        corners: wikiSpecs?.corners ?? existing?.corners ?? null,
         history,
       };
 
@@ -278,6 +290,7 @@ export async function syncCircuitData(season: number): Promise<CircuitSyncResult
         merged.firstGrandPrix !== null ||
         merged.fastestLap !== null ||
         merged.trackImageUrl !== null ||
+        merged.corners != null ||
         merged.history != null;
 
       if (hasAnyData) {

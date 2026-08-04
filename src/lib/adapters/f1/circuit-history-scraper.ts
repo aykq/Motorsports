@@ -119,6 +119,72 @@ async function fetchWikipediaHistoryText(title: string): Promise<string | null> 
   }
 }
 
+export interface WikipediaCircuitSpecs {
+  lengthKm: number | null;
+  corners: number | null;
+  fastestLap: { time: string; driver: string; year: number } | null;
+}
+
+// Wikipedia's circuit infobox often lists stats for MULTIPLE configurations (e.g. Suzuka has
+// separate "Grand Prix Circuit" (F1) and "Motorcycle Grand Prix Circuit" (MotoGP) blocks, each
+// with their own Length/Turns) — grabbing the first "Length" row blindly would sometimes pick
+// the wrong series' numbers. This scopes extraction to the "Grand Prix Circuit"-headed block
+// when one exists, else treats the whole infobox as in-scope (single-configuration circuits).
+export async function scrapeWikipediaCircuitSpecs(title: string): Promise<WikipediaCircuitSpecs | null> {
+  try {
+    const url = `https://en.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, "_"))}`;
+    const res = await fetchWithTimeout(url, WIKIPEDIA_UA);
+    if (!res.ok) return null;
+    const html = await res.text();
+    const $ = cheerio.load(html);
+
+    const $table = $("table.infobox").first();
+    if ($table.length === 0) return null;
+
+    const rows = $table.find("> tbody > tr").toArray();
+    const hasGpHeader = rows.some((tr) =>
+      $(tr).find("> th.infobox-header").text().trim().startsWith("Grand Prix Circuit")
+    );
+
+    let inTarget = !hasGpHeader;
+    let lengthKm: number | null = null;
+    let corners: number | null = null;
+    let fastestLap: { time: string; driver: string; year: number } | null = null;
+
+    for (const tr of rows) {
+      const $tr = $(tr);
+      const $header = $tr.find("> th.infobox-header");
+      if ($header.length > 0) {
+        if (hasGpHeader) {
+          inTarget = $header.text().trim().startsWith("Grand Prix Circuit");
+        }
+        continue;
+      }
+      if (!inTarget) continue;
+
+      const label = $tr.find("> th.infobox-label").text().trim();
+      const data = $tr.find("> td.infobox-data").text().trim();
+      if (!label || !data) continue;
+
+      if (label === "Length" && lengthKm === null) {
+        const m = data.match(/^([\d.]+)/);
+        if (m) lengthKm = parseFloat(m[1]);
+      } else if (label === "Turns" && corners === null) {
+        const m = data.match(/^(\d+)/);
+        if (m) corners = parseInt(m[1], 10);
+      } else if (label === "Race lap record" && fastestLap === null) {
+        const m = data.match(/^([\d:.]+)\s*\(([^,]+),[^,]+,\s*(\d{4})/);
+        if (m) fastestLap = { time: m[1], driver: m[2].trim(), year: parseInt(m[3], 10) };
+      }
+    }
+
+    if (lengthKm === null && corners === null && fastestLap === null) return null;
+    return { lengthKm, corners, fastestLap };
+  } catch {
+    return null;
+  }
+}
+
 const F1_CIRCUITS_UA = "Mozilla/5.0 (compatible; motorsports-hub/1.0)";
 const HISTORY_SECTION_SELECTORS = ["#overview", "#corners", "#iconic", "#history"];
 const MAX_LINKS = 5;
