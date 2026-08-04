@@ -70,6 +70,7 @@ Rules:
 - Avoid generic filler — highlight concrete facts: names, years, records, incidents.
 - Do not invent facts not present in the source text.
 - Do not include URLs or links in the text.
+- Do not use em dashes (—) anywhere in the summaries. Use commas, periods, or parentheses instead.
 - Return ONLY a JSON object: {"en": "English summary", "tr": "Turkish summary"}
 - Both summaries must independently read well in their own language — not a literal translation of each other.
 - No explanations, no markdown, just the JSON object.`;

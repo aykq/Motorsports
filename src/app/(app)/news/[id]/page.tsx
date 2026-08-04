@@ -244,7 +244,7 @@ export default async function NewsDetailPage({ params }: Props) {
           className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors mt-2 self-start"
         >
           <ExternalLink className="w-3.5 h-3.5" />
-          {t("source")} — motorsport.com
+          {t("source")}: motorsport.com
         </Link>
       </div>
     </div>

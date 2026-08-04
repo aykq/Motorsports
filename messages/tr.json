@@ -36,7 +36,7 @@
     "completed": "Tamamlandı",
     "cancelled": "İptal",
     "nextRace": "Sıradaki",
-    "now": "— Şimdi —",
+    "now": "Şimdi",
     "noUpcoming": "Yaklaşan yarış bulunamadı.",
     "noData": "Bu seri için henüz veri yok."
   },
@@ -85,7 +85,7 @@
     }
   },
   "login": {
-    "tagline": "F1, WEC, MotoGP ve daha fazlası — tek bir yerde",
+    "tagline": "F1, WEC, MotoGP ve daha fazlası, tek bir yerde",
     "googleSignIn": "Google ile Giriş Yap",
     "magicLink": "Sihirli Bağlantı Gönder",
     "emailPlaceholder": "email@ornek.com",
@@ -131,7 +131,7 @@
     "upcoming": "Yaklaşan ({count})",
     "completed": "Tamamlanan ({count})",
     "noData": "Henüz takvim verisi yok.",
-    "now": "— Şimdi —",
+    "now": "Şimdi",
     "nextRace": "Sıradaki"
   },
   "standingsPage": {
@@ -179,7 +179,7 @@
     "firstGrandPrix": "İlk Grand Prix",
     "lapCount": "Tur Sayısı",
     "raceDistance": "Yarış mesafesi {distance} km",
-    "lapRecord": "Pist rekoru: {time} — {driver} ({year})",
+    "lapRecord": "Pist rekoru: {time} · {driver} ({year})",
     "thisSeason": "Bu Sezon ({year})",
     "latestRace": "Son Yarış ({year})",
     "winner": "Kazanan",
@@ -217,8 +217,8 @@
     "colGap": "Fark",
     "colLap": "Tur",
     "qualifyingResults": "Sıralama Sonuçları",
-    "q2Eliminated": "Q2 — Elenenler",
-    "q1Eliminated": "Q1 — Elenenler",
+    "q2Eliminated": "Q2: Elenenler",
+    "q1Eliminated": "Q1: Elenenler",
     "loadMore": "Daha fazla göster",
     "viewAll": "Tümünü gör",
     "winsLabel": "G"
@@ -372,6 +372,6 @@
     "toastNotifFailed": ", {failed} başarısız",
     "toastDriverCacheCleared": "{slug} driver cache temizlendi ({count} kayıt)",
     "toastNewsItem": "{slug}: {urls} URL, +{inserted} kayıt, {skipped} mevcut",
-    "toastNewsError": "{slug}: HATA — {error}"
+    "toastNewsError": "{slug}: HATA ({error})"
   }
 }

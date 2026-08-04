@@ -57,7 +57,7 @@ export default async function AdminApprovePage({ searchParams }: Props) {
         <div className="text-center space-y-2">
           <p className="text-lg font-semibold">{t("alreadyProcessed")}</p>
           <p className="text-sm text-muted-foreground">
-            {targetUser.name ?? targetUser.email} — {statusLabelPast[targetUser.status] ?? targetUser.status}
+            {targetUser.name ?? targetUser.email} ({statusLabelPast[targetUser.status] ?? targetUser.status})
           </p>
         </div>
       </div>
