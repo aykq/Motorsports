@@ -7,6 +7,8 @@ import { db } from "@/db";
 import { accounts, sessions, users, verificationTokens } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { sendNewUserDiscordNotification } from "./discord";
+import { authConfig } from "@/auth.config";
+import type { JWT } from "next-auth/jwt";
 
 const devProviders =
   process.env.NODE_ENV === "development" && process.env.ENABLE_DEV_LOGIN === "1"
@@ -43,13 +45,13 @@ const devProviders =
     : [];
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  ...authConfig,
   adapter: DrizzleAdapter(db, {
     usersTable: users,
     accountsTable: accounts,
     sessionsTable: sessions,
     verificationTokensTable: verificationTokens,
   }),
-  session: { strategy: "jwt" },
   providers: [
     Google({
       clientId: process.env.AUTH_GOOGLE_ID ?? "",
@@ -127,18 +129,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!userId || typeof userId !== "string") return null;
         const user = await db.query.users.findFirst({
           where: eq(users.id, userId),
-          columns: { id: true, email: true, name: true, image: true, status: true },
+          columns: { id: true, email: true, name: true, image: true, status: true, role: true, language: true, theme: true },
         });
         if (!user || user.status !== "approved") return null;
-        return { id: user.id, email: user.email, name: user.name, image: user.image };
+        return user;
       },
     }),
     ...devProviders,
   ],
-  pages: {
-    signIn: "/login",
-    error: "/login",
-  },
   events: {
     async signIn({ user, account, profile, isNewUser }) {
       // Google profil bilgilerini güncelle
@@ -191,19 +189,31 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (dbUser?.status === "blocked") return false;
       return true;
     },
-    jwt({ token, user }) {
+    async jwt(params) {
+      const { token, user, trigger } = params;
       if (user) {
         token.sub = user.id;
         if (user.image) token.picture = user.image;
         if (user.name) token.name = user.name;
       }
-      return token;
+
+      const withRoleStatus = authConfig.callbacks!.jwt!(params) as JWT;
+
+      if (trigger === "update" && withRoleStatus.sub) {
+        const fresh = await db.query.users.findFirst({
+          where: eq(users.id, withRoleStatus.sub),
+          columns: { role: true, status: true, language: true, theme: true },
+        });
+        if (fresh) {
+          withRoleStatus.role = fresh.role;
+          withRoleStatus.status = fresh.status;
+          withRoleStatus.language = fresh.language;
+          withRoleStatus.theme = fresh.theme;
+        }
+      }
+
+      return withRoleStatus;
     },
-    session({ session, token }) {
-      if (token.sub) session.user.id = token.sub;
-      if (token.picture) session.user.image = token.picture as string;
-      if (token.name) session.user.name = token.name as string;
-      return session;
-    },
+    session: authConfig.callbacks!.session,
   },
 });
