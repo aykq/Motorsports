@@ -1,6 +1,7 @@
 import { getCachedScheduleMultiYear } from "@/lib/cache";
 import { getSeriesConfig } from "@/lib/series-config";
 import { getF1CircuitInfo, getF1CircuitHistory } from "@/lib/circuit-data";
+import { CircuitHistoryCard } from "./CircuitHistoryCard";
 import { CircuitLayoutImage } from "@/components/race/CircuitLayoutImage";
 import { Badge } from "@/components/ui/badge";
 import { notFound } from "next/navigation";
@@ -72,7 +73,7 @@ export default async function CircuitDetailPage({ params }: Props) {
   const cancelledRaces = circuitRaces.filter((r) => r.status === "cancelled");
 
   const { specs, mapUrl: layoutUrl } = slug === "f1" ? await getF1CircuitInfo(id) : { specs: null, mapUrl: null };
-  const circuitHistory = slug === "f1" ? await getF1CircuitHistory(id, locale) : null;
+  const circuitHistory = slug === "f1" ? await getF1CircuitHistory(id) : null;
   const latestCompleted = completedRaces[0];
   const totalLaps = latestCompleted?.results?.[0]?.laps ?? specs?.officialLaps;
   const fastestLapResult = latestCompleted?.results?.find((r) => r.fastestLap);
@@ -155,38 +156,13 @@ export default async function CircuitDetailPage({ params }: Props) {
 
       {/* ── Pist Tarihçesi ── */}
       {circuitHistory && (
-        <section className="space-y-2">
-          <h2 className="font-display text-xs font-semibold text-muted-foreground tracking-wide">
-            {t("historyTitle")}
-          </h2>
-          <div
-            className="relative rounded-lg border border-border p-4 overflow-hidden"
-            style={{
-              background: `linear-gradient(135deg, ${config.color}20 0%, ${config.color}05 50%, transparent 100%)`,
-            }}
-          >
-            <p className="relative text-sm leading-relaxed whitespace-pre-line">{circuitHistory.text}</p>
-          </div>
-          {circuitHistory.links.length > 0 && (
-            <div className="space-y-1.5">
-              <p className="text-[10px] text-muted-foreground tracking-wide">{t("relatedLinks")}</p>
-              <div className="flex flex-wrap gap-2">
-                {circuitHistory.links.map((link) => (
-                  <a
-                    key={link.url}
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors border border-border rounded px-2 py-1"
-                  >
-                    <ExternalLink className="w-3 h-3" />
-                    {link.label}
-                  </a>
-                ))}
-              </div>
-            </div>
-          )}
-        </section>
+        <CircuitHistoryCard
+          tr={circuitHistory.tr}
+          en={circuitHistory.en}
+          links={circuitHistory.links}
+          initialLocale={locale}
+          color={config.color}
+        />
       )}
 
       {/* ── Bu Sezonun / Son Yarışın En İyileri ── */}

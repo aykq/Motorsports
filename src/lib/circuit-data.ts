@@ -86,17 +86,13 @@ export async function getF1CircuitInfo(
 }
 
 export async function getF1CircuitHistory(
-  circuitId: string,
-  locale: string
-): Promise<{ text: string; links: { url: string; label: string }[] } | null> {
+  circuitId: string
+): Promise<{ tr: string | null; en: string | null; links: { url: string; label: string }[] } | null> {
   const scraped = await getCachedCircuitData("f1", circuitId);
   const history = scraped?.history;
-  if (!history) return null;
+  if (!history || (!history.tr && !history.en)) return null;
 
-  const text = locale === "tr" ? history.tr : history.en;
-  if (!text) return null;
-
-  return { text, links: history.links };
+  return { tr: history.tr ?? null, en: history.en ?? null, links: history.links };
 }
 
 // F1 media CDN circuit layout icons 4x3 (Jolpica circuit ID → CDN slug)
