@@ -41,6 +41,14 @@ const F1_CIRCUIT_SPECS: Record<string, CircuitSpecs> = {
   // 2026'da yeni: Madrid (round 14, ilk kez), Sepang (round 16, "Bahrain GP in Malaysia" adıyla)
   madring:        { lengthKm: 5.416, corners: 22, officialLaps: 57, raceDistanceKm: 308.524, firstGrandPrix: 2026 },
   sepang:         { lengthKm: 5.543, corners: 15, officialLaps: 56, raceDistanceKm: 310.408, firstGrandPrix: 1999, fastestLap: { time: "1:34.080", driver: "Sebastian Vettel", year: 2017 } }, // tur/mesafe verisi 1999-2017 Malezya GP'sinden (Wikipedia) — 2026'daki "Bahrain GP in Malaysia" için henüz resmi rakam yok
+  // 2021-2022 sonrası takvimden düştü (COVID-dönemi yedekleri / Rusya yaptırımları / Fransa
+  // takvimden çıktı) ama 2021-2025 backfill'inde yarışları var. Uzunluk/viraj/pist rekoru
+  // Wikipedia'dan (2026-08-04), tur sayısı kendi DB'mizdeki gerçek yarış sonucundan (results[0].laps),
+  // raceDistanceKm = lengthKm × laps hesaplanmıştır (resmi F1.com rakamı yok, tahmin değil hesap).
+  portimao:       { lengthKm: 4.653, corners: 15, officialLaps: 66, raceDistanceKm: 307.098, firstGrandPrix: 2020, fastestLap: { time: "1:18.750", driver: "Lewis Hamilton", year: 2020 } },
+  ricard:         { lengthKm: 5.842, corners: 15, officialLaps: 53, raceDistanceKm: 309.626, firstGrandPrix: 2018, fastestLap: { time: "1:32.740", driver: "Sebastian Vettel", year: 2019 } }, // firstGrandPrix modern-dönem dönüşü (1971-1990 arası farklı layout, kıyaslanmıyor)
+  sochi:          { lengthKm: 5.848, corners: 18, officialLaps: 53, raceDistanceKm: 309.944, firstGrandPrix: 2014, fastestLap: { time: "1:35.761", driver: "Lewis Hamilton", year: 2019 } },
+  istanbul:       { lengthKm: 5.338, corners: 14, officialLaps: 58, raceDistanceKm: 309.604, firstGrandPrix: 2005, fastestLap: { time: "1:24.770", driver: "Juan Pablo Montoya", year: 2005 } },
 };
 
 export function getF1CircuitSpecs(circuitId: string): CircuitSpecs | null {
@@ -103,6 +111,11 @@ const F1_CIRCUIT_LAYOUT_SLUGS: Record<string, string> = {
   vegas:         "las_vegas",
   losail:        "qatar",
   yas_marina:    "abu_dhabi",
+  // Eski (2018-redesign-assets) set takvim-dışı pistleri de içeriyor — curl ile doğrulandı.
+  portimao:      "portugal",
+  ricard:        "france",
+  sochi:         "russia",
+  istanbul:      "turkey",
 };
 
 export function getF1CircuitLayoutUrl(circuitId: string): string | null {
@@ -180,6 +193,11 @@ const F1_CIRCUIT_COORDS: Record<string, [number, number]> = {
   yas_marina:    [24.4672,   54.6031],
   madring:       [40.4653,  -3.6153],
   sepang:        [2.7606,  101.7375],
+  // Kendi race verimizdeki circuitLat/circuitLng'den (Jolpica) alındı.
+  portimao:      [37.2270,  -8.6267],
+  ricard:        [43.2506,   5.7917],
+  sochi:         [43.4057,  39.9578],
+  istanbul:      [40.9517,  29.4050],
 };
 
 export function getF1CircuitCoords(circuitId: string): [number, number] | null {
