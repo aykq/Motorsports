@@ -157,9 +157,12 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
   ].sort(), [sessions]);
 
   const daysUntilRace = useMemo(() => {
-    const firstSession = sessionDates[0];
-    if (!firstSession) return Infinity;
-    return Math.ceil((new Date(firstSession).getTime() - nowMs) / (1000 * 60 * 60 * 24));
+    // Anchored on the last session (usually race day), not the first: fetchForecast
+    // requests a range through this date, and Open-Meteo rejects the whole range if
+    // any part of it falls outside its forecast horizon.
+    const lastSession = sessionDates[sessionDates.length - 1];
+    if (!lastSession) return Infinity;
+    return Math.ceil((new Date(lastSession).getTime() - nowMs) / (1000 * 60 * 60 * 24));
   }, [sessionDates, nowMs]);
 
   const tooFarAhead = daysUntilRace > FORECAST_HORIZON_DAYS && status === "upcoming";
