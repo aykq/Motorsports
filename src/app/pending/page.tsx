@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { SessionProvider } from "next-auth/react";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -19,12 +20,14 @@ export default async function PendingPage() {
     if (user.status === "blocked") redirect("/blocked");
 
     return (
-      <PendingClient
-        hasSession={true}
-        userId={session.user.id}
-        userName={session.user?.name ?? null}
-        userEmail={session.user?.email ?? null}
-      />
+      <SessionProvider session={session} refetchOnWindowFocus={false}>
+        <PendingClient
+          hasSession={true}
+          userId={session.user.id}
+          userName={session.user?.name ?? null}
+          userEmail={session.user?.email ?? null}
+        />
+      </SessionProvider>
     );
   }
 
@@ -40,12 +43,14 @@ export default async function PendingPage() {
     if (user.status === "blocked") redirect("/login?error=AccessDenied");
 
     return (
-      <PendingClient
-        hasSession={false}
-        userId={pendingUserId}
-        userName={user.name ?? null}
-        userEmail={user.email ?? null}
-      />
+      <SessionProvider session={null} refetchOnWindowFocus={false}>
+        <PendingClient
+          hasSession={false}
+          userId={pendingUserId}
+          userName={user.name ?? null}
+          userEmail={user.email ?? null}
+        />
+      </SessionProvider>
     );
   }
 
