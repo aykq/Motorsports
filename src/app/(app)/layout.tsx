@@ -28,18 +28,17 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const session = await auth();
-  if (!session) redirect("/login");
 
-  const userPrefs = session.user?.id
+  const userPrefs = session?.user?.id
     ? await db.query.users.findFirst({
         where: eq(users.id, session.user.id),
         columns: { language: true, theme: true, status: true, role: true },
       })
     : null;
 
-  if (!userPrefs) redirect("/login");
-  if (userPrefs.status === "blocked") redirect("/blocked");
-  if (userPrefs.status !== "approved") redirect("/pending");
+  // proxy only checks the JWT status claim, not whether the DB row still exists —
+  // this guards a session/DB desync (e.g. user deleted after the JWT was minted)
+  if (!session || !userPrefs) redirect("/login");
 
   return (
     <div className="flex min-h-screen">
