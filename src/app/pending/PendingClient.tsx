@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { signIn, signOut } from "next-auth/react";
+import { signIn, signOut, useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
@@ -22,10 +22,12 @@ export function PendingClient({ hasSession, userId, userName, userEmail }: Pendi
   const router = useRouter();
   const t = useTranslations("pending");
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { update } = useSession();
 
   useEffect(() => {
     async function handleApproved() {
       if (hasSession) {
+        await update();
         router.push("/");
       } else {
         const result = await signIn("pending-approval", { userId, redirect: false });
@@ -85,7 +87,7 @@ export function PendingClient({ hasSession, userId, userName, userEmail }: Pendi
       es.close();
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [hasSession, userId, router]);
+  }, [hasSession, userId, router, update]);
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-background px-4">
