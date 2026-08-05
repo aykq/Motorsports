@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
 import { signIn, signOut, useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -19,21 +18,32 @@ function clearPendingCookie() {
 }
 
 export function PendingClient({ hasSession, userId, userName, userEmail }: PendingClientProps) {
-  const router = useRouter();
   const t = useTranslations("pending");
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { update } = useSession();
+  // update() re-renders SessionProvider (loading state toggles), which changes
+  // this function's identity — a ref avoids that identity change re-triggering
+  // the effect below mid-flight (it would tear down the interval/SSE before
+  // update() and the redirect that follows it ever complete).
+  const updateRef = useRef(update);
+  useEffect(() => {
+    updateRef.current = update;
+  });
 
   useEffect(() => {
     async function handleApproved() {
       if (hasSession) {
-        await update();
-        router.push("/");
+        // update() with no argument does a plain GET (next-auth only sends
+        // the update POST — and only then does auth.ts's jwt callback refetch
+        // status from the DB — when called with a defined argument), so this
+        // must pass something to actually trigger the refresh.
+        await updateRef.current({});
+        window.location.href = "/";
       } else {
         const result = await signIn("pending-approval", { userId, redirect: false });
         if (result && !result.error) {
           clearPendingCookie();
-          router.push("/");
+          window.location.href = "/";
         }
       }
     }
@@ -87,7 +97,7 @@ export function PendingClient({ hasSession, userId, userName, userEmail }: Pendi
       es.close();
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [hasSession, userId, router, update]);
+  }, [hasSession, userId]);
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-background px-4">
