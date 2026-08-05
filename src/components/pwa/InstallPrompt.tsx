@@ -22,7 +22,13 @@ export function InstallPrompt() {
   const t = useTranslations("installPrompt");
   const [show, setShow] = useState(false);
   const [visible, setVisible] = useState(false);
-  const [platform, setPlatform] = useState<Platform | null>(null);
+  const [platform, setPlatform] = useState<Platform | null>(() => {
+    if (typeof navigator === "undefined") return null;
+    const ua = navigator.userAgent;
+    if (!/iphone|ipad|ipod/i.test(ua)) return null;
+    const isSafari = /safari/i.test(ua) && !/crios|fxios|opios|mercury/i.test(ua);
+    return isSafari ? "ios" : null;
+  });
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
 
   useEffect(() => {
@@ -47,7 +53,6 @@ export function InstallPrompt() {
     if (isIOS) {
       const isSafari = /safari/i.test(ua) && !/crios|fxios|opios|mercury/i.test(ua);
       if (!isSafari) return;
-      setPlatform("ios");
       const timer = setTimeout(reveal, 2000);
       return () => clearTimeout(timer);
     }

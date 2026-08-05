@@ -38,6 +38,10 @@ export function Countdown({ targetDate, label, compact = false }: CountdownProps
   const [time, setTime] = useState<TimeLeft | null>(null);
 
   useEffect(() => {
+    // Starts at null so server and first client render match (avoids a hydration
+    // mismatch on this per-second value); setting it immediately here (rather than
+    // waiting for the first interval tick) avoids an extra second of "--:--" flash.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTime(getTimeLeft(targetDate));
     const interval = setInterval(() => setTime(getTimeLeft(targetDate)), 1000);
     return () => clearInterval(interval);

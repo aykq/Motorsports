@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 async function fetchFavorites(): Promise<string[]> {
@@ -28,6 +29,7 @@ async function removeFavorite(seriesSlug: string): Promise<void> {
 
 export function useFavorites(initialFavorites?: string[]) {
   const queryClient = useQueryClient();
+  const [initialFetchedAt] = useState(() => Date.now());
 
   const { data: favorites = [] } = useQuery({
     queryKey: ["favorites"],
@@ -35,7 +37,7 @@ export function useFavorites(initialFavorites?: string[]) {
     // Server'dan gelen initial veri varsa anında kullan, staleTime içinde refetch etme
     ...(initialFavorites !== undefined && {
       initialData: initialFavorites,
-      initialDataUpdatedAt: Date.now(),
+      initialDataUpdatedAt: initialFetchedAt,
     }),
   });
 

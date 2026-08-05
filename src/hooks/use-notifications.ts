@@ -61,10 +61,23 @@ function writePrefsStorage(prefs: Record<string, string[]>) {
   } catch {}
 }
 
+function computeIsSupported(): boolean {
+  if (typeof window === "undefined") return false;
+  return (
+    window.isSecureContext &&
+    "serviceWorker" in navigator &&
+    "PushManager" in window &&
+    "Notification" in window
+  );
+}
+
 export function useNotifications(): UseNotificationsReturn {
-  const [permission, setPermission] = useState<NotificationPermission>("default");
-  const [isSupported, setIsSupported] = useState(false);
-  const [isSecureContext, setIsSecureContext] = useState(true);
+  const [permission, setPermission] = useState<NotificationPermission>(() => {
+    if (typeof window === "undefined" || !("Notification" in window)) return "default";
+    return Notification.permission as NotificationPermission;
+  });
+  const [isSupported] = useState(computeIsSupported);
+  const [isSecureContext] = useState(() => typeof window === "undefined" || window.isSecureContext);
   const [subscription, setSubscription] = useState<PushSubscription | null>(null);
   const [enabledSeries, setEnabledSeriesRaw] = useState<string[]>(() => {
     if (typeof window === "undefined") return [];
@@ -86,17 +99,8 @@ export function useNotifications(): UseNotificationsReturn {
   }, []);
 
   useEffect(() => {
-    const secure = window.isSecureContext;
-    setIsSecureContext(secure);
-    const supported =
-      secure &&
-      "serviceWorker" in navigator &&
-      "PushManager" in window &&
-      "Notification" in window;
-    setIsSupported(supported);
-    if (!supported) return;
+    if (!isSupported) return;
 
-    setPermission(Notification.permission as NotificationPermission);
     navigator.serviceWorker.ready.then((reg) => {
       reg.pushManager.getSubscription().then(async (sub) => {
         setSubscription(sub);
@@ -132,7 +136,7 @@ export function useNotifications(): UseNotificationsReturn {
         } catch {}
       });
     });
-  }, [setEnabledSeries, setSessionPreferences]);
+  }, [isSupported, setEnabledSeries, setSessionPreferences]);
 
   const requestPermission = useCallback(async (): Promise<boolean> => {
     if (!isSupported) return false;
