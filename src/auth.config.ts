@@ -24,6 +24,7 @@ export const authConfig = {
       return token;
     },
     session({ session, token }: { session: Session; token: JWT }) {
+      if (token.sub) session.user.id = token.sub;
       if (token.role) session.user.role = token.role;
       if (token.status) session.user.status = token.status;
       session.user.language = token.language ?? null;
