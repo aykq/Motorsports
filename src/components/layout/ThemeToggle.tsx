@@ -3,7 +3,11 @@
 import { useTheme } from "next-themes";
 import { Moon, Sun, Monitor } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
+
+function subscribeNoop() {
+  return () => {};
+}
 
 const THEMES = [
   { value: "light", icon: Sun },
@@ -13,9 +17,8 @@ const THEMES = [
 
 export function ThemeToggle({ className }: { className?: string }) {
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(subscribeNoop, () => true, () => false);
 
-  useEffect(() => setMounted(true), []);
   if (!mounted) return null;
 
   function handleChange(next: string) {

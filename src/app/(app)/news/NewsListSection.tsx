@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
@@ -21,20 +21,19 @@ function timeAgo(date: Date | null, t: ReturnType<typeof useTranslations>): stri
 
 export function NewsListSection({ news }: { news: NewsItem[] }) {
   const t = useTranslations("newsPage");
-  const prevIdsRef = useRef<Set<string>>(new Set());
+  const [prevNews, setPrevNews] = useState(news);
+  const [newIndexMap, setNewIndexMap] = useState(new Map<string, number>());
 
-  // Determine new items before updating the ref (runs during render, before useEffect)
-  const newIndexMap = new Map<string, number>();
-  let newIdx = 0;
-  for (const item of news) {
-    if (!prevIdsRef.current.has(item.id)) {
-      newIndexMap.set(item.id, newIdx++);
+  if (news !== prevNews) {
+    const prevIds = new Set(prevNews.map((n) => n.id));
+    const map = new Map<string, number>();
+    let newIdx = 0;
+    for (const item of news) {
+      if (!prevIds.has(item.id)) map.set(item.id, newIdx++);
     }
+    setPrevNews(news);
+    setNewIndexMap(map);
   }
-
-  useEffect(() => {
-    prevIdsRef.current = new Set(news.map((n) => n.id));
-  }, [news]);
 
   return (
     <div className="flex flex-col gap-2">

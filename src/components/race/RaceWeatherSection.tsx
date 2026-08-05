@@ -150,6 +150,7 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
   const [loading, setLoading] = useState(true);
   const meetingKeyRef = useRef<number | null>(null);
   const [currentSession, setCurrentSession] = useState<RaceSession | null>(() => findCurrentSession(sessions));
+  const [nowMs] = useState(() => Date.now());
 
   const sessionDates = useMemo(() => [
     ...new Set(sessions.map((s) => new Date(s.date).toISOString().split("T")[0])),
@@ -158,8 +159,8 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
   const daysUntilRace = useMemo(() => {
     const firstSession = sessionDates[0];
     if (!firstSession) return Infinity;
-    return Math.ceil((new Date(firstSession).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-  }, [sessionDates]);
+    return Math.ceil((new Date(firstSession).getTime() - nowMs) / (1000 * 60 * 60 * 24));
+  }, [sessionDates, nowMs]);
 
   const tooFarAhead = daysUntilRace > FORECAST_HORIZON_DAYS && status === "upcoming";
 
@@ -209,10 +210,7 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
   }, [lat, lng]);
 
   useEffect(() => {
-    if (tooFarAhead) {
-      setLoading(false);
-      return;
-    }
+    if (tooFarAhead) return;
     let interval: ReturnType<typeof setInterval> | null = null;
     let sessionCheckInterval: ReturnType<typeof setInterval> | null = null;
     let cancelled = false;
@@ -266,7 +264,7 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
 
   if (tooFarAhead) {
     const daysUntilAvailable = daysUntilRace - FORECAST_HORIZON_DAYS;
-    const availableDate = new Date(Date.now() + daysUntilAvailable * 24 * 60 * 60 * 1000);
+    const availableDate = new Date(nowMs + daysUntilAvailable * 24 * 60 * 60 * 1000);
     const availableDateStr = availableDate.toLocaleDateString(locale, { day: "numeric", month: "long" });
     return (
       <section className="space-y-2">
