@@ -16,7 +16,12 @@ export default async function PendingPage() {
       columns: { status: true },
     });
     if (!user) redirect("/login");
-    if (user.status === "approved") redirect("/");
+    // Only redirect straight to "/" when the JWT's own status claim already
+    // agrees with the DB — otherwise proxy (which trusts the JWT, not the DB)
+    // would bounce the still-"pending"-per-JWT request straight back here,
+    // an infinite loop. Falling through lets PendingClient's approved-poll
+    // path refresh the JWT (session.update()) before it navigates to "/".
+    if (user.status === "approved" && session.user.status === "approved") redirect("/");
     if (user.status === "blocked") redirect("/blocked");
 
     return (
