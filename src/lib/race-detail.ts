@@ -158,6 +158,24 @@ export async function syncRaceDetails(
       const raw = await getRaceDetailRaw(slug, season, race.round);
       if (!raw) continue;
 
+      // raceControlFetched !== true → önceki fetch OpenF1'den veri alamadı, tekrar dene
+      if (!raw.raceControlFetched) {
+        const fresh = await fetchF1RaceDetail(season, race.round, race, true);
+        if (fresh.raceControl.length > 0) {
+          await new Promise((r) => setTimeout(r, 2000));
+          const translated = await translateRaceControlMessages(
+            fresh.raceControl.map((e) => e.message)
+          );
+          await setCachedRaceDetail(slug, season, race.round, {
+            ...raw,
+            ...fresh,
+            raceControlTr: translated,
+          });
+          synced++;
+        }
+        continue;
+      }
+
       const needsTr =
         raw.raceControl.length > 0 &&
         (!raw.raceControlTr?.length ||
@@ -540,7 +558,7 @@ async function fetchF1RaceDetail(
     practice1Results: attachDriverIds(fp1Result.status === "fulfilled" ? fp1Result.value : [], numberToDriverId),
     practice2Results: attachDriverIds(fp2Result.status === "fulfilled" ? fp2Result.value : [], numberToDriverId),
     practice3Results: attachDriverIds(fp3Result.status === "fulfilled" ? fp3Result.value : [], numberToDriverId),
-    raceControlFetched: isCompleted,
+    raceControlFetched: isCompleted && raceControl.length > 0,
     stintsFetched: isCompleted,
   };
 }
