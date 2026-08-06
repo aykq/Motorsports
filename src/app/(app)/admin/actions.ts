@@ -15,11 +15,28 @@ import {
 import { sendPushToSubscribers } from "@/lib/push";
 import { requireAdmin } from "@/lib/admin-guard";
 import { fetchAndCacheNews, cleanAllNewsContent } from "@/lib/scrapers/motorsportNews";
+import { setShowNonF1Series } from "@/lib/app-settings";
 import { getTranslations } from "next-intl/server";
 
 async function checkAdmin() {
   const adminId = await requireAdmin();
   if (!adminId) throw new Error("Unauthorized");
+}
+
+export async function setNonF1VisibilityAction(
+  value: boolean
+): Promise<{ ok: boolean; message: string }> {
+  await checkAdmin();
+  try {
+    await setShowNonF1Series(value);
+    const t = await getTranslations("admin");
+    return {
+      ok: true,
+      message: value ? t("nonF1VisibilityEnabled") : t("nonF1VisibilityDisabled"),
+    };
+  } catch (err) {
+    return { ok: false, message: String(err) };
+  }
 }
 
 export async function syncSeriesAction(slug: string): Promise<{ ok: boolean; message: string }> {

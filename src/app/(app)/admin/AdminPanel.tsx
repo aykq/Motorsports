@@ -13,10 +13,11 @@ import {
   syncSeriesAction, clearRaceDetailAction, sendTestNotifAction,
   clearDriverCacheAction, getRecentNotificationsAction, type RecentNotification,
   syncF1ScheduleAction, syncF1DriverStandingsAction, syncF1TeamStandingsAction,
-  syncF1DriversAction, syncF1CircuitsAction,
+  syncF1DriversAction, syncF1CircuitsAction, setNonF1VisibilityAction,
 } from "./actions";
 import { UsersTable } from "./UsersTable";
 import { NewsSyncButton } from "@/components/news/NewsSyncButton";
+import { Switch } from "@/components/ui/switch";
 
 const NOTIF_PAGE = 10;
 
@@ -77,6 +78,7 @@ interface Props {
   lastSyncTimes: Record<string, string | null>;
   initialUsers: AdminUser[];
   initialNotifications: RecentNotification[];
+  initialShowNonF1Series: boolean;
 }
 
 function StatCard({ accent, label, value }: { accent: string; label: string; value: number }) {
@@ -89,11 +91,15 @@ function StatCard({ accent, label, value }: { accent: string; label: string; val
   );
 }
 
-export function AdminPanel({ stats, lastSyncTimes, initialUsers, initialNotifications }: Props) {
+export function AdminPanel({
+  stats, lastSyncTimes, initialUsers, initialNotifications, initialShowNonF1Series,
+}: Props) {
   const router = useRouter();
   const t = useTranslations("admin");
   const locale = useLocale();
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [showNonF1Series, setShowNonF1SeriesState] = useState(initialShowNonF1Series);
+  const [nonF1Pending, startNonF1Transition] = useTransition();
   const [syncPending, startSyncTransition] = useTransition();
   const [syncingSlug, setSyncingSlug] = useState<string | null>(null);
   const [syncAllPending, setSyncAllPending] = useState(false);
@@ -174,6 +180,15 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers, initialNotifica
       const result = await clearDriverCacheAction(clearDriverSlug);
       addToast(result.ok, result.message);
       if (result.ok) setClearDriverSlug("");
+    });
+  }
+
+  function handleToggleNonF1Series(next: boolean) {
+    setShowNonF1SeriesState(next);
+    startNonF1Transition(async () => {
+      const result = await setNonF1VisibilityAction(next);
+      if (!result.ok) setShowNonF1SeriesState(!next); // revert on failure
+      addToast(result.ok, result.message);
     });
   }
 
@@ -588,7 +603,21 @@ export function AdminPanel({ stats, lastSyncTimes, initialUsers, initialNotifica
         </TabsContent>
 
         {/* ── Settings ── */}
-        <TabsContent value="settings" className="mt-3">
+        <TabsContent value="settings" className="mt-3 space-y-4">
+          <section className="rounded-xl bg-card border border-border p-4 space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium">{t("nonF1VisibilityTitle")}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{t("nonF1VisibilityDescription")}</p>
+              </div>
+              <Switch
+                checked={showNonF1Series}
+                onCheckedChange={handleToggleNonF1Series}
+                disabled={nonF1Pending}
+                className="cursor-pointer shrink-0"
+              />
+            </div>
+          </section>
           <div className="rounded-xl bg-card border border-border p-8 flex flex-col items-center gap-3 text-center">
             <ShieldCheck className="w-8 h-8 text-muted-foreground/40" />
             <p className="text-sm text-muted-foreground">{t("settingsComingSoon")}</p>
