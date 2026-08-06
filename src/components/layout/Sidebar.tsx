@@ -16,17 +16,22 @@ interface SidebarProps {
     image?: string | null;
   };
   isAdmin?: boolean;
+  showNonF1Series?: boolean;
 }
 
-export function Sidebar({ user, isAdmin }: SidebarProps) {
+export function Sidebar({ user, isAdmin, showNonF1Series }: SidebarProps) {
   const pathname = usePathname();
   const t = useTranslations("nav");
   const tAccount = useTranslations("settings.account");
 
   const NAV_ITEMS = [
     { href: "/", label: t("calendar"), icon: CalendarDays },
-    { href: "/series", label: t("series"), icon: Grid2X2 },
-    { href: "/favorites", label: t("favorites"), icon: Heart },
+    ...(showNonF1Series
+      ? [
+          { href: "/series", label: t("series"), icon: Grid2X2 },
+          { href: "/favorites", label: t("favorites"), icon: Heart },
+        ]
+      : []),
     { href: "/news", label: t("news"), icon: Newspaper },
     { href: "/settings", label: t("settings"), icon: Settings },
   ];
