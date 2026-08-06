@@ -26,3 +26,7 @@ export const SERIES_LIST: SeriesConfig[] = [
 export function getSeriesConfig(slug: string): SeriesConfig | undefined {
   return SERIES_LIST.find((s) => s.slug === slug);
 }
+
+export function isSeriesVisible(series: SeriesConfig, showNonF1Series: boolean): boolean {
+  return showNonF1Series || series.slug === "f1";
+}
