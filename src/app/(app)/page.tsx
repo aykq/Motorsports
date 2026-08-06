@@ -1,5 +1,6 @@
 import { getCachedSchedule } from "@/lib/cache";
-import { SERIES_LIST } from "@/lib/series-config";
+import { SERIES_LIST, isSeriesVisible } from "@/lib/series-config";
+import { getShowNonF1Series } from "@/lib/app-settings";
 import { CalendarClient } from "@/components/calendar/CalendarClient";
 import type { Metadata } from "next";
 import type { CalendarRace, SeriesCountdownInfo } from "@/components/calendar/CalendarClient";
@@ -14,7 +15,10 @@ function getRaceSessionDate(race: { sessions: { type: string; date: string }[]; 
 
 export default async function CalendarPage() {
   const year = new Date().getFullYear();
-  const allAvailableSeries = SERIES_LIST.filter((s) => s.available);
+  const showNonF1Series = await getShowNonF1Series();
+  const allAvailableSeries = SERIES_LIST.filter(
+    (s) => s.available && isSeriesVisible(s, showNonF1Series)
+  );
   // filter bar + countdown chips — hidden sub-series (moto2/moto3) excluded
   const filterSeries = allAvailableSeries.filter((s) => !s.hidden);
 
