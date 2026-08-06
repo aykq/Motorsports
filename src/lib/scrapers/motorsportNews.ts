@@ -174,6 +174,12 @@ function extractBlocks($: cheerio.CheerioAPI): ContentBlock[] {
     // Skip elements nested inside the reader-survey promo widget
     if ($el.closest("msnt-survey-promo").length > 0) return;
 
+    // Skip elements nested inside the comments-CTA widget or the article-end
+    // share/save block — neither currently contains p/img, but excluding by
+    // container (not text match) keeps it that way if motorsport.com's markup changes
+    if ($el.closest("msnt-comments-promo").length > 0) return;
+    if ($el.closest(".ms-article-end").length > 0) return;
+
     if ($el.is("p")) {
       const text = $el.text().trim();
       if (text.length > 30 && !SHARE_PATTERN.test(text) && !/^İZLE:/i.test(text)) {
