@@ -6,6 +6,7 @@ import { openf1IsF1SessionFinished } from "@/lib/adapters/f1/openf1";
 import { isMScomF1RaceFinished } from "@/lib/adapters/f1/motorsport-com-scraper";
 import { getSeriesConfig } from "@/lib/series-config";
 import { recomputeRaceStatus } from "@/lib/cache";
+import { getShowNonF1Series } from "@/lib/app-settings";
 import type { Race } from "@/types/series";
 
 const STATUS_DRIVEN_SERIES = new Set(["motogp", "moto2", "moto3", "wec"]);
@@ -95,9 +96,14 @@ export async function notifySessions(): Promise<NotifySessionsResult> {
     start:   { start: now -  4 * 60 * 1000, end: now +  6 * 60 * 1000 },
   };
 
-  const allRaces = await db.query.cachedRaces.findMany();
+  const [allRaces, showNonF1Series] = await Promise.all([
+    db.query.cachedRaces.findMany(),
+    getShowNonF1Series(),
+  ]);
 
   for (const row of allRaces) {
+    if (!showNonF1Series && row.seriesSlug !== "f1") continue;
+
     const race = recomputeRaceStatus(row.data as Race, row.seriesSlug);
 
     for (const session of (race.sessions ?? [])) {
