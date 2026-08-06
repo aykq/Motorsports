@@ -74,7 +74,7 @@ function buildEnduranceSessions(e: CalendarEntry): RaceSession[] {
 function calendarToRaces(entries: CalendarEntry[]): Race[] {
   return entries.map((e) => ({
     round:       e.round,
-    name:        `GT World Challenge Europe ${e.seriesType === "endurance" ? "Endurance" : "Sprint"} Cup — ${e.circuitName}`,
+    name:        `GT World Challenge Europe ${e.seriesType === "endurance" ? "Endurance" : "Sprint"} Cup · ${e.circuitName}`,
     circuitId:   slugify(e.circuitName),
     circuitName: e.circuitName,
     location:    e.circuitName,

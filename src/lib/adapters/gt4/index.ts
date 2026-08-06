@@ -60,7 +60,7 @@ function fallbackCalendar(): Race[] {
     const coords = CIRCUIT_COORDS[e.circuitName];
     return {
       round:       e.round,
-      name:        `GT4 European Series — ${e.circuitName}`,
+      name:        `GT4 European Series · ${e.circuitName}`,
       circuitId:   slugify(e.circuitName),
       circuitName: e.circuitName,
       location:    e.circuitName,

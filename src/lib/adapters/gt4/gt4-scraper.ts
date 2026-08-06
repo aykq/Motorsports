@@ -173,7 +173,7 @@ export async function scrapeGT4Schedule(season: number): Promise<Race[]> {
 
     races.push({
       round,
-      name:        `GT4 European Series — ${circuitName}`,
+      name:        `GT4 European Series · ${circuitName}`,
       circuitId:   toSlug(circuitName),
       circuitName,
       location:    circuitName,
@@ -222,7 +222,7 @@ export async function scrapeGT4Schedule(season: number): Promise<Race[]> {
 
     races.push({
       round,
-      name:        `GT4 European Series — ${circuitName}`,
+      name:        `GT4 European Series · ${circuitName}`,
       circuitId:   toSlug(circuitName),
       circuitName,
       location:    circuitName,

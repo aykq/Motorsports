@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { cachedRaceDetails, cachedRaces, cachedDrivers, notificationLog } from "@/db/schema";
+import { cachedRaceDetails, cachedDrivers, notificationLog } from "@/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { updateTag } from "next/cache";
 import {
