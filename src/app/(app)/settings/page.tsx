@@ -7,6 +7,7 @@ import { NotificationSettings } from "@/components/settings/NotificationSettings
 import { LanguageToggle } from "@/components/layout/LanguageToggle";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { getTranslations } from "next-intl/server";
+import { getShowNonF1Series } from "@/lib/app-settings";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
@@ -19,6 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function SettingsPage() {
   const session = await auth();
   const t = await getTranslations("settings");
+  const showNonF1Series = await getShowNonF1Series();
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
@@ -71,7 +73,7 @@ export default async function SettingsPage() {
         </div>
       </section>
 
-      <NotificationSettings />
+      <NotificationSettings showNonF1Series={showNonF1Series} />
     </div>
   );
 }

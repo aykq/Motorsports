@@ -1,7 +1,7 @@
 "use client";
 
 import { useNotifications } from "@/hooks/use-notifications";
-import { SERIES_LIST } from "@/lib/series-config";
+import { SERIES_LIST, isSeriesVisible } from "@/lib/series-config";
 import {
   getSessionTypesForSeries,
   getSessionTypeConfig,
@@ -13,7 +13,11 @@ import { Bell, BellOff, BellRing } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
 
-export function NotificationSettings() {
+interface Props {
+  showNonF1Series: boolean;
+}
+
+export function NotificationSettings({ showNonF1Series }: Props) {
   const t = useTranslations("settings.notifications");
   const {
     permission,
@@ -50,7 +54,9 @@ export function NotificationSettings() {
     await subscribe();
   };
 
-  const availableSeries = SERIES_LIST.filter((s) => s.available && !s.hidden);
+  const availableSeries = SERIES_LIST.filter(
+    (s) => s.available && !s.hidden && isSeriesVisible(s, showNonF1Series)
+  );
 
   return (
     <section className="rounded-xl bg-card border border-border p-4 space-y-4">
