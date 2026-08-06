@@ -8,16 +8,21 @@ import { useTranslations } from "next-intl";
 
 interface BottomNavProps {
   isAdmin?: boolean;
+  showNonF1Series?: boolean;
 }
 
-export function BottomNav({ isAdmin }: BottomNavProps) {
+export function BottomNav({ isAdmin, showNonF1Series }: BottomNavProps) {
   const pathname = usePathname();
   const t = useTranslations("nav");
 
   const NAV_ITEMS = [
     { href: "/", label: t("calendar"), icon: CalendarDays },
-    { href: "/series", label: t("series"), icon: Grid2X2 },
-    { href: "/favorites", label: t("favorites"), icon: Heart },
+    ...(showNonF1Series
+      ? [
+          { href: "/series", label: t("series"), icon: Grid2X2 },
+          { href: "/favorites", label: t("favorites"), icon: Heart },
+        ]
+      : []),
     { href: "/news", label: t("news"), icon: Newspaper },
     { href: "/settings", label: t("settings"), icon: Settings },
   ];

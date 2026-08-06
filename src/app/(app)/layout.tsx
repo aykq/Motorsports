@@ -11,6 +11,7 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import dynamic from "next/dynamic";
+import { getShowNonF1Series } from "@/lib/app-settings";
 
 // DevSyncPanel: local-only dev tool, gitignored — dosya yoksa sessizce atlanır
 const DevSyncPanel =
@@ -29,12 +30,15 @@ export default async function AppLayout({
 }) {
   const session = await auth();
 
-  const userPrefs = session?.user?.id
-    ? await db.query.users.findFirst({
-        where: eq(users.id, session.user.id),
-        columns: { language: true, theme: true, status: true, role: true },
-      })
-    : null;
+  const [userPrefs, showNonF1Series] = await Promise.all([
+    session?.user?.id
+      ? db.query.users.findFirst({
+          where: eq(users.id, session.user.id),
+          columns: { language: true, theme: true, status: true, role: true },
+        })
+      : Promise.resolve(null),
+    getShowNonF1Series(),
+  ]);
 
   // proxy only checks the JWT status claim, not whether the DB row still exists —
   // this guards a session/DB desync (e.g. user deleted after the JWT was minted)
@@ -51,11 +55,12 @@ export default async function AppLayout({
       <Sidebar
         user={{ name: session.user?.name, email: session.user?.email, image: session.user?.image }}
         isAdmin={userPrefs.role === "admin"}
+        showNonF1Series={showNonF1Series}
       />
       <main className="flex-1 min-w-0 pb-16 md:pb-0">
         <PageTransitionWrapper>{children}</PageTransitionWrapper>
       </main>
-      <BottomNav isAdmin={userPrefs.role === "admin"} />
+      <BottomNav isAdmin={userPrefs.role === "admin"} showNonF1Series={showNonF1Series} />
       <InstallPrompt />
       {DevSyncPanel && <DevSyncPanel />}
     </div>
