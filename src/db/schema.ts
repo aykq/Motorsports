@@ -7,6 +7,7 @@ import {
   primaryKey,
   uniqueIndex,
   index,
+  boolean,
 } from "drizzle-orm/pg-core";
 import type { AdapterAccountType } from "next-auth/adapters";
 
@@ -228,3 +229,11 @@ export const notificationLog = pgTable(
     index("notification_log_series_sent_at_idx").on(t.seriesSlug, t.sentAt),
   ]
 );
+
+// ─── App-wide settings ────────────────────────────────────────────────────────
+// Singleton row (fixed id) for app-wide (not per-user) toggles. First one:
+// hiding non-F1 series from end users without deleting their code/data.
+export const appSettings = pgTable("app_settings", {
+  id: text("id").primaryKey().default("singleton"),
+  showNonF1Series: boolean("show_non_f1_series").notNull().default(false),
+});
