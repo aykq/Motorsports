@@ -1,4 +1,5 @@
-import { SERIES_LIST, getSeriesConfig } from "@/lib/series-config";
+import { SERIES_LIST, getSeriesConfig, isSeriesVisible } from "@/lib/series-config";
+import { getShowNonF1Series } from "@/lib/app-settings";
 import { Badge } from "@/components/ui/badge";
 import { SeriesGlowSurface } from "@/components/series/SeriesGlowSurface";
 import { getTranslations } from "next-intl/server";
@@ -11,7 +12,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function SeriesListPage() {
   const t = await getTranslations("series");
-  const visibleSeries = SERIES_LIST.filter((s) => !s.hidden);
+  const showNonF1Series = await getShowNonF1Series();
+  const visibleSeries = SERIES_LIST.filter(
+    (s) => !s.hidden && isSeriesVisible(s, showNonF1Series)
+  );
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 space-y-6">
