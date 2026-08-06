@@ -10,7 +10,6 @@ import { adapters } from "@/lib/adapters";
 import { db } from "@/db";
 import { notifySessions } from "@/lib/notify-sessions";
 import { fetchAndCacheNews, cleanAllNewsContent } from "@/lib/scrapers/motorsportNews";
-import { revalidateTag } from "next/cache";
 import type { Race } from "@/types/series";
 
 const POST_RACE_WINDOW_MS = 12 * 60 * 60 * 1000;
@@ -179,7 +178,9 @@ cron.schedule(
     });
     const cleanedCount = await cleanAllNewsContent();
     if (cleanedCount > 0) console.log(`[cron] news content cleaned: ${cleanedCount} items`);
-    revalidateTag("news", "max");
+    // No revalidateTag() here: it requires Next's request-scoped store, which a bare
+    // node-cron timer callback never has (unlike /api/cron/news/route.ts's Route Handler,
+    // used in prod) — the news cache still expires on its own 1800s revalidate window.
     console.log("[cron] news fetch finished");
   },
   { timezone: "UTC" }
