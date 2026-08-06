@@ -107,7 +107,6 @@ export default async function RaceDetailPage({ params, searchParams }: Props) {
   const fp1Done = race.sessions.find((s) => s.type === "practice1") ? new Date(race.sessions.find((s) => s.type === "practice1")!.date) < now : false;
   const fp2Done = race.sessions.find((s) => s.type === "practice2") ? new Date(race.sessions.find((s) => s.type === "practice2")!.date) < now : false;
   const fp3Done = race.sessions.find((s) => s.type === "practice3") ? new Date(race.sessions.find((s) => s.type === "practice3")!.date) < now : false;
-  const sprintQualiDone = race.sessions.find((s) => s.type === "sprintQuali") ? new Date(race.sessions.find((s) => s.type === "sprintQuali")!.date) < now : false;
   const sprintDone = race.sessions.find((s) => s.type === "sprint") ? new Date(race.sessions.find((s) => s.type === "sprint")!.date) < now : false;
   const qualifyingDone = race.sessions.find((s) => s.type === "qualifying") ? new Date(race.sessions.find((s) => s.type === "qualifying")!.date) < now : false;
 

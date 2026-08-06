@@ -64,9 +64,6 @@ const SERIES_URLS: Record<string, string> = {
   wec:    `${BASE}/wec/news/`,
 };
 
-// URL pattern: /f1/news/some-slug/12345678/
-const ARTICLE_URL_RE = /^\/(f1|motogp|moto2|wec)\/news\/[^/]+\/\d+\/?$/;
-
 async function fetchPage(url: string): Promise<string> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);

@@ -178,7 +178,7 @@ export async function scrapeGTWCESchedule(season: number): Promise<Race[]> {
 
     races.push({
       round,
-      name: `GT World Challenge Europe ${isEndurance ? "Endurance" : "Sprint"} Cup — ${circuitName}`,
+      name: `GT World Challenge Europe ${isEndurance ? "Endurance" : "Sprint"} Cup · ${circuitName}`,
       circuitId:   toSlug(circuitName),
       circuitName,
       location:    circuitName,

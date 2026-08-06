@@ -6,6 +6,16 @@ const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   {
+    // Underscore-prefixed args/vars are an intentional "unused by design"
+    // marker (e.g. adapter stubs matching a shared interface signature).
+    rules: {
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
+    },
+  },
+  {
     // Standalone CommonJS scripts, not part of the Next.js app bundle.
     files: ["scripts/**/*.cjs"],
     rules: {

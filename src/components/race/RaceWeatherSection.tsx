@@ -263,7 +263,7 @@ export function RaceWeatherSection({ raceDate, sessions, lat, lng, status, accen
       if (interval) clearInterval(interval);
       if (sessionCheckInterval) clearInterval(sessionCheckInterval);
     };
-  }, [status, sessions, fetchForecast, fetchLiveWeather, fetchMeteoLive, tooFarAhead]);
+  }, [status, sessions, fetchForecast, fetchLiveWeather, fetchMeteoLive, tooFarAhead, enableOpenF1]);
 
   if (tooFarAhead) {
     const daysUntilAvailable = daysUntilRace - FORECAST_HORIZON_DAYS;

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/admin-guard";
 import { db } from "@/db";
-import { cachedRaces, users, accounts, pushSubscriptions, favorites, notificationLog } from "@/db/schema";
+import { cachedRaces, users, accounts, pushSubscriptions, notificationLog } from "@/db/schema";
 import { max, count, sql } from "drizzle-orm";
 import { AdminPanel } from "./AdminPanel";
 import { getRecentNotificationsAction } from "./actions";
