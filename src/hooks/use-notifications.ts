@@ -72,21 +72,17 @@ function computeIsSupported(): boolean {
 }
 
 export function useNotifications(): UseNotificationsReturn {
-  const [permission, setPermission] = useState<NotificationPermission>(() => {
-    if (typeof window === "undefined" || !("Notification" in window)) return "default";
-    return Notification.permission as NotificationPermission;
-  });
-  const [isSupported] = useState(computeIsSupported);
-  const [isSecureContext] = useState(() => typeof window === "undefined" || window.isSecureContext);
+  // All five below start at the value the server would render (no window/localStorage
+  // access during the initial render) and are synced to their real client-side value in
+  // the mount effect further down — reading browser-only APIs directly in a useState
+  // initializer makes the client's hydration-pass render diverge from the server's HTML,
+  // which React flags as a hydration mismatch.
+  const [permission, setPermission] = useState<NotificationPermission>("default");
+  const [isSupported, setIsSupported] = useState(false);
+  const [isSecureContext, setIsSecureContext] = useState(true);
   const [subscription, setSubscription] = useState<PushSubscription | null>(null);
-  const [enabledSeries, setEnabledSeriesRaw] = useState<string[]>(() => {
-    if (typeof window === "undefined") return [];
-    return readStorage();
-  });
-  const [sessionPreferences, setSessionPreferencesRaw] = useState<Record<string, string[]>>(() => {
-    if (typeof window === "undefined") return {};
-    return readPrefsStorage();
-  });
+  const [enabledSeries, setEnabledSeriesRaw] = useState<string[]>([]);
+  const [sessionPreferences, setSessionPreferencesRaw] = useState<Record<string, string[]>>({});
 
   const setEnabledSeries = useCallback((series: string[]) => {
     setEnabledSeriesRaw(series);
@@ -96,6 +92,18 @@ export function useNotifications(): UseNotificationsReturn {
   const setSessionPreferences = useCallback((prefs: Record<string, string[]>) => {
     setSessionPreferencesRaw(prefs);
     writePrefsStorage(prefs);
+  }, []);
+
+  useEffect(() => {
+    // Mount-only sync from browser-only APIs (window/Notification/localStorage) that
+    // useState initializers can't read without diverging from the server's render —
+    // see the SSR-safe defaults above.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsSupported(computeIsSupported());
+    setIsSecureContext(window.isSecureContext);
+    if ("Notification" in window) setPermission(Notification.permission as NotificationPermission);
+    setEnabledSeriesRaw(readStorage());
+    setSessionPreferencesRaw(readPrefsStorage());
   }, []);
 
   useEffect(() => {
