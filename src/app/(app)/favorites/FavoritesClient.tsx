@@ -1,7 +1,7 @@
 "use client";
 
 import { useFavorites } from "@/hooks/use-favorites";
-import { SERIES_LIST } from "@/lib/series-config";
+import { SERIES_LIST, isSeriesVisible } from "@/lib/series-config";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,12 +12,15 @@ import { useTranslations } from "next-intl";
 
 interface Props {
   initialFavorites: string[];
+  showNonF1Series: boolean;
 }
 
-export function FavoritesClient({ initialFavorites }: Props) {
+export function FavoritesClient({ initialFavorites, showNonF1Series }: Props) {
   const t = useTranslations("favorites");
   const { isFavorite, toggle } = useFavorites(initialFavorites);
-  const available = SERIES_LIST.filter((s) => s.available);
+  const available = SERIES_LIST.filter(
+    (s) => s.available && isSeriesVisible(s, showNonF1Series)
+  );
   const coming = SERIES_LIST.filter((s) => !s.available);
   const favoritedAvailable = available.filter((s) => isFavorite(s.slug));
 
