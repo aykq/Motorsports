@@ -16,13 +16,13 @@ export interface LogErrorInput {
 // severity="error" ise (throttle'lı) admin'lere push bildirim atar.
 // Kendi içindeki hatalar çağıranın akışını asla etkilemesin diye yutulur.
 export async function logError({ source, severity, message, context }: LogErrorInput): Promise<void> {
-  if (severity === "error") {
-    console.error(`[${source}] ${message}`, context ?? "");
-  } else {
-    console.warn(`[${source}] ${message}`, context ?? "");
-  }
-
   try {
+    if (severity === "error") {
+      console.error(`[${source}] ${message}`, context ?? "");
+    } else {
+      console.warn(`[${source}] ${message}`, context ?? "");
+    }
+
     const [row] = await db
       .insert(errorLog)
       .values({ source, severity, message, context: context ?? null })

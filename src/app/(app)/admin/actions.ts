@@ -267,7 +267,7 @@ export interface ErrorLogEntry {
 
 export async function getErrorLogAction(opts: {
   source?: string;
-  severity?: string;
+  severity?: "error" | "warning";
   offset?: number;
   limit?: number;
 }): Promise<ErrorLogEntry[]> {
