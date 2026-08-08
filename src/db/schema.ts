@@ -237,3 +237,26 @@ export const appSettings = pgTable("app_settings", {
   id: text("id").primaryKey().default("singleton"),
   showNonF1Series: boolean("show_non_f1_series").notNull().default(false),
 });
+
+// ─── Error log ────────────────────────────────────────────────────────────────
+// Cron/admin-action/scraper vb. kaynaklardan gelen hataların kalıcı kaydı —
+// admin panelin "Logs" tab'ı ve severity="error" için throttle'lı push bildirimi
+// bu tabloya bakar.
+export const errorLog = pgTable(
+  "error_log",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    source: text("source").notNull(), // ör. "cron/race-details", "admin/syncSeries", "scraper/wec"
+    severity: text("severity").notNull(), // "error" | "warning"
+    message: text("message").notNull(),
+    context: jsonb("context"), // nullable — ekstra bilgi (slug/round vb.)
+    pushedAt: timestamp("pushed_at"), // push throttle penceresi bunun üzerinden hesaplanır
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => [
+    index("error_log_created_at_idx").on(t.createdAt),
+    index("error_log_source_created_at_idx").on(t.source, t.createdAt),
+  ]
+);
