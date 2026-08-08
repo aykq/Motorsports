@@ -1,6 +1,7 @@
 import * as cheerio from "cheerio";
 import type { RaceResult } from "@/types/series";
 import { getWECTeamIdByCarNo } from "./wec-drivers";
+import { logError } from "@/lib/error-log";
 
 const BASE = "https://tr.motorsport.com";
 const TIMEOUT_MS = 15_000;
@@ -249,7 +250,7 @@ export async function fetchWECRaceResults(
     const raw = await scrapeRaceResultsPage(url);
     return raw.map(toRaceResult);
   } catch (err) {
-    console.error("[WEC scraper] fetchWECRaceResults error:", err);
+    logError({ source: "scraper/wec-results", severity: "error", message: err instanceof Error ? err.message : String(err) });
     return [];
   }
 }
