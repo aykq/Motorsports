@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { isActiveRaceWeekend } from "@/lib/race-detail";
 import { syncScheduleOnly } from "@/lib/sync";
 import type { Race } from "@/types/series";
+import { logError } from "@/lib/error-log";
 
 // MotoGP/WEC gibi status-güdümlü serilerde yarış durumunu ("FINISHED"/"FT" →
 // "completed") tazeler; bildirim cron'u tamamlanmayı bu sayede yakalar.
@@ -38,10 +39,16 @@ export async function POST(request: Request) {
       }
     }
 
-    if (errors.length) console.error("[cron/status-refresh] errors:", errors);
+    if (errors.length) {
+      await logError({ source: "cron/status-refresh", severity: "warning", message: errors.join("; ") });
+    }
     return NextResponse.json({ ok: true, refreshed: activeSlugs, errors });
   } catch (err) {
-    console.error("[cron/status-refresh] fatal:", err);
+    await logError({
+      source: "cron/status-refresh",
+      severity: "error",
+      message: err instanceof Error ? err.message : String(err),
+    });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
