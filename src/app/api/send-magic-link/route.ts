@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm";
 import { sendNewUserDiscordNotification } from "@/lib/discord";
 import { setPendingCookie } from "@/lib/pending-cookie";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { logError } from "@/lib/error-log";
 
 const schema = z.object({ email: z.string().email() });
 
@@ -85,7 +86,7 @@ export async function POST(req: NextRequest) {
       provider: "nodemailer",
       image: null,
       signupAt: new Date(),
-    }).catch((err) => console.error("Discord notification failed:", err));
+    }).catch((err) => logError({ source: "send-magic-link/discord-notify", severity: "warning", message: err instanceof Error ? err.message : String(err) }));
   } else {
     userId = existing.id;
   }

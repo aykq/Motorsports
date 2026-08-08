@@ -5,6 +5,7 @@ import {
   scrapeGTWCETeamStandings,
   scrapeGTWCEDriverList,
 } from "./gtwce-scraper";
+import { logError } from "@/lib/error-log";
 
 // ─── Hardcoded 2026 calendar (fallback when scraper fails) ────────────────────
 
@@ -95,7 +96,7 @@ export async function fetchGT3Schedule(season: number): Promise<Race[]> {
       const scraped = await scrapeGTWCESchedule(season);
       if (scraped.length >= 5) return scraped;
     } catch (err) {
-      console.error("[GT3] schedule scraper failed, using fallback:", err);
+      logError({ source: "scraper/gt3", severity: "warning", message: `schedule scraper failed, using fallback: ${err instanceof Error ? err.message : String(err)}` });
     }
   }
   const hardcoded = GT3_CALENDAR[season];
@@ -112,7 +113,7 @@ export async function fetchGT3Standings(season: number, type: StandingType) {
         : await scrapeGTWCETeamStandings();
       if (scraped.length > 0) return scraped;
     } catch (err) {
-      console.error("[GT3] standings scraper failed:", err);
+      logError({ source: "scraper/gt3", severity: "warning", message: `standings scraper failed: ${err instanceof Error ? err.message : String(err)}` });
     }
   }
   return [];
@@ -124,7 +125,7 @@ export async function fetchGT3Drivers(season: number) {
     const drivers = await scrapeGTWCEDriverList();
     if (drivers.length > 0) return drivers;
   } catch (err) {
-    console.error("[GT3] driver list scraper failed:", err);
+    logError({ source: "scraper/gt3", severity: "warning", message: `driver list scraper failed: ${err instanceof Error ? err.message : String(err)}` });
   }
   return [];
 }

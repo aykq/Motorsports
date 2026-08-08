@@ -1,6 +1,7 @@
 import * as cheerio from "cheerio";
 import { z } from "zod";
 import type { Race, Standing, Driver, Circuit, StandingType, RaceStatus } from "@/types/series";
+import { logError } from "@/lib/error-log";
 
 const NextDataEventSchema = z.object({
   date: z.string().optional(),
@@ -192,7 +193,7 @@ export async function fetchCarreraSchedule(season: number): Promise<Race[]> {
     const valid = scraped.filter((r) => !isCssGarbage(r.name));
     if (valid.length > 0) return valid;
   } catch (err) {
-    console.error("[CarreraCup] scraper error:", err);
+    logError({ source: "scraper/carrera-cup", severity: "warning", message: `scraper error, using fallback: ${err instanceof Error ? err.message : String(err)}` });
   }
 
   // Hardcoded fallback
@@ -202,7 +203,7 @@ export async function fetchCarreraSchedule(season: number): Promise<Race[]> {
     return calendarToRaces(hardcoded);
   }
 
-  console.error(`[CarreraCup] No data for season ${season}`);
+  logError({ source: "scraper/carrera-cup", severity: "warning", message: `No data for season ${season}` });
   return [];
 }
 
@@ -349,7 +350,7 @@ export async function fetchCarreraDrivers(_season: number): Promise<Driver[]> {
     );
     return results.filter((d): d is Driver => d !== null);
   } catch (err) {
-    console.error("[CarreraCup] fetchCarreraDrivers error:", err);
+    logError({ source: "scraper/carrera-cup", severity: "error", message: `fetchCarreraDrivers error: ${err instanceof Error ? err.message : String(err)}` });
     return [];
   }
 }

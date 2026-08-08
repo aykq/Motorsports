@@ -376,6 +376,13 @@
     "toastNotifFailed": ", {failed} failed",
     "toastDriverCacheCleared": "{slug} driver cache cleared ({count} records)",
     "toastNewsItem": "{slug}: {urls} URLs, +{inserted} new, {skipped} existing",
-    "toastNewsError": "{slug}: ERROR ({error})"
+    "toastNewsError": "{slug}: ERROR ({error})",
+    "tabLogs": "Logs",
+    "errorLogAllSources": "All sources",
+    "errorLogAllSeverities": "All severities",
+    "severityError": "Error",
+    "severityWarning": "Warning",
+    "errorLogEmpty": "No errors logged yet.",
+    "errorLogDetails": "Details"
   }
 }

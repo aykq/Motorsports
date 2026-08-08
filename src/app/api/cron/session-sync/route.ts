@@ -3,6 +3,7 @@ import { verifyCronSecret } from "@/lib/cron-auth";
 import { db } from "@/db";
 import { isActiveRaceWeekend, syncActiveSessionData } from "@/lib/race-detail";
 import type { Race } from "@/types/series";
+import { logError } from "@/lib/error-log";
 
 // Aktif yarış hafta sonlarında FP/quali/sprint/yarış seans verisini çeker.
 // Crontab'dan sık aralıkla (2-5 dk) çağrılmalı — aktif hafta sonu yoksa hemen döner.
@@ -28,10 +29,16 @@ export async function POST(request: Request) {
       }
     }
 
-    if (errors.length) console.error("[cron/session-sync] errors:", errors);
+    if (errors.length) {
+      await logError({ source: "cron/session-sync", severity: "warning", message: errors.join("; ") });
+    }
     return NextResponse.json({ ok: true, active: activeRows.length, errors });
   } catch (err) {
-    console.error("[cron/session-sync] fatal:", err);
+    await logError({
+      source: "cron/session-sync",
+      severity: "error",
+      message: err instanceof Error ? err.message : String(err),
+    });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

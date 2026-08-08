@@ -1,8 +1,9 @@
 import webpush from "web-push";
 import { db } from "@/db";
-import { pushSubscriptions, notificationLog } from "@/db/schema";
-import { inArray } from "drizzle-orm";
+import { pushSubscriptions, notificationLog, users } from "@/db/schema";
+import { inArray, eq } from "drizzle-orm";
 import { DEFAULT_SESSION_TYPES } from "@/lib/session-types";
+import { logError } from "@/lib/error-log";
 
 webpush.setVapidDetails(
   process.env.VAPID_EMAIL!,
@@ -74,7 +75,56 @@ export async function sendPushToSubscribers(
       failedCount: failed,
     });
   } catch (err) {
-    console.error("[push] notification_log insert failed:", err);
+    logError({ source: "push/notification-log", severity: "warning", message: err instanceof Error ? err.message : String(err) });
+  }
+
+  return { sent, failed };
+}
+
+// Rol bazlı hedefleme — hangi seriye abone olduğuna bakılmaksızın role="admin"
+// olan kullanıcının tüm push aboneliklerine gider. Hata-log push bildirimleri
+// (bkz. src/lib/error-log.ts) bunu kullanır, seri filtresi burada anlamsız.
+export async function sendPushToAdmins(
+  payload: PushPayload
+): Promise<{ sent: number; failed: number }> {
+  const subs = await db
+    .select({
+      id: pushSubscriptions.id,
+      endpoint: pushSubscriptions.endpoint,
+      keys: pushSubscriptions.keys,
+    })
+    .from(pushSubscriptions)
+    .innerJoin(users, eq(pushSubscriptions.userId, users.id))
+    .where(eq(users.role, "admin"));
+
+  let sent = 0;
+  let failed = 0;
+  const expiredIds: string[] = [];
+
+  await Promise.allSettled(
+    subs.map(async (sub) => {
+      try {
+        await webpush.sendNotification(
+          {
+            endpoint: sub.endpoint,
+            keys: sub.keys as { p256dh: string; auth: string },
+          },
+          JSON.stringify(payload),
+          { urgency: "high", TTL: 6 * 60 * 60 }
+        );
+        sent++;
+      } catch (err: unknown) {
+        const status = (err as { statusCode?: number }).statusCode;
+        if (status === 410 || status === 404) {
+          expiredIds.push(sub.id);
+        }
+        failed++;
+      }
+    })
+  );
+
+  if (expiredIds.length > 0) {
+    await db.delete(pushSubscriptions).where(inArray(pushSubscriptions.id, expiredIds));
   }
 
   return { sent, failed };

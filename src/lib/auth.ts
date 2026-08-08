@@ -9,6 +9,7 @@ import { eq } from "drizzle-orm";
 import { sendNewUserDiscordNotification } from "./discord";
 import { authConfig } from "@/auth.config";
 import type { JWT } from "next-auth/jwt";
+import { logError } from "@/lib/error-log";
 
 const devProviders =
   process.env.NODE_ENV === "development" && process.env.ENABLE_DEV_LOGIN === "1"
@@ -174,7 +175,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             signupAt: new Date(),
           });
         } catch (err) {
-          console.error("Discord notification failed:", err);
+          logError({ source: "auth/discord-notify", severity: "warning", message: err instanceof Error ? err.message : String(err) });
         }
       }
     },
