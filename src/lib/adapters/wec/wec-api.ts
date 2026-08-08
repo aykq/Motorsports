@@ -3,6 +3,7 @@ import type { Race, Standing, Driver, Circuit, StandingType, RaceStatus } from "
 import { lookupCircuitCoords } from "@/lib/circuit-coords";
 import { getWECDrivers } from "./wec-drivers";
 import { scrapeWECDriverStandings, scrapeWECTeamStandings } from "./wec-standings-scraper";
+import { logError } from "@/lib/error-log";
 
 const THESPORTSDB_WEC_ID = "4413";
 const TIMEOUT_MS = 15_000;
@@ -231,7 +232,7 @@ export async function fetchWECSchedule(season: number): Promise<Race[]> {
     races.forEach((r, i) => { r.round = i + 1; });
     return races;
   } catch (err) {
-    console.error("[WEC] fetchSchedule error:", err);
+    logError({ source: "scraper/wec", severity: "error", message: `fetchSchedule error: ${err instanceof Error ? err.message : String(err)}` });
     return staticRaces.length > 0 ? staticRaces : [];
   }
 }
@@ -245,7 +246,7 @@ export async function fetchWECStandings(
     if (type === "team") return await scrapeWECTeamStandings(season);
     return [];
   } catch (err) {
-    console.error("[WEC] fetchStandings error:", err);
+    logError({ source: "scraper/wec", severity: "error", message: `fetchStandings error: ${err instanceof Error ? err.message : String(err)}` });
     return [];
   }
 }

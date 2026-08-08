@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { Race, Standing, Driver, Circuit, StandingType, RaceStatus } from "@/types/series";
 import { lookupCircuitCoords } from "@/lib/circuit-coords";
+import { logError } from "@/lib/error-log";
 
 const BASE_URL = "https://api.motogp.pulselive.com/motogp/v1";
 
@@ -274,7 +275,7 @@ export function createMotoGPFetchers(
         };
       });
     } catch (err) {
-      console.error(`[${displayName}] fetchSchedule error:`, err);
+      logError({ source: "scraper/motogp", severity: "error", message: `${displayName} fetchSchedule error: ${err instanceof Error ? err.message : String(err)}` });
       return [];
     }
   }
@@ -338,7 +339,7 @@ export function createMotoGPFetchers(
         } : {}),
       }));
     } catch (err) {
-      console.error(`[${displayName}] fetchStandings error:`, err);
+      logError({ source: "scraper/motogp", severity: "error", message: `${displayName} fetchStandings error: ${err instanceof Error ? err.message : String(err)}` });
       return [];
     }
   }
@@ -349,7 +350,7 @@ export function createMotoGPFetchers(
       const raw = await fetchMotogp(`/riders?seasonYear=${season}&categoryUuid=${categoryUuid}`);
 
       if (!Array.isArray(raw)) {
-        console.error(`[${displayName}] riders response is not an array`);
+        logError({ source: "scraper/motogp", severity: "warning", message: `${displayName} riders response is not an array` });
         return [];
       }
 
@@ -382,7 +383,7 @@ export function createMotoGPFetchers(
 
       return drivers;
     } catch (err) {
-      console.error(`[${displayName}] fetchRiders error:`, err);
+      logError({ source: "scraper/motogp", severity: "error", message: `${displayName} fetchRiders error: ${err instanceof Error ? err.message : String(err)}` });
       return [];
     }
   }
@@ -410,7 +411,7 @@ export function createMotoGPFetchers(
       }
       return circuits;
     } catch (err) {
-      console.error(`[${displayName}] fetchCircuits error:`, err);
+      logError({ source: "scraper/motogp", severity: "error", message: `${displayName} fetchCircuits error: ${err instanceof Error ? err.message : String(err)}` });
       return [];
     }
   }

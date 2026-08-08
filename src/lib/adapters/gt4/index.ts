@@ -7,6 +7,7 @@ import {
   scrapeGT4DriverList,
 } from "./gt4-scraper";
 import type { Race, Circuit } from "@/types/series";
+import { logError } from "@/lib/error-log";
 
 // ─── Hardcoded 2026 fallback calendar ────────────────────────────────────────
 
@@ -86,7 +87,7 @@ async function fetchGT4Schedule(season: number): Promise<Race[]> {
       const scraped = await scrapeGT4Schedule(season);
       if (scraped.length >= 3) return scraped;
     } catch (err) {
-      console.error("[GT4] schedule scraper failed, using fallback:", err);
+      logError({ source: "scraper/gt4", severity: "warning", message: `schedule scraper failed, using fallback: ${err instanceof Error ? err.message : String(err)}` });
     }
   }
   if (season === 2026) return fallbackCalendar();
@@ -102,7 +103,7 @@ async function fetchGT4Standings(season: number, type: StandingType) {
       : await scrapeGT4TeamStandings();
     if (scraped.length > 0) return scraped;
   } catch (err) {
-    console.error("[GT4] standings scraper failed:", err);
+    logError({ source: "scraper/gt4", severity: "warning", message: `standings scraper failed: ${err instanceof Error ? err.message : String(err)}` });
   }
   return [];
 }
@@ -113,7 +114,7 @@ async function fetchGT4Drivers(season: number) {
     const drivers = await scrapeGT4DriverList();
     if (drivers.length > 0) return drivers;
   } catch (err) {
-    console.error("[GT4] driver list scraper failed:", err);
+    logError({ source: "scraper/gt4", severity: "warning", message: `driver list scraper failed: ${err instanceof Error ? err.message : String(err)}` });
   }
   return [];
 }
