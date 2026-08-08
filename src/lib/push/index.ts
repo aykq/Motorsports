@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { pushSubscriptions, notificationLog, users } from "@/db/schema";
 import { inArray, eq } from "drizzle-orm";
 import { DEFAULT_SESSION_TYPES } from "@/lib/session-types";
+import { logError } from "@/lib/error-log";
 
 webpush.setVapidDetails(
   process.env.VAPID_EMAIL!,
@@ -74,7 +75,7 @@ export async function sendPushToSubscribers(
       failedCount: failed,
     });
   } catch (err) {
-    console.error("[push] notification_log insert failed:", err);
+    logError({ source: "push/notification-log", severity: "warning", message: err instanceof Error ? err.message : String(err) });
   }
 
   return { sent, failed };
