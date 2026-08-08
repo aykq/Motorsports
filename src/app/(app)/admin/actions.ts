@@ -17,6 +17,7 @@ import { requireAdmin } from "@/lib/admin-guard";
 import { fetchAndCacheNews, cleanAllNewsContent } from "@/lib/scrapers/motorsportNews";
 import { setShowNonF1Series } from "@/lib/app-settings";
 import { getTranslations } from "next-intl/server";
+import { logError } from "@/lib/error-log";
 
 async function checkAdmin() {
   const adminId = await requireAdmin();
@@ -35,6 +36,7 @@ export async function setNonF1VisibilityAction(
       message: value ? t("nonF1VisibilityEnabled") : t("nonF1VisibilityDisabled"),
     };
   } catch (err) {
+    await logError({ source: "admin/setNonF1Visibility", severity: "error", message: String(err) });
     return { ok: false, message: String(err) };
   }
 }
@@ -52,6 +54,7 @@ export async function syncSeriesAction(slug: string): Promise<{ ok: boolean; mes
     });
     return { ok: true, message: msg };
   } catch (err) {
+    await logError({ source: "admin/syncSeries", severity: "error", message: String(err) });
     return { ok: false, message: String(err) };
   }
 }
@@ -66,6 +69,7 @@ export async function syncF1ScheduleAction(): Promise<{ ok: boolean; message: st
     const t = await getTranslations("admin");
     return { ok: true, message: t("toastSyncCount", { count: 1 }) };
   } catch (err) {
+    await logError({ source: "admin/syncF1Schedule", severity: "error", message: String(err) });
     return { ok: false, message: String(err) };
   }
 }
@@ -77,6 +81,7 @@ export async function syncF1DriverStandingsAction(): Promise<{ ok: boolean; mess
     const t = await getTranslations("admin");
     return { ok: true, message: t("toastSyncCount", { count }) };
   } catch (err) {
+    await logError({ source: "admin/syncF1DriverStandings", severity: "error", message: String(err) });
     return { ok: false, message: String(err) };
   }
 }
@@ -88,6 +93,7 @@ export async function syncF1TeamStandingsAction(): Promise<{ ok: boolean; messag
     const t = await getTranslations("admin");
     return { ok: true, message: t("toastSyncCount", { count }) };
   } catch (err) {
+    await logError({ source: "admin/syncF1TeamStandings", severity: "error", message: String(err) });
     return { ok: false, message: String(err) };
   }
 }
@@ -99,6 +105,7 @@ export async function syncF1DriversAction(): Promise<{ ok: boolean; message: str
     const t = await getTranslations("admin");
     return { ok: true, message: t("toastSyncCount", { count }) };
   } catch (err) {
+    await logError({ source: "admin/syncF1Drivers", severity: "error", message: String(err) });
     return { ok: false, message: String(err) };
   }
 }
@@ -110,6 +117,7 @@ export async function syncF1CircuitsAction(): Promise<{ ok: boolean; message: st
     const t = await getTranslations("admin");
     return { ok: true, message: t("toastCircuitSync", { synced: result.synced, skipped: result.skipped }) };
   } catch (err) {
+    await logError({ source: "admin/syncF1Circuits", severity: "error", message: String(err) });
     return { ok: false, message: String(err) };
   }
 }
@@ -133,6 +141,7 @@ export async function clearRaceDetailAction(
     const t = await getTranslations("admin");
     return { ok: true, message: t("toastRaceDetailCleared", { slug, round }) };
   } catch (err) {
+    await logError({ source: "admin/clearRaceDetail", severity: "error", message: String(err) });
     return { ok: false, message: String(err) };
   }
 }
@@ -149,6 +158,7 @@ export async function sendTestNotifAction(
     const msg = t("toastNotifSent", { sent }) + (failed ? t("toastNotifFailed", { failed }) : "");
     return { ok: true, message: msg };
   } catch (err) {
+    await logError({ source: "admin/sendTestNotif", severity: "error", message: String(err) });
     return { ok: false, message: String(err) };
   }
 }
@@ -203,6 +213,7 @@ export async function clearDriverCacheAction(
     const t = await getTranslations("admin");
     return { ok: true, message: t("toastDriverCacheCleared", { slug: slug.toUpperCase(), count: result.rowCount ?? 0 }) };
   } catch (err) {
+    await logError({ source: "admin/clearDriverCache", severity: "error", message: String(err) });
     return { ok: false, message: String(err) };
   }
 }
@@ -219,6 +230,7 @@ export async function syncNewsAction(): Promise<{ ok: boolean; message: string }
       const { urlsFound, inserted, skipped } = r.value;
       lines.push(t("toastNewsItem", { slug, urls: urlsFound, inserted, skipped }));
     } else {
+      logError({ source: `admin/syncNews/${slug}`, severity: "warning", message: String(r.reason) });
       lines.push(t("toastNewsError", { slug, error: String(r.reason) }));
     }
   });
