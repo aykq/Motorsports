@@ -16,6 +16,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  let response: NextResponse;
   try {
     const season = new Date().getFullYear();
     const result = await syncCircuitData(season);
@@ -23,6 +24,17 @@ export async function POST(request: Request) {
       await logError({ source: "cron/circuit-data", severity: "warning", message: result.errors.join("; ") });
     }
 
+    response = NextResponse.json({ ok: true, ...result });
+  } catch (err) {
+    await logError({
+      source: "cron/circuit-data",
+      severity: "error",
+      message: err instanceof Error ? err.message : String(err),
+    });
+    response = NextResponse.json({ error: "Internal error" }, { status: 500 });
+  } finally {
+    // Scrape başarısız olsa da retention temizliği atlanmasın diye finally'de —
+    // bkz. docs/cron-setup.md.
     try {
       const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
       await db.delete(errorLog).where(lt(errorLog.createdAt, cutoff));
@@ -33,14 +45,7 @@ export async function POST(request: Request) {
         message: err instanceof Error ? err.message : String(err),
       });
     }
-
-    return NextResponse.json({ ok: true, ...result });
-  } catch (err) {
-    await logError({
-      source: "cron/circuit-data",
-      severity: "error",
-      message: err instanceof Error ? err.message : String(err),
-    });
-    return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
+
+  return response;
 }

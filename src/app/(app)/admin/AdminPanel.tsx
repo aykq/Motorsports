@@ -130,7 +130,7 @@ export function AdminPanel({
   // Hata logları
   const [logs, setLogs] = useState<ErrorLogEntry[]>(initialErrorLogs);
   const [logSourceFilter, setLogSourceFilter] = useState<string>("");
-  const [logSeverityFilter, setLogSeverityFilter] = useState<string>("");
+  const [logSeverityFilter, setLogSeverityFilter] = useState<"" | "error" | "warning">("");
   const [logOffset, setLogOffset] = useState(initialErrorLogs.length);
   const [logHasMore, setLogHasMore] = useState(initialErrorLogs.length >= LOG_PAGE);
   const [logPending, startLogTransition] = useTransition();
@@ -254,7 +254,7 @@ export function AdminPanel({
     });
   }
 
-  function fetchLogs(source: string, severity: string, offset: number) {
+  function fetchLogs(source: string, severity: "" | "error" | "warning", offset: number) {
     return getErrorLogAction({
       source: source || undefined,
       severity: severity || undefined,
@@ -273,7 +273,7 @@ export function AdminPanel({
     });
   }
 
-  function handleLogSeverityFilter(severity: string) {
+  function handleLogSeverityFilter(severity: "" | "error" | "warning") {
     setLogSeverityFilter(severity);
     startLogTransition(async () => {
       const rows = await fetchLogs(logSourceFilter, severity, 0);
@@ -693,7 +693,7 @@ export function AdminPanel({
               <div className="flex gap-2">
                 <select
                   value={logSeverityFilter}
-                  onChange={(e) => handleLogSeverityFilter(e.target.value)}
+                  onChange={(e) => handleLogSeverityFilter(e.target.value as "" | "error" | "warning")}
                   disabled={logPending}
                   className="rounded-md border border-border bg-background px-2 py-1 text-[11px] uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
                 >
