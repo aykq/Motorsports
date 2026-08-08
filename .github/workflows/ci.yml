@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: motorsports_test
+          POSTGRES_USER: ms_test_user
+          POSTGRES_PASSWORD: ms_test_password
+        ports:
+          - 5434:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://ms_test_user:ms_test_password@localhost:5434/motorsports_test
+      AUTH_SECRET: test-only-secret-do-not-use-in-prod
+      ADMIN_EMAIL: dev@test.com
+      VAPID_EMAIL: mailto:test@test.local
+      VAPID_PUBLIC_KEY: BNlD87Hwg7-DlgkPpWbnDGWeDgUZK-3bFDv1G6wrZ7i_KS4uaE3H4yil5dkA40czni_bmFMys6dVxBMZ-IPL1p0
+      VAPID_PRIVATE_KEY: LrXiylld-DrFQVJKsJina4kIX1F8FU4uEuNiJsaaavk
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      - run: npm run db:test:push
+
+      - run: npm run build
+
+      - run: npm run test
+
+      - run: npx playwright install --with-deps chromium
+
+      - run: npm run test:e2e
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
