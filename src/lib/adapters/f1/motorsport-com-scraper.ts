@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 import type { RaceResult } from "@/types/series";
+import { logError } from "@/lib/error-log";
 
 const BASE = "https://www.motorsport.com";
 const TIMEOUT_MS = 15_000;
@@ -143,7 +144,7 @@ export async function scrapeF1RaceResults(
     }
     return scrapeResultsPage(url);
   } catch (err) {
-    console.error("[F1 mscom] scrapeF1RaceResults error:", err);
+    logError({ source: "scraper/f1", severity: "error", message: err instanceof Error ? err.message : String(err) });
     return [];
   }
 }

@@ -8,6 +8,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { sendUnblockedEmail } from "@/lib/email";
 import { broadcastUserStatus } from "@/lib/sse";
+import { logError } from "@/lib/error-log";
 
 const BodySchema = z.object({
   token: z.string(),
@@ -51,7 +52,7 @@ export async function POST(req: Request) {
           await signIn("nodemailer", { email: current.email, redirect: false, callbackUrl: "/" });
         }
       } catch (err) {
-        console.error("Approval email failed:", err);
+        logError({ source: "admin/action/approval-email", severity: "warning", message: err instanceof Error ? err.message : String(err) });
       }
     }
   } else if (action === "reject") {

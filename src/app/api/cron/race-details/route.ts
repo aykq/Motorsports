@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { verifyCronSecret } from "@/lib/cron-auth";
 import { getCachedSchedule } from "@/lib/cache";
 import { syncRaceDetails } from "@/lib/race-detail";
+import { logError } from "@/lib/error-log";
 
 // F1 yarış detayı backfill'i — son 14 gündeki tamamlanmış yarışlar için
 // race control çevirisi, eksik practice/stint/sprint verisi tamamlanır.
@@ -24,10 +25,16 @@ export async function POST(request: Request) {
     if (!recent.length) return NextResponse.json({ ok: true, synced: 0 });
 
     const result = await syncRaceDetails("f1", season, recent);
-    if (result.errors.length) console.error("[cron/race-details] errors:", result.errors);
+    if (result.errors.length) {
+      await logError({ source: "cron/race-details", severity: "warning", message: result.errors.join("; ") });
+    }
     return NextResponse.json({ ok: true, ...result });
   } catch (err) {
-    console.error("[cron/race-details] fatal:", err);
+    await logError({
+      source: "cron/race-details",
+      severity: "error",
+      message: err instanceof Error ? err.message : String(err),
+    });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

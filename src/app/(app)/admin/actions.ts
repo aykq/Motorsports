@@ -1,8 +1,8 @@
 "use server";
 
 import { db } from "@/db";
-import { cachedRaceDetails, cachedDrivers, notificationLog } from "@/db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { cachedRaceDetails, cachedDrivers, notificationLog, errorLog } from "@/db/schema";
+import { eq, and, desc, gt, count } from "drizzle-orm";
 import { updateTag } from "next/cache";
 import {
   syncSeries,
@@ -17,6 +17,7 @@ import { requireAdmin } from "@/lib/admin-guard";
 import { fetchAndCacheNews, cleanAllNewsContent } from "@/lib/scrapers/motorsportNews";
 import { setShowNonF1Series } from "@/lib/app-settings";
 import { getTranslations } from "next-intl/server";
+import { logError } from "@/lib/error-log";
 
 async function checkAdmin() {
   const adminId = await requireAdmin();
@@ -35,6 +36,7 @@ export async function setNonF1VisibilityAction(
       message: value ? t("nonF1VisibilityEnabled") : t("nonF1VisibilityDisabled"),
     };
   } catch (err) {
+    await logError({ source: "admin/setNonF1Visibility", severity: "error", message: String(err) });
     return { ok: false, message: String(err) };
   }
 }
@@ -52,6 +54,7 @@ export async function syncSeriesAction(slug: string): Promise<{ ok: boolean; mes
     });
     return { ok: true, message: msg };
   } catch (err) {
+    await logError({ source: "admin/syncSeries", severity: "error", message: String(err) });
     return { ok: false, message: String(err) };
   }
 }
@@ -66,6 +69,7 @@ export async function syncF1ScheduleAction(): Promise<{ ok: boolean; message: st
     const t = await getTranslations("admin");
     return { ok: true, message: t("toastSyncCount", { count: 1 }) };
   } catch (err) {
+    await logError({ source: "admin/syncF1Schedule", severity: "error", message: String(err) });
     return { ok: false, message: String(err) };
   }
 }
@@ -77,6 +81,7 @@ export async function syncF1DriverStandingsAction(): Promise<{ ok: boolean; mess
     const t = await getTranslations("admin");
     return { ok: true, message: t("toastSyncCount", { count }) };
   } catch (err) {
+    await logError({ source: "admin/syncF1DriverStandings", severity: "error", message: String(err) });
     return { ok: false, message: String(err) };
   }
 }
@@ -88,6 +93,7 @@ export async function syncF1TeamStandingsAction(): Promise<{ ok: boolean; messag
     const t = await getTranslations("admin");
     return { ok: true, message: t("toastSyncCount", { count }) };
   } catch (err) {
+    await logError({ source: "admin/syncF1TeamStandings", severity: "error", message: String(err) });
     return { ok: false, message: String(err) };
   }
 }
@@ -99,6 +105,7 @@ export async function syncF1DriversAction(): Promise<{ ok: boolean; message: str
     const t = await getTranslations("admin");
     return { ok: true, message: t("toastSyncCount", { count }) };
   } catch (err) {
+    await logError({ source: "admin/syncF1Drivers", severity: "error", message: String(err) });
     return { ok: false, message: String(err) };
   }
 }
@@ -110,6 +117,7 @@ export async function syncF1CircuitsAction(): Promise<{ ok: boolean; message: st
     const t = await getTranslations("admin");
     return { ok: true, message: t("toastCircuitSync", { synced: result.synced, skipped: result.skipped }) };
   } catch (err) {
+    await logError({ source: "admin/syncF1Circuits", severity: "error", message: String(err) });
     return { ok: false, message: String(err) };
   }
 }
@@ -133,6 +141,7 @@ export async function clearRaceDetailAction(
     const t = await getTranslations("admin");
     return { ok: true, message: t("toastRaceDetailCleared", { slug, round }) };
   } catch (err) {
+    await logError({ source: "admin/clearRaceDetail", severity: "error", message: String(err) });
     return { ok: false, message: String(err) };
   }
 }
@@ -149,6 +158,7 @@ export async function sendTestNotifAction(
     const msg = t("toastNotifSent", { sent }) + (failed ? t("toastNotifFailed", { failed }) : "");
     return { ok: true, message: msg };
   } catch (err) {
+    await logError({ source: "admin/sendTestNotif", severity: "error", message: String(err) });
     return { ok: false, message: String(err) };
   }
 }
@@ -203,6 +213,7 @@ export async function clearDriverCacheAction(
     const t = await getTranslations("admin");
     return { ok: true, message: t("toastDriverCacheCleared", { slug: slug.toUpperCase(), count: result.rowCount ?? 0 }) };
   } catch (err) {
+    await logError({ source: "admin/clearDriverCache", severity: "error", message: String(err) });
     return { ok: false, message: String(err) };
   }
 }
@@ -219,6 +230,7 @@ export async function syncNewsAction(): Promise<{ ok: boolean; message: string }
       const { urlsFound, inserted, skipped } = r.value;
       lines.push(t("toastNewsItem", { slug, urls: urlsFound, inserted, skipped }));
     } else {
+      logError({ source: `admin/syncNews/${slug}`, severity: "warning", message: String(r.reason) });
       lines.push(t("toastNewsError", { slug, error: String(r.reason) }));
     }
   });
@@ -242,4 +254,57 @@ export async function getLastSyncTimesAction(): Promise<Record<string, string | 
   return Object.fromEntries(
     Object.entries(bySlug).map(([slug, d]) => [slug, d ? d.toISOString() : null])
   );
+}
+
+export interface ErrorLogEntry {
+  id: string;
+  source: string;
+  severity: "error" | "warning";
+  message: string;
+  context: Record<string, unknown> | null;
+  createdAt: string;
+}
+
+export async function getErrorLogAction(opts: {
+  source?: string;
+  severity?: "error" | "warning";
+  offset?: number;
+  limit?: number;
+}): Promise<ErrorLogEntry[]> {
+  await checkAdmin();
+  const limit = opts.limit ?? 20;
+  const offset = opts.offset ?? 0;
+  const conditions = [];
+  if (opts.source) conditions.push(eq(errorLog.source, opts.source));
+  if (opts.severity) conditions.push(eq(errorLog.severity, opts.severity));
+  const rows = await db.query.errorLog.findMany({
+    where: conditions.length ? and(...conditions) : undefined,
+    orderBy: desc(errorLog.createdAt),
+    limit,
+    offset,
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    source: r.source,
+    severity: r.severity as "error" | "warning",
+    message: r.message,
+    context: r.context as Record<string, unknown> | null,
+    createdAt: r.createdAt.toISOString(),
+  }));
+}
+
+export async function getErrorLogSourcesAction(): Promise<string[]> {
+  await checkAdmin();
+  const rows = await db.selectDistinct({ source: errorLog.source }).from(errorLog).orderBy(errorLog.source);
+  return rows.map((r) => r.source);
+}
+
+export async function getErrorLogBadgeCountAction(): Promise<number> {
+  await checkAdmin();
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const rows = await db
+    .select({ count: count() })
+    .from(errorLog)
+    .where(and(eq(errorLog.severity, "error"), gt(errorLog.createdAt, since)));
+  return rows[0]?.count ?? 0;
 }

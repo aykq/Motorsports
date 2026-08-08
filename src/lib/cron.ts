@@ -11,6 +11,7 @@ import { db } from "@/db";
 import { notifySessions } from "@/lib/notify-sessions";
 import { fetchAndCacheNews, cleanAllNewsContent } from "@/lib/scrapers/motorsportNews";
 import type { Race } from "@/types/series";
+import { logError } from "@/lib/error-log";
 
 const POST_RACE_WINDOW_MS = 12 * 60 * 60 * 1000;
 const STATUS_DRIVEN_SERIES = new Set(["motogp", "moto2", "moto3", "wec"]);
@@ -26,9 +27,9 @@ cron.schedule(
       try {
         const result = await syncSeries(slug, SEASON);
         console.log(`[cron] ${slug}: ${result.racesCount} races, ${result.driversCount} drivers`);
-        if (result.errors.length) console.error(`[cron] ${slug} errors:`, result.errors);
+        if (result.errors.length) logError({ source: "cron.ts/full-sync", severity: "warning", message: `${slug}: ${result.errors.join("; ")}` });
       } catch (err) {
-        console.error(`[cron] ${slug} failed:`, err);
+        logError({ source: "cron.ts/full-sync", severity: "error", message: `${slug}: ${err instanceof Error ? err.message : String(err)}` });
       }
     }
     // F1 race details backfill — son 14 gündeki tamamlanmış yarışlar için race control + çeviri kontrol
@@ -41,10 +42,10 @@ cron.schedule(
       if (recentCompleted.length) {
         const detailResult = await syncRaceDetails("f1", SEASON, recentCompleted);
         if (detailResult.synced) console.log(`[cron] race details: ${detailResult.synced} updated`);
-        if (detailResult.errors.length) console.error("[cron] race detail errors:", detailResult.errors);
+        if (detailResult.errors.length) logError({ source: "cron.ts/race-details", severity: "warning", message: detailResult.errors.join("; ") });
       }
     } catch (err) {
-      console.error("[cron] race details backfill error:", err);
+      logError({ source: "cron.ts/race-details", severity: "error", message: err instanceof Error ? err.message : String(err) });
     }
 
     console.log("[cron] full sync finished");
@@ -60,9 +61,9 @@ cron.schedule(
     try {
       const result = await notifySessions();
       if (result.sent.length) console.log("[cron] notif sent:", result.sent);
-      if (result.errors.length) console.error("[cron] notif errors:", result.errors);
+      if (result.errors.length) logError({ source: "cron.ts/notify", severity: "warning", message: result.errors.join("; ") });
     } catch (err) {
-      console.error("[cron] session notification error:", err);
+      logError({ source: "cron.ts/notify", severity: "error", message: err instanceof Error ? err.message : String(err) });
     }
   },
   { timezone: "UTC" }
@@ -86,7 +87,7 @@ cron.schedule(
       try {
         await syncActiveSessionData(row.seriesSlug, season, row.data as Race);
       } catch (err) {
-        console.error(`[cron] session sync error (${row.seriesSlug} R${(row.data as Race).round}):`, err);
+        logError({ source: "cron.ts/session-sync", severity: "error", message: `${row.seriesSlug} R${(row.data as Race).round}: ${err instanceof Error ? err.message : String(err)}` });
       }
     }
   },
@@ -118,7 +119,7 @@ cron.schedule(
         await syncScheduleOnly(slug, season);
         console.log(`[cron] status refresh: ${slug}`);
       } catch (err) {
-        console.error(`[cron] status refresh error (${slug}):`, err);
+        logError({ source: "cron.ts/status-refresh", severity: "error", message: `${slug}: ${err instanceof Error ? err.message : String(err)}` });
       }
     }
   },
@@ -154,7 +155,7 @@ cron.schedule(
       try {
         await syncSeries(slug, season);
       } catch (err) {
-        console.error(`[cron] post-race sync error (${slug}):`, err);
+        logError({ source: "cron.ts/post-race-sync", severity: "error", message: `${slug}: ${err instanceof Error ? err.message : String(err)}` });
       }
     }
   },
@@ -173,7 +174,7 @@ cron.schedule(
         const { urlsFound, inserted } = r.value;
         if (inserted > 0) console.log(`[cron] news ${NEWS_SERIES[i]}: +${inserted}/${urlsFound}`);
       } else {
-        console.error(`[cron] news ${NEWS_SERIES[i]} error:`, r.reason);
+        logError({ source: "cron.ts/news", severity: "warning", message: `${NEWS_SERIES[i]}: ${String(r.reason)}` });
       }
     });
     const cleanedCount = await cleanAllNewsContent();
