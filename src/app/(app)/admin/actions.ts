@@ -1,8 +1,8 @@
 "use server";
 
 import { db } from "@/db";
-import { cachedRaceDetails, cachedDrivers, notificationLog } from "@/db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { cachedRaceDetails, cachedDrivers, notificationLog, errorLog } from "@/db/schema";
+import { eq, and, desc, gt, count } from "drizzle-orm";
 import { updateTag } from "next/cache";
 import {
   syncSeries,
@@ -242,4 +242,57 @@ export async function getLastSyncTimesAction(): Promise<Record<string, string | 
   return Object.fromEntries(
     Object.entries(bySlug).map(([slug, d]) => [slug, d ? d.toISOString() : null])
   );
+}
+
+export interface ErrorLogEntry {
+  id: string;
+  source: string;
+  severity: "error" | "warning";
+  message: string;
+  context: Record<string, unknown> | null;
+  createdAt: string;
+}
+
+export async function getErrorLogAction(opts: {
+  source?: string;
+  severity?: string;
+  offset?: number;
+  limit?: number;
+}): Promise<ErrorLogEntry[]> {
+  await checkAdmin();
+  const limit = opts.limit ?? 20;
+  const offset = opts.offset ?? 0;
+  const conditions = [];
+  if (opts.source) conditions.push(eq(errorLog.source, opts.source));
+  if (opts.severity) conditions.push(eq(errorLog.severity, opts.severity));
+  const rows = await db.query.errorLog.findMany({
+    where: conditions.length ? and(...conditions) : undefined,
+    orderBy: desc(errorLog.createdAt),
+    limit,
+    offset,
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    source: r.source,
+    severity: r.severity as "error" | "warning",
+    message: r.message,
+    context: r.context as Record<string, unknown> | null,
+    createdAt: r.createdAt.toISOString(),
+  }));
+}
+
+export async function getErrorLogSourcesAction(): Promise<string[]> {
+  await checkAdmin();
+  const rows = await db.selectDistinct({ source: errorLog.source }).from(errorLog).orderBy(errorLog.source);
+  return rows.map((r) => r.source);
+}
+
+export async function getErrorLogBadgeCountAction(): Promise<number> {
+  await checkAdmin();
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const rows = await db
+    .select({ count: count() })
+    .from(errorLog)
+    .where(and(eq(errorLog.severity, "error"), gt(errorLog.createdAt, since)));
+  return rows[0]?.count ?? 0;
 }
