@@ -376,6 +376,13 @@
     "toastNotifFailed": ", {failed} başarısız",
     "toastDriverCacheCleared": "{slug} driver cache temizlendi ({count} kayıt)",
     "toastNewsItem": "{slug}: {urls} URL, +{inserted} kayıt, {skipped} mevcut",
-    "toastNewsError": "{slug}: HATA ({error})"
+    "toastNewsError": "{slug}: HATA ({error})",
+    "tabLogs": "Loglar",
+    "errorLogAllSources": "Tüm kaynaklar",
+    "errorLogAllSeverities": "Tüm seviyeler",
+    "severityError": "Hata",
+    "severityWarning": "Uyarı",
+    "errorLogEmpty": "Henüz hata kaydı yok.",
+    "errorLogDetails": "Detaylar"
   }
 }
