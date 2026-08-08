@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { syncSeries } from "@/lib/sync";
 import { verifyCronSecret } from "@/lib/cron-auth";
+import { logError } from "@/lib/error-log";
 
 export async function POST(
   req: NextRequest,
@@ -17,7 +18,7 @@ export async function POST(
     const result = await syncSeries(series, season);
     return NextResponse.json({ ok: true, result });
   } catch (err) {
-    console.error("[sync] failed:", series, err);
+    await logError({ source: "api/sync", severity: "error", message: `${series}: ${err instanceof Error ? err.message : String(err)}` });
     return NextResponse.json({ ok: false, error: "Sync failed" }, { status: 500 });
   }
 }

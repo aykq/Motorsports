@@ -15,6 +15,7 @@ import {
 } from "@/lib/adapters/f1/openf1";
 import { fetchRaceWeather } from "@/lib/weather";
 import { translateRaceControlMessages } from "@/lib/gemini";
+import { logError } from "@/lib/error-log";
 
 const SESSION_WINDOW_MS: Record<string, number> = {
   practice1: 3 * 60 * 60 * 1000,
@@ -437,7 +438,7 @@ export async function syncActiveSessionData(
         changed = true;
       }
     } catch (err) {
-      console.error(`[cron] session sync error (${slug} R${race.round} ${type}):`, err);
+      logError({ source: "race-detail/sync-active-session", severity: "error", message: `${slug} R${race.round} ${type}: ${err instanceof Error ? err.message : String(err)}` });
     }
   }
 

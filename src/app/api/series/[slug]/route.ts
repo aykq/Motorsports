@@ -6,6 +6,7 @@ import {
 } from "@/lib/cache";
 import { syncSeries } from "@/lib/sync";
 import { getAdapter } from "@/lib/adapters";
+import { logError } from "@/lib/error-log";
 
 export async function GET(
   req: NextRequest,
@@ -54,7 +55,7 @@ export async function GET(
         fresh: true,
       });
     } catch (err) {
-      console.error("[series] sync failed:", err);
+      await logError({ source: "api/series", severity: "error", message: err instanceof Error ? err.message : String(err) });
       return NextResponse.json({ error: "Data unavailable" }, { status: 500 });
     }
   }
@@ -66,7 +67,9 @@ export async function GET(
     !teamStandingsCache.fresh;
 
   if (stale) {
-    syncSeries(slug, season).catch(console.error);
+    syncSeries(slug, season).catch((err) =>
+      logError({ source: "api/series/background-sync", severity: "warning", message: err instanceof Error ? err.message : String(err) })
+    );
   }
 
   return NextResponse.json({

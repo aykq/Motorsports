@@ -1,3 +1,5 @@
+import { logError } from "@/lib/error-log";
+
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-2.0-flash";
 
@@ -40,7 +42,7 @@ export async function translateRaceControlMessages(messages: string[]): Promise<
 
     if (!res.ok) {
       const errText = await res.text().catch(() => "");
-      console.error(`[Gemini] ${res.status} ${res.statusText} — model: ${GEMINI_MODEL}`, errText);
+      logError({ source: "gemini/translate", severity: "error", message: `${res.status} ${res.statusText} (model: ${GEMINI_MODEL})`, context: { errText } });
       return [];
     }
 
@@ -56,10 +58,10 @@ export async function translateRaceControlMessages(messages: string[]): Promise<
       return translated as string[];
     }
 
-    console.error("[Gemini] Unexpected response shape:", text);
+    logError({ source: "gemini/translate", severity: "warning", message: "Unexpected response shape", context: { text } });
     return [];
   } catch (err) {
-    console.error("[Gemini] Request failed:", err);
+    logError({ source: "gemini/translate", severity: "error", message: err instanceof Error ? err.message : String(err) });
     return [];
   }
 }
@@ -107,7 +109,7 @@ export async function summarizeCircuitHistory(
 
     if (!res.ok) {
       const errText = await res.text().catch(() => "");
-      console.error(`[Gemini] ${res.status} ${res.statusText} — circuit history: ${circuitName}`, errText);
+      logError({ source: "gemini/circuit-history", severity: "error", message: `${res.status} ${res.statusText} (circuit: ${circuitName})`, context: { errText } });
       return null;
     }
 
@@ -124,10 +126,10 @@ export async function summarizeCircuitHistory(
       return parsed as { en: string; tr: string };
     }
 
-    console.error("[Gemini] Unexpected circuit history response shape:", text);
+    logError({ source: "gemini/circuit-history", severity: "warning", message: "Unexpected response shape", context: { text } });
     return null;
   } catch (err) {
-    console.error("[Gemini] Circuit history request failed:", err);
+    logError({ source: "gemini/circuit-history", severity: "error", message: err instanceof Error ? err.message : String(err) });
     return null;
   }
 }
