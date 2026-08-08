@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition, useState } from "react";
+import { useTransition, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,7 +15,7 @@ import {
   clearDriverCacheAction, getRecentNotificationsAction, type RecentNotification,
   syncF1ScheduleAction, syncF1DriverStandingsAction, syncF1TeamStandingsAction,
   syncF1DriversAction, syncF1CircuitsAction, setNonF1VisibilityAction,
-  getErrorLogAction, type ErrorLogEntry,
+  getErrorLogAction, getErrorLogBadgeCountAction, type ErrorLogEntry,
 } from "./actions";
 import { UsersTable } from "./UsersTable";
 import { NewsSyncButton } from "@/components/news/NewsSyncButton";
@@ -23,6 +23,8 @@ import { Switch } from "@/components/ui/switch";
 
 const NOTIF_PAGE = 10;
 const LOG_PAGE = 20;
+const LOG_POLL_INTERVAL_MS = 30_000;
+const FRESH_LOG_ANIMATION_MS = 3_000;
 
 const ALL_SERIES = ["f1", "wec", "motogp", "moto2", "moto3", "gt3", "gt4", "carrera-cup"] as const;
 
@@ -99,7 +101,7 @@ function StatCard({ accent, label, value }: { accent: string; label: string; val
 
 export function AdminPanel({
   stats, lastSyncTimes, initialUsers, initialNotifications, initialShowNonF1Series,
-  initialErrorLogs, errorLogSources, errorLogBadgeCount,
+  initialErrorLogs, errorLogSources, errorLogBadgeCount: initialErrorLogBadgeCount,
 }: Props) {
   const router = useRouter();
   const t = useTranslations("admin");
@@ -134,6 +136,9 @@ export function AdminPanel({
   const [logOffset, setLogOffset] = useState(initialErrorLogs.length);
   const [logHasMore, setLogHasMore] = useState(initialErrorLogs.length >= LOG_PAGE);
   const [logPending, startLogTransition] = useTransition();
+  const [activeTab, setActiveTab] = useState("users");
+  const [errorLogBadgeCount, setErrorLogBadgeCount] = useState(initialErrorLogBadgeCount);
+  const [freshLogIds, setFreshLogIds] = useState<Set<string>>(new Set());
 
   function addToast(ok: boolean, message: string) {
     const id = ++toastId;
@@ -292,6 +297,29 @@ export function AdminPanel({
     });
   }
 
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      if (document.visibilityState !== "visible") return;
+
+      const count = await getErrorLogBadgeCountAction();
+      setErrorLogBadgeCount(count);
+
+      if (activeTab === "logs") {
+        const rows = await fetchLogs(logSourceFilter, logSeverityFilter, 0);
+        const existingIds = new Set(logs.map((l) => l.id));
+        const fresh = rows.filter((r) => !existingIds.has(r.id));
+        if (fresh.length > 0) {
+          setLogs((prev) => [...fresh, ...prev]);
+          setLogOffset((o) => o + fresh.length);
+          const freshIds = new Set(fresh.map((r) => r.id));
+          setFreshLogIds(freshIds);
+          setTimeout(() => setFreshLogIds(new Set()), FRESH_LOG_ANIMATION_MS);
+        }
+      }
+    }, LOG_POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [activeTab, logSourceFilter, logSeverityFilter, logs, errorLogBadgeCount]);
+
   const maxSubs = Math.max(...Object.values(stats.subscriptionsBySeries), 1);
 
   return (
@@ -323,7 +351,7 @@ export function AdminPanel({
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="users">
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as string)}>
         <TabsList className="w-full grid grid-cols-5">
           <TabsTrigger value="users" className="flex items-center gap-1.5 text-[11px]">
             <Users className="w-3 h-3 shrink-0" />
@@ -725,7 +753,10 @@ export function AdminPanel({
                   return (
                     <li
                       key={l.id}
-                      className="rounded-lg bg-background border border-border pl-3 pr-3 py-2.5"
+                      className={cn(
+                        "rounded-lg bg-background border border-border pl-3 pr-3 py-2.5",
+                        freshLogIds.has(l.id) && "animate-in fade-in-0 slide-in-from-top-3 [animation-fill-mode:backwards] duration-300",
+                      )}
                       style={{ borderLeftColor: accent, borderLeftWidth: "3px" }}
                     >
                       <div className="flex items-center gap-2 mb-1">
