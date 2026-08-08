@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { cachedRaces, users, accounts, pushSubscriptions, notificationLog } from "@/db/schema";
 import { max, count, sql } from "drizzle-orm";
 import { AdminPanel } from "./AdminPanel";
-import { getRecentNotificationsAction } from "./actions";
+import { getRecentNotificationsAction, getErrorLogAction, getErrorLogSourcesAction, getErrorLogBadgeCountAction } from "./actions";
 import { getTranslations } from "next-intl/server";
 import { getShowNonF1Series } from "@/lib/app-settings";
 import { ShieldAlert } from "lucide-react";
@@ -84,12 +84,18 @@ export default async function AdminPage() {
 
   const t = await getTranslations("admin");
 
-  const [lastSyncTimes, initialUsers, stats, initialNotifications, showNonF1Series] = await Promise.all([
+  const [
+    lastSyncTimes, initialUsers, stats, initialNotifications, showNonF1Series,
+    initialErrorLogs, errorLogSources, errorLogBadgeCount,
+  ] = await Promise.all([
     getLastSyncTimes(),
     getInitialUsers(),
     getAdminStats(),
     getRecentNotificationsAction({ limit: 10 }),
     getShowNonF1Series(),
+    getErrorLogAction({ limit: 20 }),
+    getErrorLogSourcesAction(),
+    getErrorLogBadgeCountAction(),
   ]);
 
   return (
@@ -104,6 +110,9 @@ export default async function AdminPage() {
         initialUsers={initialUsers}
         initialNotifications={initialNotifications}
         initialShowNonF1Series={showNonF1Series}
+        initialErrorLogs={initialErrorLogs}
+        errorLogSources={errorLogSources}
+        errorLogBadgeCount={errorLogBadgeCount}
       />
     </div>
   );
