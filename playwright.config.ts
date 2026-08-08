@@ -20,6 +20,14 @@ export default defineConfig({
   workers: 1,
   retries: process.env.CI ? 2 : 0,
   reporter: "html",
+  // CI runners are slower than a local dev machine, and `next dev` compiles
+  // each route on-demand on first hit (cold compiles alone measured up to
+  // ~40s locally) — the default 30s test / 5s assertion timeouts are tuned
+  // for an already-warm local server and are too tight for a CI cold start.
+  timeout: process.env.CI ? 90_000 : 30_000,
+  expect: {
+    timeout: process.env.CI ? 15_000 : 5_000,
+  },
   use: {
     baseURL: BASE_URL,
     trace: "on-first-retry",
@@ -34,7 +42,7 @@ export default defineConfig({
     command: `next dev -p ${PORT}`,
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
-    timeout: 60_000,
+    timeout: 120_000,
     env: {
       ...process.env,
       NODE_ENV: "development",
