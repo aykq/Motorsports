@@ -33,6 +33,11 @@ yarn-error.log*
 # env files
 .env*
 !.env.example
+!.env.test.example
+
+# testing
+/playwright-report
+/test-results
 
 # debug endpoints (local dev only, unauthenticated)
 src/app/api/debug/
