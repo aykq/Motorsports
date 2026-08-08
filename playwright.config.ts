@@ -43,6 +43,11 @@ export default defineConfig({
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    // Surface next dev's own stdout/stderr in the CI job log — by default
+    // Playwright suppresses it once the server is up, which would hide a
+    // compile or runtime error happening on first render.
+    stdout: "pipe",
+    stderr: "pipe",
     env: {
       ...process.env,
       NODE_ENV: "development",
