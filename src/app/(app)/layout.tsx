@@ -13,11 +13,18 @@ import { eq } from "drizzle-orm";
 import dynamic from "next/dynamic";
 import { getShowNonF1Series } from "@/lib/app-settings";
 
-// DevSyncPanel: local-only dev tool, gitignored — dosya yoksa sessizce atlanır
+// DevSyncPanel: local-only dev tool, gitignored — dosya yoksa sessizce atlanır.
+// The path is built from parts (not a string/template literal) so the
+// bundler can't statically resolve it at build/compile time — a literal
+// `import("@/components/dev/DevSyncPanel")` fails as a hard "Module not
+// found" compile error on any checkout where the gitignored file doesn't
+// exist (e.g. CI), which the .catch() below can't help with since that
+// only handles a runtime rejection, not a build-time resolution failure.
+const DEV_SYNC_PANEL_PATH = ["@/components/dev", "DevSyncPanel"].join("/");
 const DevSyncPanel =
   process.env.NODE_ENV === "development"
     ? dynamic(() =>
-        import("@/components/dev/DevSyncPanel")
+        import(DEV_SYNC_PANEL_PATH)
           .then((m) => ({ default: m.DevSyncPanel }))
           .catch(() => ({ default: () => null }))
       )
