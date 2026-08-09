@@ -90,10 +90,24 @@ describe("getTopDriversWithPoints", () => {
     expect(result[0].driver.id).toBe("d1");
   });
 
-  it("drops entries with no matching driver anywhere", () => {
+  it("drops entries where driver is undefined", () => {
     const standingsWithGhost: Standing[] = [
       { position: 1, points: 50, wins: 0, driver: undefined },
     ];
     expect(getTopDriversWithPoints(standingsWithGhost, drivers, 5)).toEqual([]);
+  });
+
+  it("uses standings driver as fallback when roster lookup fails", () => {
+    const unknownDriver = { id: "d99", firstName: "Unknown", lastName: "Driver", nationality: "XX" };
+    const standingsWithUnknown: Standing[] = [
+      { position: 1, points: 75, wins: 2, driver: unknownDriver },
+    ];
+    const result = getTopDriversWithPoints(standingsWithUnknown, drivers, 5);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toEqual({
+      driver: unknownDriver,
+      points: 75,
+      position: 1,
+    });
   });
 });
