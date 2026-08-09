@@ -18,7 +18,9 @@ export interface ResultRow {
 export type ContentBlock =
   | { type: "p"; text: string }
   | { type: "img"; src: string; caption: string | null }
-  | { type: "result-table"; label: string; rows: ResultRow[] };
+  | { type: "result-table"; label: string; rows: ResultRow[] }
+  | { type: "heading"; text: string }
+  | { type: "list"; items: string[] };
 
 function decodeEntities(str: string): string {
   return str
@@ -105,7 +107,7 @@ async function scrapeArticleUrls(listUrl: string, series: string): Promise<strin
   return urls.slice(0, 10);
 }
 
-interface ArticleData {
+export interface ArticleData {
   title: string;
   imageUrl: string | null;
   summary: string | null;
@@ -165,7 +167,7 @@ function extractBlocks($: cheerio.CheerioAPI): ContentBlock[] {
   const blocks: ContentBlock[] = [];
 
   // cheerio's .find() returns elements in document (DOM) order
-  bodyEl.find("p, img, div.ms-result-table").each((_, el) => {
+  bodyEl.find("p, img, div.ms-result-table, h2, h3, ul, ol").each((_, el) => {
     const $el = $(el);
 
     // Skip elements nested inside a result table container
@@ -182,9 +184,26 @@ function extractBlocks($: cheerio.CheerioAPI): ContentBlock[] {
 
     if ($el.is("p")) {
       const text = $el.text().trim();
-      if (text.length > 30 && !SHARE_PATTERN.test(text) && !/^İZLE:/i.test(text)) {
+      // Short standalone-bold paragraphs (e.g. "7 Ağustos Cuma" before a session
+      // list) act as sub-headings — a session schedule's day labels would
+      // otherwise be dropped by the length filter below.
+      const strongText = $el.children("strong").length === 1 ? $el.children("strong").first().text().trim() : null;
+      const isBoldSubheading = strongText !== null && strongText === text && text.length > 0;
+      if (isBoldSubheading && !SHARE_PATTERN.test(text)) {
+        blocks.push({ type: "heading", text });
+      } else if (text.length > 30 && !SHARE_PATTERN.test(text) && !/^İZLE:/i.test(text)) {
         blocks.push({ type: "p", text });
       }
+    } else if ($el.is("h2, h3")) {
+      const text = $el.text().trim();
+      if (text.length > 0) blocks.push({ type: "heading", text });
+    } else if ($el.is("ul, ol")) {
+      const items = $el
+        .children("li")
+        .map((_, li) => $(li).text().replace(/\s+/g, " ").trim())
+        .get()
+        .filter((t) => t.length > 0);
+      if (items.length > 0) blocks.push({ type: "list", items });
     } else if ($el.is("img")) {
       const w = $el.attr("width");
       if (w && parseInt(w) <= 10) return;
@@ -205,7 +224,7 @@ function extractBlocks($: cheerio.CheerioAPI): ContentBlock[] {
   return blocks;
 }
 
-async function scrapeArticle(url: string): Promise<ArticleData> {
+export async function scrapeArticle(url: string): Promise<ArticleData> {
   const html = await fetchPage(url);
   const $ = cheerio.load(html);
 
