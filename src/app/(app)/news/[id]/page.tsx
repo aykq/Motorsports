@@ -17,6 +17,34 @@ function flagEmoji(src: string): string {
   return [...code].map((c) => String.fromCodePoint(0x1f1e6 + c.charCodeAt(0) - 65)).join("");
 }
 
+// "Sıralama: 13:50" gibi "etiket: SS:DD" satırlarını ayırır, saat mono/tabular gösterilir
+function ScheduleDayCard({ heading, items }: { heading: string; items: string[] }) {
+  return (
+    <div className="rounded-lg border border-border overflow-hidden">
+      <div className="px-3 py-2 bg-muted/40 border-b border-border">
+        <span className="font-display text-xs font-bold tracking-wide text-muted-foreground">
+          {heading}
+        </span>
+      </div>
+      <div className="divide-y divide-border">
+        {items.map((item, j) => {
+          const m = item.match(/^(.*?):\s*(\d{1,2}[:.]\d{2})\s*$/);
+          return (
+            <div key={j} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+              <span className="text-foreground/80">{m ? m[1].trim() : item}</span>
+              {m && (
+                <span className="font-mono text-xs tabular-nums text-muted-foreground shrink-0">
+                  {m[2]}
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function ResultTable({ label, rows }: { label: string; rows: ResultRow[] }) {
   return (
     <div className="rounded-xl border border-border overflow-hidden text-sm">
@@ -230,6 +258,12 @@ export default async function NewsDetailPage({ params }: Props) {
                 return <ResultTable key={i} label={block.label} rows={block.rows} />;
               }
               if (block.type === "heading") {
+                // A heading immediately followed by a list reads as "day: session times" —
+                // render the pair as one compact schedule card instead of a bare <ul>.
+                const next = blocks[i + 1];
+                if (next?.type === "list") {
+                  return <ScheduleDayCard key={i} heading={block.text} items={next.items} />;
+                }
                 return (
                   <h2 key={i} className="font-display text-lg font-bold leading-tight -mb-1">
                     {block.text}
@@ -237,6 +271,8 @@ export default async function NewsDetailPage({ params }: Props) {
                 );
               }
               if (block.type === "list") {
+                const prev = blocks[i - 1];
+                if (prev?.type === "heading") return null; // already rendered with the heading above
                 return (
                   <ul key={i} className="list-disc pl-5 space-y-1 text-sm leading-relaxed text-foreground/80">
                     {block.items.map((item, j) => (
