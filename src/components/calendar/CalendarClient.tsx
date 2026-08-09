@@ -33,6 +33,7 @@ interface Props {
   races: CalendarRace[];
   seriesCountdowns: SeriesCountdownInfo[];
   availableSeries: SeriesConfig[];
+  seriesHub?: React.ReactNode;
 }
 
 function getRaceDate(race: CalendarRace): Date {
@@ -255,7 +256,7 @@ function CalendarTimeline({
   );
 }
 
-export function CalendarClient({ races, seriesCountdowns, availableSeries }: Props) {
+export function CalendarClient({ races, seriesCountdowns, availableSeries, seriesHub }: Props) {
   const t = useTranslations("calendar");
   const raceStatusT = useTranslations("raceStatus");
   const locale = useLocale();
@@ -355,7 +356,9 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries }: Pro
         </div>
       )}
 
-      {isAllSelected ? (
+      {availableSeries.length === 1 && seriesHub ? (
+        seriesHub
+      ) : isAllSelected ? (
         <div className={cn(
           "grid gap-3",
           seriesCountdowns.length === 1 ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2"
