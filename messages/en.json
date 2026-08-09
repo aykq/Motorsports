@@ -38,7 +38,8 @@
     "nextRace": "Next Race",
     "now": "Now",
     "noUpcoming": "No upcoming races found.",
-    "noData": "No data available for this series."
+    "noData": "No data available for this series.",
+    "lastRace": "Last Race"
   },
   "series": {
     "title": "Series",

@@ -38,7 +38,8 @@
     "nextRace": "Sıradaki",
     "now": "Şimdi",
     "noUpcoming": "Yaklaşan yarış bulunamadı.",
-    "noData": "Bu seri için henüz veri yok."
+    "noData": "Bu seri için henüz veri yok.",
+    "lastRace": "Son Yarış"
   },
   "series": {
     "title": "Seriler",
