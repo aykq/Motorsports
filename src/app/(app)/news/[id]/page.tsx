@@ -229,6 +229,22 @@ export default async function NewsDetailPage({ params }: Props) {
               if (block.type === "result-table") {
                 return <ResultTable key={i} label={block.label} rows={block.rows} />;
               }
+              if (block.type === "heading") {
+                return (
+                  <h2 key={i} className="font-display text-lg font-bold leading-tight -mb-1">
+                    {block.text}
+                  </h2>
+                );
+              }
+              if (block.type === "list") {
+                return (
+                  <ul key={i} className="list-disc pl-5 space-y-1 text-sm leading-relaxed text-foreground/80">
+                    {block.items.map((item, j) => (
+                      <li key={j}>{item}</li>
+                    ))}
+                  </ul>
+                );
+              }
               return null;
             })}
           </div>
