@@ -16,6 +16,9 @@ export interface SeriesHubLabels {
   teamsTitle: string;
   viewAll: string;
   pointsAbbr: string;
+  posLabel?: string;
+  nameLabel?: string;
+  pointsLabel?: string;
 }
 
 export interface SeriesHubWidgetsProps {
@@ -87,7 +90,13 @@ export function SeriesHubWidgets({
               {labels.viewAll}
             </Link>
           </div>
-          <StandingsTable color={color} rows={teamStandingsRows} />
+          <StandingsTable
+            color={color}
+            rows={teamStandingsRows}
+            posLabel={labels.posLabel}
+            nameLabel={labels.nameLabel}
+            ptsLabel={labels.pointsLabel}
+          />
         </section>
       )}
     </div>

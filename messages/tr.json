@@ -39,7 +39,10 @@
     "now": "Şimdi",
     "noUpcoming": "Yaklaşan yarış bulunamadı.",
     "noData": "Bu seri için henüz veri yok.",
-    "lastRace": "Son Yarış"
+    "lastRace": "Son Yarış",
+    "posLabel": "Sıra",
+    "nameLabel": "İsim",
+    "pointsLabel": "Puan"
   },
   "series": {
     "title": "Seriler",

@@ -1,7 +1,7 @@
 import { getCachedSchedule, getCachedStandings, getCachedDrivers } from "@/lib/cache";
 import { SERIES_LIST, isSeriesVisible } from "@/lib/series-config";
 import { getShowNonF1Series } from "@/lib/app-settings";
-import { getF1CircuitPhotoUrl, getF1CircuitCoords } from "@/lib/circuit-data";
+import { getCircuitPresentation } from "@/lib/circuit-data";
 import { getF1Team, getF1TeamByName } from "@/lib/f1-teams";
 import { getNextRace, getLastCompletedRace, getTopDriversWithPoints } from "@/lib/home-hub";
 import { formatRaceWeekend } from "@/components/series/NextRaceHeroCard";
@@ -96,14 +96,7 @@ export default async function CalendarPage() {
       };
     });
 
-    const circuitPhotoUrl = nextRace && series.slug === "f1" ? getF1CircuitPhotoUrl(nextRace.circuitId) : null;
-    const circuitCoords = nextRace && series.slug === "f1"
-      ? (getF1CircuitCoords(nextRace.circuitId) ?? (
-          nextRace.circuitLat && nextRace.circuitLng
-            ? [nextRace.circuitLat, nextRace.circuitLng] as [number, number]
-            : null
-        ))
-      : null;
+    const { circuitPhotoUrl, circuitCoords } = getCircuitPresentation(series.slug, nextRace);
 
     seriesHub = (
       <SeriesHubWidgets
@@ -125,6 +118,9 @@ export default async function CalendarPage() {
           teamsTitle: tSeries("teams"),
           viewAll: tSeries("viewAll"),
           pointsAbbr: tPoints("pointsAbbr"),
+          posLabel: tCalendar("posLabel"),
+          nameLabel: tCalendar("nameLabel"),
+          pointsLabel: tCalendar("pointsLabel"),
         }}
       />
     );

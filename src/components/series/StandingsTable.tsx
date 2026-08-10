@@ -9,13 +9,21 @@ export interface StandingsRow {
   points: number;
 }
 
-export function StandingsTable({ color, rows }: { color: string; rows: StandingsRow[] }) {
+export interface StandingsTableProps {
+  color: string;
+  rows: StandingsRow[];
+  posLabel?: string;
+  nameLabel?: string;
+  ptsLabel?: string;
+}
+
+export function StandingsTable({ color, rows, posLabel = "Pos", nameLabel = "Name", ptsLabel = "Pts" }: StandingsTableProps) {
   return (
     <div className="bg-card rounded-xl border border-border overflow-hidden">
         <div className="flex items-center px-4 py-2 border-b border-border font-display text-[10px] text-muted-foreground tracking-wide">
-          <div className="w-8">Pos</div>
-          <div className="flex-1">Name</div>
-          <div>Pts</div>
+          <div className="w-8">{posLabel}</div>
+          <div className="flex-1">{nameLabel}</div>
+          <div>{ptsLabel}</div>
         </div>
         {rows.map((s, i) => (
           <Link
