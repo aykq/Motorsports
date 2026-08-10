@@ -246,3 +246,20 @@ const F1_CIRCUIT_PHOTOS: Record<string, string> = {
 export function getF1CircuitPhotoUrl(circuitId: string): string | null {
   return F1_CIRCUIT_PHOTOS[circuitId] ?? null;
 }
+
+/**
+ * Derives the circuit photo/coords used by the next-race hero card. Only F1 has
+ * curated photo/coords data today, so every other series (and a null race) resolves to nulls.
+ */
+export function getCircuitPresentation(
+  slug: string,
+  race: { circuitId: string; circuitLat?: number; circuitLng?: number } | null
+): { circuitPhotoUrl: string | null; circuitCoords: [number, number] | null } {
+  if (!race || slug !== "f1") return { circuitPhotoUrl: null, circuitCoords: null };
+  return {
+    circuitPhotoUrl: getF1CircuitPhotoUrl(race.circuitId),
+    circuitCoords:
+      getF1CircuitCoords(race.circuitId) ??
+      (race.circuitLat && race.circuitLng ? [race.circuitLat, race.circuitLng] : null),
+  };
+}
