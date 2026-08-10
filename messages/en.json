@@ -39,7 +39,10 @@
     "now": "Now",
     "noUpcoming": "No upcoming races found.",
     "noData": "No data available for this series.",
-    "lastRace": "Last Race"
+    "lastRace": "Last Race",
+    "posLabel": "Pos",
+    "nameLabel": "Name",
+    "pointsLabel": "Pts"
   },
   "series": {
     "title": "Series",
