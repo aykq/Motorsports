@@ -27,6 +27,11 @@ export interface TopDriverEntry {
   position: number;
 }
 
+/**
+ * `driverStandings` must already be sorted by championship position (ascending) —
+ * this function only slices the first `limit` entries, it does not sort them.
+ * Callers like `getCachedStandings` are expected to return pre-sorted data.
+ */
 export function getTopDriversWithPoints(
   driverStandings: Standing[],
   drivers: Driver[],
