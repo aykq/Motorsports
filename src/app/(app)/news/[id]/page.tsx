@@ -160,7 +160,7 @@ export default async function NewsDetailPage({ params }: Props) {
             >
               {seriesName}
             </span>
-            <h1 className="text-white font-display text-2xl sm:text-3xl font-bold leading-tight drop-shadow-lg">
+            <h1 className="text-white font-display text-2xl font-bold leading-tight drop-shadow-lg">
               {item.title}
             </h1>
           </div>
@@ -177,7 +177,7 @@ export default async function NewsDetailPage({ params }: Props) {
             >
               {seriesName}
             </span>
-            <h1 className="font-display text-3xl font-bold leading-tight">{item.title}</h1>
+            <h1 className="font-display text-2xl font-bold leading-tight">{item.title}</h1>
           </>
         )}
 

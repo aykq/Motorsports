@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { NotificationSettings } from "@/components/settings/NotificationSettings";
 import { LanguageToggle } from "@/components/layout/LanguageToggle";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { getTranslations } from "next-intl/server";
 import { getShowNonF1Series } from "@/lib/app-settings";
 import type { Metadata } from "next";
@@ -23,10 +24,8 @@ export default async function SettingsPage() {
   const showNonF1Series = await getShowNonF1Series();
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-      <div>
-        <h1 className="font-display text-3xl font-bold tracking-tight leading-tight">{t("title")}</h1>
-      </div>
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+      <PageHeader title={t("title")} />
 
       {/* Account */}
       <section className="rounded-xl bg-card border border-border p-4 space-y-4">

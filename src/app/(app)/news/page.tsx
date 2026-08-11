@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { NewsListSection } from "./NewsListSection";
 import { NewsAutoRefresh } from "./NewsAutoRefresh";
 import { NewsSyncButton } from "@/components/news/NewsSyncButton";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 export const metadata: Metadata = { title: "Haberler" };
 
@@ -17,12 +18,9 @@ export default async function NewsPage() {
   const isAdmin = !!adminId;
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 pb-24">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 pb-24 space-y-5">
       <NewsAutoRefresh />
-      <div className="flex items-center justify-between mb-5">
-        <h1 className="font-display text-3xl font-bold tracking-tight leading-tight">{t("title")}</h1>
-        {isAdmin && <NewsSyncButton />}
-      </div>
+      <PageHeader title={t("title")} action={isAdmin && <NewsSyncButton />} />
 
       {news.length === 0 && (
         <p className="text-sm text-muted-foreground text-center py-16">

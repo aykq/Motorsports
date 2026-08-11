@@ -9,6 +9,7 @@ import { Star, StarOff, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 interface Props {
   initialFavorites: string[];
@@ -25,11 +26,11 @@ export function FavoritesClient({ initialFavorites, showNonF1Series }: Props) {
   const favoritedAvailable = available.filter((s) => isFavorite(s.slug));
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-      <div className="space-y-0.5">
-        <h1 className="font-display text-3xl font-bold tracking-tight leading-tight">{t("title")}</h1>
-        <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
-      </div>
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+      <PageHeader
+        title={t("title")}
+        subtitle={<p className="text-sm text-muted-foreground">{t("subtitle")}</p>}
+      />
 
       {favoritedAvailable.length > 0 && (
         <section className="space-y-2">

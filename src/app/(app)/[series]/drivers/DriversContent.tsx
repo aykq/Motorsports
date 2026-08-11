@@ -8,7 +8,7 @@ import { getMotoGPTeam, getMotoGPTeamByName } from "@/lib/motogp-teams";
 import { getSeriesConfig } from "@/lib/series-config";
 import { TeamLogo } from "@/components/series/TeamLogo";
 import { DriverPhoto } from "@/components/series/DriverPhoto";
-import { BackButton } from "@/components/layout/BackButton";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { SeriesSubNav } from "@/components/series/SeriesSubNav";
 import { cn } from "@/lib/utils";
 import type { Driver } from "@/types/series";
@@ -89,11 +89,13 @@ export function DriversContent({
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 space-y-5">
-      <div className="space-y-1">
-        <BackButton fallbackHref={`/${slug}`} label={config.shortName} />
-        <h1 className="font-display text-2xl font-bold tracking-tight leading-tight">{config.name} — {t("title")}</h1>
-        <p className="text-xs text-muted-foreground font-mono">{t("count", { count: drivers.length })}</p>
-      </div>
+      <PageHeader
+        backHref={`/${slug}`}
+        backLabel={config.shortName}
+        eyebrow={config.name}
+        title={t("title")}
+        subtitle={<p className="text-xs text-muted-foreground font-mono">{t("count", { count: drivers.length })}</p>}
+      />
 
       <SeriesSubNav slug={slug} color={config.color} active="drivers" />
 

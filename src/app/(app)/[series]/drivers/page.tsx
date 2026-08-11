@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { series: slug } = await params;
   const config = getSeriesConfig(slug);
   const t = await getTranslations("driversPage");
-  return { title: `${config?.name ?? slug} — ${t("title")}` };
+  return { title: `${config?.name ?? slug} • ${t("title")}` };
 }
 
 export default async function DriversListPage({ params, searchParams }: Props) {

@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     getTranslations("circuitsPage"),
   ]);
   const race = circuitRaces[0];
-  return { title: race ? `${race.circuitName} — ${config?.name ?? slug}` : t("circuit") };
+  return { title: race ? `${race.circuitName} • ${config?.name ?? slug}` : t("circuit") };
 }
 
 function StatCard({ label, value }: { label: string; value: string | number }) {
@@ -85,7 +85,7 @@ export default async function CircuitDetailPage({ params }: Props) {
       : null;
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 pb-8">
+    <div className="max-w-3xl mx-auto space-y-6 pb-8">
       <div className="px-4 pt-6">
         <BackButton fallbackHref={`/${slug}/circuits`} label={t("title")} />
       </div>
