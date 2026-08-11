@@ -1,7 +1,7 @@
 import { getCachedSchedule } from "@/lib/cache";
 import { getSeriesConfig } from "@/lib/series-config";
 import { RaceTimeline } from "@/components/race/RaceTimeline";
-import { BackButton } from "@/components/layout/BackButton";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { SeriesSubNav } from "@/components/series/SeriesSubNav";
 import { notFound } from "next/navigation";
 import { getTranslations, getLocale } from "next-intl/server";
@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { series: slug } = await params;
   const config = getSeriesConfig(slug);
   const t = await getTranslations("schedulePage");
-  return { title: `${config?.name ?? slug} — ${t("title")}` };
+  return { title: `${config?.name ?? slug} • ${t("title")}` };
 }
 
 export default async function SchedulePage({ params }: Props) {
@@ -62,11 +62,13 @@ export default async function SchedulePage({ params }: Props) {
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 space-y-8">
-      <div className="space-y-1">
-        <BackButton fallbackHref={`/${slug}`} label={config.shortName} />
-        <h1 className="font-display text-2xl font-bold tracking-tight leading-tight">{config.name} — {t("title")}</h1>
-        <p className="text-xs text-muted-foreground font-mono">{t("season", { year, count: races.length })}</p>
-      </div>
+      <PageHeader
+        backHref={`/${slug}`}
+        backLabel={config.shortName}
+        eyebrow={config.name}
+        title={t("title")}
+        subtitle={<p className="text-xs text-muted-foreground font-mono">{t("season", { year, count: races.length })}</p>}
+      />
 
       <SeriesSubNav slug={slug} color={config.color} active="schedule" />
 
