@@ -40,9 +40,9 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   if (!race) {
     const { races } = await getCachedSchedule(slug, year);
     const fallback = races.find((r) => r.round === parseInt(round));
-    return { title: fallback ? `${fallback.name} — ${config?.name ?? slug}` : "Race Detail" };
+    return { title: fallback ? `${fallback.name} • ${config?.name ?? slug}` : "Race Detail" };
   }
-  return { title: `${race.name} — ${config?.name ?? slug}` };
+  return { title: `${race.name} • ${config?.name ?? slug}` };
 }
 
 export default async function RaceDetailPage({ params, searchParams }: Props) {
@@ -218,7 +218,7 @@ export default async function RaceDetailPage({ params, searchParams }: Props) {
               {tStatus(race.status as "upcoming" | "live" | "completed" | "cancelled") ?? race.status}
             </Badge>
           </div>
-          <h1 className="font-display text-3xl font-bold tracking-tight leading-tight">{race.name}</h1>
+          <h1 className="font-display text-2xl font-bold tracking-tight leading-tight">{race.name}</h1>
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground flex-wrap">
             <MapPin className="w-4 h-4 shrink-0" />
             <Link
