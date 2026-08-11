@@ -1,6 +1,6 @@
 import { getCachedStandings } from "@/lib/cache";
 import { getSeriesConfig } from "@/lib/series-config";
-import { BackButton } from "@/components/layout/BackButton";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { SeriesSubNav } from "@/components/series/SeriesSubNav";
 import { getF1Team, getF1TeamByName } from "@/lib/f1-teams";
 import { getF1DriverImage } from "@/lib/adapters/f1/driver-images";
@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { series: slug } = await params;
   const config = getSeriesConfig(slug);
   const t = await getTranslations("standingsPage");
-  return { title: `${config?.name ?? slug} — ${t("title")}` };
+  return { title: `${config?.name ?? slug} • ${t("title")}` };
 }
 
 function TeamBadge({ teamId, teamName }: { teamId?: string; teamName?: string }) {
@@ -58,11 +58,13 @@ export default async function StandingsPage({ params, searchParams }: Props) {
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-      <div className="space-y-1">
-        <BackButton fallbackHref={`/${slug}`} label={config.shortName} />
-        <h1 className="font-display text-2xl font-bold tracking-tight leading-tight">{config.name} — {t("title")}</h1>
-        <p className="text-xs text-muted-foreground font-mono">{t("season", { year })}</p>
-      </div>
+      <PageHeader
+        backHref={`/${slug}`}
+        backLabel={config.shortName}
+        eyebrow={config.name}
+        title={t("title")}
+        subtitle={<p className="text-xs text-muted-foreground font-mono">{t("season", { year })}</p>}
+      />
 
       <SeriesSubNav slug={slug} color={config.color} active="standings" />
 

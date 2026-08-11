@@ -98,7 +98,7 @@ export default async function DriverDetailPage({ params }: Props) {
     .sort((a, b) => new Date(b.race.date).getTime() - new Date(a.race.date).getTime());
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 pb-8">
+    <div className="max-w-3xl mx-auto space-y-6 pb-8">
       <div className="px-4 pt-6">
         <BackButton fallbackHref={`/${slug}/drivers`} label={t("title")} />
       </div>
@@ -130,7 +130,7 @@ export default async function DriverDetailPage({ params }: Props) {
             priority
           />
           <div className="min-w-0">
-            <h1 className="font-display text-3xl font-bold tracking-tight leading-tight">
+            <h1 className="font-display text-2xl font-bold tracking-tight leading-tight">
               {driver.firstName} {driver.lastName}
             </h1>
             <div className="flex items-center gap-2 mt-1.5 flex-wrap">

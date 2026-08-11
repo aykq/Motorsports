@@ -5,6 +5,7 @@ import Link from "next/link";
 import { cn, toTitleCase } from "@/lib/utils";
 import { Countdown } from "@/components/race/Countdown";
 import { SeriesGlowSurface } from "@/components/series/SeriesGlowSurface";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { useTranslations, useLocale } from "next-intl";
 import type { RaceStatus } from "@/types/series";
 import type { SeriesConfig } from "@/lib/series-config";
@@ -316,10 +317,10 @@ export function CalendarClient({ races, seriesCountdowns, availableSeries, serie
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-      <div className="space-y-0.5">
-        <h1 className="font-display text-3xl font-bold tracking-tight leading-tight">{t("title")}</h1>
-        <p className="text-xs text-muted-foreground font-mono">{t("season", { year: new Date().getFullYear() })}</p>
-      </div>
+      <PageHeader
+        title={t("title")}
+        subtitle={<p className="text-xs text-muted-foreground font-mono">{t("season", { year: new Date().getFullYear() })}</p>}
+      />
 
       {availableSeries.length > 1 && (
         <div className="flex gap-2 flex-wrap">
