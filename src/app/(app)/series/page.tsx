@@ -1,6 +1,7 @@
 import { SERIES_LIST, getSeriesConfig, isSeriesVisible } from "@/lib/series-config";
 import { getShowNonF1Series } from "@/lib/app-settings";
 import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { SeriesGlowSurface } from "@/components/series/SeriesGlowSurface";
 import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
@@ -19,10 +20,10 @@ export default async function SeriesListPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-      <div className="space-y-0.5">
-        <h1 className="font-display text-3xl font-bold tracking-tight leading-tight">{t("title")}</h1>
-        <p className="text-xs text-muted-foreground font-mono">{t("subtitle")}</p>
-      </div>
+      <PageHeader
+        title={t("title")}
+        subtitle={<p className="text-xs text-muted-foreground font-mono">{t("subtitle")}</p>}
+      />
 
       <div className="grid gap-3 sm:grid-cols-2">
         {visibleSeries.map((series) => {
