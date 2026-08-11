@@ -73,7 +73,7 @@ export default async function TeamDetailPage({ params }: Props) {
     .sort((a, b) => a.round - b.round);
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 pb-8">
+    <div className="max-w-3xl mx-auto space-y-6 pb-8">
       <div className="px-4 pt-6">
         <BackButton fallbackHref={`/${slug}/teams`} label={t("title")} />
       </div>
@@ -99,7 +99,7 @@ export default async function TeamDetailPage({ params }: Props) {
             fallbackClassName="w-16 h-16 rounded-xl text-lg shrink-0"
           />
           <div>
-            <h1 className="font-display text-3xl font-bold tracking-tight leading-tight">{teamName}</h1>
+            <h1 className="font-display text-2xl font-bold tracking-tight leading-tight">{teamName}</h1>
             <p className="text-sm text-muted-foreground mt-1 font-mono">
               {year} · {standing?.team?.nationality ?? ""}
             </p>

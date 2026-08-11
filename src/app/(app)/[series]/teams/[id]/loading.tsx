@@ -3,7 +3,7 @@ import { StatCardsSkeleton } from "@/components/ui/skeletons";
 
 export default function TeamDetailLoading() {
   return (
-    <div className="max-w-2xl mx-auto space-y-6 pb-8">
+    <div className="max-w-3xl mx-auto space-y-6 pb-8">
       <div className="px-4 pt-6">
         <Skeleton className="h-5 w-24" />
       </div>
