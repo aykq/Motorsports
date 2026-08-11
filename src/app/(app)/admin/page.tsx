@@ -8,6 +8,7 @@ import { getRecentNotificationsAction, getErrorLogAction, getErrorLogSourcesActi
 import { getTranslations } from "next-intl/server";
 import { getShowNonF1Series } from "@/lib/app-settings";
 import { ShieldAlert } from "lucide-react";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 export const dynamic = "force-dynamic";
 
@@ -99,11 +100,8 @@ export default async function AdminPage() {
   ]);
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
-      <div className="flex items-center gap-2">
-        <ShieldAlert className="w-5 h-5 text-muted-foreground" />
-        <h1 className="font-display text-3xl font-bold tracking-tight leading-tight">{t("title")}</h1>
-      </div>
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 space-y-4">
+      <PageHeader title={t("title")} icon={<ShieldAlert className="w-5 h-5 text-muted-foreground" />} />
       <AdminPanel
         stats={stats}
         lastSyncTimes={lastSyncTimes}
