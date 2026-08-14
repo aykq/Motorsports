@@ -35,12 +35,14 @@ export function TeamLogo({
   }
 
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={src}
-      alt={alt}
-      className={cn("object-contain", className)}
-      onError={() => setError(true)}
-    />
+    <div className={cn("flex items-center justify-center rounded-md bg-zinc-900 p-1", className)}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt={alt}
+        className="max-w-full max-h-full object-contain"
+        onError={() => setError(true)}
+      />
+    </div>
   );
 }
