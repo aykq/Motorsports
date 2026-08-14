@@ -25,9 +25,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 function positionClass(pos: number): string {
-  if (pos === 1) return "text-yellow-400 font-black";
-  if (pos === 2) return "text-zinc-300 font-black";
-  if (pos === 3) return "text-orange-400 font-black";
+  if (pos === 1) return "text-yellow-500 font-black";
+  if (pos === 2) return "text-zinc-400 font-black";
+  if (pos === 3) return "text-amber-600 font-black";
   return "font-bold";
 }
 
