@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { cn } from "@/lib/utils";
+import { cn, readableTextColor } from "@/lib/utils";
 
 interface TeamLogoProps {
   src?: string;
@@ -25,8 +25,8 @@ export function TeamLogo({
   if (!src || error) {
     return (
       <div
-        className={cn("flex items-center justify-center text-white font-bold", fallbackClassName)}
-        style={{ backgroundColor: fallbackColor }}
+        className={cn("flex items-center justify-center font-bold", fallbackClassName)}
+        style={{ backgroundColor: fallbackColor, color: readableTextColor(fallbackColor) }}
         title={alt}
       >
         {fallbackText}

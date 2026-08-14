@@ -2,11 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
+import { cn } from "@/lib/utils";
 
 interface CountdownProps {
   targetDate: string;
   label?: string;
   compact?: boolean;
+  /** Force light text — for use over a dark photo scrim, where the background doesn't follow the site theme. */
+  invert?: boolean;
 }
 
 interface TimeLeft {
@@ -33,7 +36,7 @@ function pad(n: number) {
   return String(n).padStart(2, "0");
 }
 
-export function Countdown({ targetDate, label, compact = false }: CountdownProps) {
+export function Countdown({ targetDate, label, compact = false, invert = false }: CountdownProps) {
   const t = useTranslations("countdown");
   const [time, setTime] = useState<TimeLeft | null>(null);
 
@@ -88,15 +91,15 @@ export function Countdown({ targetDate, label, compact = false }: CountdownProps
         {units.map(({ value, label: unitLabel }, i) => (
           <div key={unitLabel} className="flex items-center gap-2">
             <div className="flex flex-col items-center">
-              <span className="text-xl font-mono font-bold tabular-nums text-foreground leading-none">
+              <span className={cn("text-xl font-mono font-bold tabular-nums leading-none", invert ? "text-white" : "text-foreground")}>
                 {pad(value)}
               </span>
-              <span className="text-[10px] text-muted-foreground tracking-wide">
+              <span className={cn("text-[10px] tracking-wide", invert ? "text-white/70" : "text-muted-foreground")}>
                 {unitLabel}
               </span>
             </div>
             {i < units.length - 1 && (
-              <span className="text-base font-bold text-muted-foreground/50 mb-2">:</span>
+              <span className={cn("text-base font-bold mb-2", invert ? "text-white/40" : "text-muted-foreground/50")}>:</span>
             )}
           </div>
         ))}

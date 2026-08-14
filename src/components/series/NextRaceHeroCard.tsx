@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Countdown } from "@/components/race/Countdown";
 import { WeatherChip } from "@/components/race/WeatherChip";
+import { cn } from "@/lib/utils";
 import type { Race } from "@/types/series";
 
 export function formatRaceWeekend(race: Race, locale: string): string {
@@ -84,13 +85,13 @@ export function NextRaceHeroCard({
         </div>
 
         <div>
-          <h2 className="font-display text-2xl font-bold tracking-tight leading-tight mb-1.5">{race.name}</h2>
-          <p className="text-xs text-muted-foreground">
+          <h2 className={cn("font-display text-2xl font-bold tracking-tight leading-tight mb-1.5", circuitPhotoUrl && "text-white")}>{race.name}</h2>
+          <p className={cn("text-xs", circuitPhotoUrl ? "text-white/70" : "text-muted-foreground")}>
             {race.circuitName} &bull; <span className="font-mono">{weekendLabel}</span>
           </p>
         </div>
 
-        <Countdown targetDate={race.date} compact />
+        <Countdown targetDate={race.date} compact invert={!!circuitPhotoUrl} />
 
         <div className="flex gap-2">
           <Link
@@ -102,7 +103,10 @@ export function NextRaceHeroCard({
           </Link>
           <Link
             href={`/${slug}/schedule`}
-            className="text-xs font-semibold uppercase px-4 py-2 rounded border border-border transition-colors hover:bg-white/5 active:scale-95"
+            className={cn(
+              "text-xs font-semibold uppercase px-4 py-2 rounded border transition-colors active:scale-95",
+              circuitPhotoUrl ? "border-white/30 text-white hover:bg-white/10" : "border-border hover:bg-white/5"
+            )}
           >
             {scheduleLabel}
           </Link>

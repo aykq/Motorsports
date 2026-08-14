@@ -51,7 +51,7 @@ export function FavoritesClient({ initialFavorites, showNonF1Series }: Props) {
       )}
 
       <section className="space-y-2">
-        <h2 className="text-xs font-semibold text-muted-foreground tracking-wide">
+        <h2 className="font-display text-xs font-semibold text-muted-foreground tracking-wide">
           {t("availableSeries")}
         </h2>
         {available.map((series) => (

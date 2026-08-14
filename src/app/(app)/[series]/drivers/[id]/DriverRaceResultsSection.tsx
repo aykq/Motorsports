@@ -27,19 +27,19 @@ function positionBadge(pos: number, status: string) {
     );
   if (pos === 1)
     return (
-      <span className="w-10 text-center text-xs font-black px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-500 border border-yellow-500/30 shrink-0">
+      <span className="w-10 text-center text-xs font-black px-1.5 py-0.5 rounded bg-yellow-500/20 text-[var(--pos-gold)] border border-yellow-500/30 shrink-0">
         P1
       </span>
     );
   if (pos === 2)
     return (
-      <span className="w-10 text-center text-xs font-black px-1.5 py-0.5 rounded bg-zinc-500/20 text-zinc-400 border border-zinc-500/30 shrink-0">
+      <span className="w-10 text-center text-xs font-black px-1.5 py-0.5 rounded bg-zinc-500/20 text-[var(--pos-silver)] border border-zinc-500/30 shrink-0">
         P2
       </span>
     );
   if (pos === 3)
     return (
-      <span className="w-10 text-center text-xs font-black px-1.5 py-0.5 rounded bg-amber-700/20 text-amber-600 border border-amber-700/30 shrink-0">
+      <span className="w-10 text-center text-xs font-black px-1.5 py-0.5 rounded bg-amber-700/20 text-[var(--pos-bronze)] border border-amber-700/30 shrink-0">
         P3
       </span>
     );

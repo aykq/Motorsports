@@ -51,9 +51,9 @@ function QualifyingRow({
       <div
         className={cn(
           "w-6 h-6 rounded-full flex items-center justify-center font-mono text-xs font-bold tabular-nums shrink-0 self-center mx-auto",
-          result.position === 1 && "bg-yellow-500/15 text-yellow-500",
-          result.position === 2 && "bg-zinc-500/15 text-zinc-400",
-          result.position === 3 && "bg-amber-700/15 text-amber-600",
+          result.position === 1 && "bg-yellow-500/15 text-[var(--pos-gold)]",
+          result.position === 2 && "bg-zinc-500/15 text-[var(--pos-silver)]",
+          result.position === 3 && "bg-amber-700/15 text-[var(--pos-bronze)]",
           result.position > 3 && "text-muted-foreground"
         )}
       >
@@ -67,11 +67,11 @@ function QualifyingRow({
           >
             {displayName}
           </Link>
-          {isPole && <Trophy className="w-3 h-3 text-yellow-500 shrink-0" />}
+          {isPole && <Trophy className="w-3 h-3 text-[var(--pos-gold)] shrink-0" />}
         </div>
         <span className="text-[10px] text-muted-foreground truncate block">{result.team}</span>
       </div>
-      <span className={cn("text-right font-mono text-[11px] shrink-0", isPole && "text-yellow-500 font-semibold")}>
+      <span className={cn("text-right font-mono text-[11px] shrink-0", isPole && "text-[var(--pos-gold)] font-semibold")}>
         {time ?? "—"}
       </span>
     </div>

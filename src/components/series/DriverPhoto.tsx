@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { cn } from "@/lib/utils";
+import { cn, readableTextColor } from "@/lib/utils";
 import type { SeriesConfig } from "@/lib/series-config";
 
 interface Props {
@@ -27,10 +27,10 @@ export function DriverPhoto({
     return (
       <div
         className={cn(
-          "rounded-full flex items-center justify-center text-xs font-black text-white shrink-0",
+          "rounded-full flex items-center justify-center text-xs font-black shrink-0",
           className
         )}
-        style={{ backgroundColor: fallbackColor, width: size, height: size }}
+        style={{ backgroundColor: fallbackColor, color: readableTextColor(fallbackColor), width: size, height: size }}
       >
         {fallbackLabel}
       </div>

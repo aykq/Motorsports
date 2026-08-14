@@ -245,21 +245,21 @@ export default async function RaceDetailPage({ params, searchParams }: Props) {
             return (
               <div className="flex items-end gap-2 pt-1 animate-in fade-in slide-in-from-bottom-2 duration-500">
                 <div className="flex flex-col items-center gap-0.5 flex-1 opacity-80">
-                  <span className="font-mono text-[9px] text-zinc-400 tracking-widest">P2</span>
+                  <span className="font-mono text-[9px] text-[var(--pos-silver)] tracking-widest">P2</span>
                   <div className="w-full rounded-lg border border-border/50 bg-background/20 backdrop-blur-sm px-3 py-1.5 text-center">
                     <p className="font-display text-sm font-bold">{shortName(r2)}</p>
                     <p className="text-[10px] text-muted-foreground font-mono">{r2.gap ?? "—"}</p>
                   </div>
                 </div>
                 <div className="flex flex-col items-center gap-0.5 flex-1 -translate-y-1.5">
-                  <span className="font-mono text-[9px] text-yellow-500 tracking-widest">P1</span>
+                  <span className="font-mono text-[9px] text-[var(--pos-gold)] tracking-widest">P1</span>
                   <div className="w-full rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-3 py-2 text-center">
-                    <p className="font-display text-base font-extrabold text-yellow-500">{shortName(r1)}</p>
+                    <p className="font-display text-base font-extrabold text-[var(--pos-gold)]">{shortName(r1)}</p>
                     <p className="text-[10px] text-muted-foreground font-mono">{r1.time ?? "—"}</p>
                   </div>
                 </div>
                 <div className="flex flex-col items-center gap-0.5 flex-1 opacity-80">
-                  <span className="font-mono text-[9px] text-amber-600 tracking-widest">P3</span>
+                  <span className="font-mono text-[9px] text-[var(--pos-bronze)] tracking-widest">P3</span>
                   <div className="w-full rounded-lg border border-border/50 bg-background/20 backdrop-blur-sm px-3 py-1.5 text-center">
                     <p className="font-display text-sm font-bold">{shortName(r3)}</p>
                     <p className="text-[10px] text-muted-foreground font-mono">{r3.gap ?? "—"}</p>
@@ -276,7 +276,7 @@ export default async function RaceDetailPage({ params, searchParams }: Props) {
         <div className="rounded-xl overflow-hidden aspect-[21/9] relative bg-card">
           {photoUrl && <CircuitHeroPhoto src={photoUrl} alt={race.circuitName} />}
           {photoUrl && (
-            <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent pointer-events-none" />
+            <div className="absolute inset-0 hidden dark:block bg-gradient-to-t from-background/60 via-transparent to-transparent pointer-events-none" />
           )}
         </div>
       )}

@@ -169,7 +169,7 @@ export function DriversContent({
                     className="h-5 w-auto shrink-0"
                     fallbackClassName="w-5 h-5 rounded-sm text-[9px] shrink-0"
                   />
-                  <span className="text-xs font-semibold text-muted-foreground tracking-wide truncate">
+                  <span className="font-display text-xs font-semibold text-muted-foreground tracking-wide truncate">
                     {team}
                   </span>
                 </div>
@@ -220,13 +220,13 @@ export function DriversContent({
                     className="h-6 w-auto shrink-0"
                     fallbackClassName="w-6 h-6 rounded-sm text-[10px] shrink-0"
                   />
-                  <span className="text-xs font-semibold text-muted-foreground tracking-wide">
+                  <span className="font-display text-xs font-semibold text-muted-foreground tracking-wide">
                     {firstDriver.team ?? t("unknownTeam")}
                   </span>
                 </div>
                 <div className="rounded-xl border border-border overflow-hidden bg-card">
                   {teamDrivers.map((driver) => (
-                    <Link key={driver.id} href={`/${slug}/drivers/${driver.id}`}>
+                    <Link key={driver.id} href={`/${slug}/drivers/${driver.id}`} className="block">
                       <div className="flex items-center gap-3 px-3 py-3 hover:bg-accent/50 transition-colors">
                         <DriverPhoto
                           image={driver.image}
