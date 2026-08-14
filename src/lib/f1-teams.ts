@@ -73,7 +73,7 @@ export const F1_TEAMS: F1TeamConfig[] = [
     logo: "/f1/teams/williams.webp",
   },
   {
-    constructorId: "sauber",
+    constructorId: "audi",
     name: "Audi",
     fullName: "Audi Formula 1 Team",
     short: "AUD",
