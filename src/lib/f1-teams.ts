@@ -4,6 +4,8 @@ export interface F1TeamConfig {
   fullName: string;
   short: string;
   color: string;
+  /** WCAG-safe variant of `color` for readable text (car numbers, headings). Backgrounds/borders/glows should keep using `color`. */
+  textColor: string;
   logo?: string;
 }
 
@@ -14,6 +16,7 @@ export const F1_TEAMS: F1TeamConfig[] = [
     fullName: "Oracle Red Bull Racing",
     short: "RBR",
     color: "#3671C6",
+    textColor: "var(--team-red-bull)",
     logo: "/f1/teams/red-bull.webp",
   },
   {
@@ -22,6 +25,7 @@ export const F1_TEAMS: F1TeamConfig[] = [
     fullName: "Scuderia Ferrari HP",
     short: "FER",
     color: "#E8002D",
+    textColor: "var(--team-ferrari)",
     logo: "/f1/teams/ferrari.webp",
   },
   {
@@ -30,6 +34,7 @@ export const F1_TEAMS: F1TeamConfig[] = [
     fullName: "Mercedes-AMG PETRONAS F1 Team",
     short: "MER",
     color: "#27F4D2",
+    textColor: "var(--team-mercedes)",
     logo: "/f1/teams/mercedes.webp",
   },
   {
@@ -38,6 +43,7 @@ export const F1_TEAMS: F1TeamConfig[] = [
     fullName: "McLaren Formula 1 Team",
     short: "MCL",
     color: "#FF8000",
+    textColor: "var(--team-mclaren)",
     logo: "/f1/teams/mclaren.webp",
   },
   {
@@ -46,6 +52,7 @@ export const F1_TEAMS: F1TeamConfig[] = [
     fullName: "Aston Martin Aramco F1 Team",
     short: "AMR",
     color: "#229971",
+    textColor: "var(--team-aston-martin)",
     logo: "/f1/teams/aston-martin.webp",
   },
   {
@@ -54,6 +61,7 @@ export const F1_TEAMS: F1TeamConfig[] = [
     fullName: "BWT Alpine F1 Team",
     short: "ALP",
     color: "#FF87BC",
+    textColor: "var(--team-alpine)",
     logo: "/f1/teams/alpine.webp",
   },
   {
@@ -62,6 +70,7 @@ export const F1_TEAMS: F1TeamConfig[] = [
     fullName: "MoneyGram Haas F1 Team",
     short: "HAS",
     color: "#B6BABD",
+    textColor: "var(--team-haas)",
     logo: "/f1/teams/haas.webp",
   },
   {
@@ -70,6 +79,7 @@ export const F1_TEAMS: F1TeamConfig[] = [
     fullName: "Williams Racing",
     short: "WIL",
     color: "#64C4FF",
+    textColor: "var(--team-williams)",
     logo: "/f1/teams/williams.webp",
   },
   {
@@ -78,6 +88,7 @@ export const F1_TEAMS: F1TeamConfig[] = [
     fullName: "Audi Formula 1 Team",
     short: "AUD",
     color: "#BB0000",
+    textColor: "var(--team-audi)",
     logo: "/f1/teams/audi.webp",
   },
   {
@@ -86,6 +97,7 @@ export const F1_TEAMS: F1TeamConfig[] = [
     fullName: "Visa Cash App RB Formula One Team",
     short: "RB",
     color: "#6692FF",
+    textColor: "var(--team-rb)",
     logo: "/f1/teams/racing-bulls.webp",
   },
   {
@@ -94,6 +106,7 @@ export const F1_TEAMS: F1TeamConfig[] = [
     fullName: "Cadillac Formula 1 Team",
     short: "CAD",
     color: "#1C3F94",
+    textColor: "var(--team-cadillac)",
     logo: "/f1/teams/cadillac.webp",
   },
 ];

@@ -54,7 +54,7 @@ export default async function TeamsPage({ params }: Props) {
 
       <SeriesSubNav slug={slug} color={config.color} active="teams" />
 
-      <div className="space-y-2">
+      <div className="space-y-3">
         {standings.map((s) => {
           const teamId = s.team?.id;
           const f1Team = slug === "f1" ? getF1Team(teamId) : undefined;
@@ -62,7 +62,7 @@ export default async function TeamsPage({ params }: Props) {
           const teamColor = f1Team?.color ?? config.color;
 
           return (
-            <Link key={s.position} href={`/${slug}/teams/${teamId}`}>
+            <Link key={s.position} href={`/${slug}/teams/${teamId}`} className="block">
               <div className="relative rounded-lg bg-card border border-border p-4 hover:bg-accent/50 transition-colors flex items-center gap-4 overflow-hidden">
                 <div
                   className="absolute left-0 top-0 bottom-0 w-1 rounded-l-lg"

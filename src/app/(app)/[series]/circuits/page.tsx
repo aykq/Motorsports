@@ -47,9 +47,9 @@ export default async function CircuitsListPage({ params }: Props) {
       {circuits.length === 0 ? (
         <p className="text-center py-16 text-sm text-muted-foreground">{t("noData")}</p>
       ) : (
-        <div className="space-y-1.5">
+        <div className="space-y-3">
           {circuits.map((race) => (
-            <Link key={race.circuitId} href={`/${slug}/circuits/${race.circuitId}`}>
+            <Link key={race.circuitId} href={`/${slug}/circuits/${race.circuitId}`} className="block">
               <div className="flex items-center gap-3 px-3 py-3 rounded-lg bg-card border border-border hover:bg-accent/50 transition-colors">
                 <div
                   className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"

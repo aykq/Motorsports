@@ -59,9 +59,9 @@ function PositionBadge({ position }: { position: number }) {
     <div
       className={cn(
         "w-6 h-6 rounded-full flex items-center justify-center font-mono text-xs font-bold tabular-nums shrink-0 self-center mx-auto",
-        position === 1 && "bg-yellow-500/15 text-yellow-500",
-        position === 2 && "bg-zinc-500/15 text-zinc-400",
-        position === 3 && "bg-amber-700/15 text-amber-600",
+        position === 1 && "bg-yellow-500/15 text-[var(--pos-gold)]",
+        position === 2 && "bg-zinc-500/15 text-[var(--pos-silver)]",
+        position === 3 && "bg-amber-700/15 text-[var(--pos-bronze)]",
         position > 3 && "text-muted-foreground"
       )}
     >
@@ -155,9 +155,9 @@ function StandingRow({
       <span
         className={cn(
           "w-5 text-right font-mono font-bold tabular-nums shrink-0",
-          rank === 1 && "text-yellow-500",
-          rank === 2 && "text-zinc-400",
-          rank === 3 && "text-amber-600",
+          rank === 1 && "text-[var(--pos-gold)]",
+          rank === 2 && "text-[var(--pos-silver)]",
+          rank === 3 && "text-[var(--pos-bronze)]",
           rank > 3 && "text-muted-foreground"
         )}
       >

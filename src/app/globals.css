@@ -106,6 +106,27 @@
   --carrera-cup: #a855f7;
   /* active-series accent — set per series via inline style; defaults to brand */
   --series: var(--brand);
+
+  /* ── F1 team colors — TEXT-safe variants (darkened to meet WCAG AA 4.5:1 on white/card).
+     Only for colored TEXT (car numbers, headings, position digits). Backgrounds/borders/
+     glows keep using the team's raw brand hex from f1-teams.ts — those don't carry the
+     same contrast requirement and should stay vibrant. */
+  --team-red-bull: #3671c6;
+  --team-ferrari: #e8002d;
+  --team-mercedes: #078470;
+  --team-mclaren: #b85c00;
+  --team-aston-martin: #1d8562;
+  --team-alpine: #e60066;
+  --team-haas: #6f767b;
+  --team-williams: #007ac4;
+  --team-audi: #bb0000;
+  --team-rb: #2c69ff;
+  --team-cadillac: #1c3f94;
+
+  /* ── Podium/position text colors — TEXT-safe variants (same darkening treatment) */
+  --pos-gold: #937005;
+  --pos-silver: #747480;
+  --pos-bronze: #b16105;
 }
 
 .dark {
@@ -143,6 +164,23 @@
   --sidebar-ring: oklch(0.6 0.012 256);
 
   --brand: #e6243f;
+
+  /* ── F1 team colors — dark theme uses the raw vibrant brand hex directly (already passes contrast) */
+  --team-red-bull: #3671c6;
+  --team-ferrari: #e8002d;
+  --team-mercedes: #27f4d2;
+  --team-mclaren: #ff8000;
+  --team-aston-martin: #229971;
+  --team-alpine: #ff87bc;
+  --team-haas: #b6babd;
+  --team-williams: #64c4ff;
+  --team-audi: #bb0000;
+  --team-rb: #6692ff;
+  --team-cadillac: #1c3f94;
+
+  --pos-gold: #eab308;
+  --pos-silver: #a1a1aa;
+  --pos-bronze: #d97706;
 }
 
 @layer base {

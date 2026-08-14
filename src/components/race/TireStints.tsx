@@ -63,9 +63,9 @@ export function TireStints({ stints, results, slug }: Props) {
             <div
               className={cn(
                 "w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0",
-                position === 1 ? "bg-yellow-500/20 text-yellow-500" :
-                position === 2 ? "bg-zinc-500/20 text-zinc-400" :
-                position === 3 ? "bg-amber-700/20 text-amber-600" :
+                position === 1 ? "bg-yellow-500/20 text-[var(--pos-gold)]" :
+                position === 2 ? "bg-zinc-500/20 text-[var(--pos-silver)]" :
+                position === 3 ? "bg-amber-700/20 text-[var(--pos-bronze)]" :
                 "border border-border text-muted-foreground"
               )}
             >

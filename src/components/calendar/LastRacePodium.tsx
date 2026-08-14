@@ -7,9 +7,9 @@ function PodiumBadge({ position }: { position: number }) {
     <div
       className={cn(
         "w-7 h-7 rounded-full flex items-center justify-center font-mono text-xs font-bold tabular-nums shrink-0",
-        position === 1 && "bg-yellow-500/15 text-yellow-500",
-        position === 2 && "bg-zinc-500/15 text-zinc-400",
-        position === 3 && "bg-amber-700/15 text-amber-600"
+        position === 1 && "bg-yellow-500/15 text-[var(--pos-gold)]",
+        position === 2 && "bg-zinc-500/15 text-[var(--pos-silver)]",
+        position === 3 && "bg-amber-700/15 text-[var(--pos-bronze)]"
       )}
     >
       {position}

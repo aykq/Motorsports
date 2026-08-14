@@ -98,14 +98,14 @@ export default async function DriverDetailPage({ params }: Props) {
     .sort((a, b) => new Date(b.race.date).getTime() - new Date(a.race.date).getTime());
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 pb-8">
-      <div className="px-4 pt-6">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 space-y-6 pb-8">
+      <div className="pt-6">
         <BackButton fallbackHref={`/${slug}/drivers`} label={t("title")} />
       </div>
 
       {/* ── Hero ── */}
       <div
-        className="relative overflow-hidden px-6 py-6"
+        className="relative rounded-2xl border border-border overflow-hidden px-6 py-6"
         style={{
           background: `linear-gradient(135deg, ${teamColor}40 0%, ${teamColor}10 50%, transparent 100%)`,
         }}

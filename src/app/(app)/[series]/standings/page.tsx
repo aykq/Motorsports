@@ -116,7 +116,7 @@ export default async function StandingsPage({ params, searchParams }: Props) {
                   />
                   <span
                     className="w-7 text-right font-mono font-bold text-base shrink-0"
-                    style={s.position <= 3 ? { color: ["#fbbf24", "#9ca3af", "#cd7f32"][s.position - 1] } : {}}
+                    style={s.position <= 3 ? { color: ["var(--pos-gold)", "var(--pos-silver)", "var(--pos-bronze)"][s.position - 1] } : {}}
                   >
                     {s.position}
                   </span>
@@ -180,7 +180,7 @@ export default async function StandingsPage({ params, searchParams }: Props) {
                   />
                   <span
                     className="w-7 text-right font-mono font-bold text-base shrink-0"
-                    style={s.position <= 3 ? { color: ["#fbbf24", "#9ca3af", "#cd7f32"][s.position - 1] } : {}}
+                    style={s.position <= 3 ? { color: ["var(--pos-gold)", "var(--pos-silver)", "var(--pos-bronze)"][s.position - 1] } : {}}
                   >
                     {s.position}
                   </span>

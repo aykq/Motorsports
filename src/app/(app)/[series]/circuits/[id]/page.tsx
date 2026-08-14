@@ -85,14 +85,14 @@ export default async function CircuitDetailPage({ params }: Props) {
       : null;
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 pb-8">
-      <div className="px-4 pt-6">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 space-y-6 pb-8">
+      <div className="pt-6">
         <BackButton fallbackHref={`/${slug}/circuits`} label={t("title")} />
       </div>
 
       {/* ── Hero Banner ── */}
       <div
-        className="relative px-6 py-8 overflow-hidden space-y-2"
+        className="relative rounded-2xl border border-border px-6 py-8 overflow-hidden space-y-2"
         style={{
           background: `linear-gradient(135deg, ${config.color}40 0%, ${config.color}10 50%, transparent 100%)`,
         }}
@@ -208,7 +208,7 @@ export default async function CircuitDetailPage({ params }: Props) {
           {upcomingRaces.map((race) => {
             const raceSession = race.sessions.find((s) => s.type === "race");
             return (
-              <Link key={`${race.raceYear}-${race.round}`} href={`/${slug}/races/${race.round}?year=${race.raceYear}`}>
+              <Link key={`${race.raceYear}-${race.round}`} href={`/${slug}/races/${race.round}?year=${race.raceYear}`} className="block">
                 <div className="rounded-lg bg-card border border-border p-4 space-y-2 hover:bg-accent/50 transition-colors cursor-pointer">
                   <div className="flex items-center justify-between">
                     <p className="font-semibold text-sm">{race.name}</p>
@@ -263,14 +263,14 @@ export default async function CircuitDetailPage({ params }: Props) {
 
       {/* ── Geçmiş Yarışlar ── */}
       {completedRaces.length > 0 && (
-        <section className="space-y-3">
+        <section className="space-y-4">
           <h2 className="font-display text-xs font-semibold text-muted-foreground tracking-wide">
             {t("pastRaces")}
           </h2>
           {completedRaces.map((race) => {
             const winner = race.results?.[0];
             return (
-              <Link key={`${race.raceYear}-${race.round}`} href={`/${slug}/races/${race.round}?year=${race.raceYear}`}>
+              <Link key={`${race.raceYear}-${race.round}`} href={`/${slug}/races/${race.round}?year=${race.raceYear}`} className="block">
                 <div className="rounded-lg bg-card border border-border p-4 space-y-2 hover:bg-accent/50 transition-colors cursor-pointer">
                   <div className="flex items-center justify-between">
                     <p className="font-semibold text-sm">{race.name}</p>

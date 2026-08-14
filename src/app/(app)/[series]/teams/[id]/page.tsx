@@ -7,6 +7,7 @@ import { BackButton } from "@/components/layout/BackButton";
 import Link from "next/link";
 import Image from "next/image";
 import { getTranslations } from "next-intl/server";
+import { readableTextColor } from "@/lib/utils";
 import type { Metadata } from "next";
 
 interface Props {
@@ -25,9 +26,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 function positionClass(pos: number): string {
-  if (pos === 1) return "text-yellow-500 font-black";
-  if (pos === 2) return "text-zinc-400 font-black";
-  if (pos === 3) return "text-amber-600 font-black";
+  if (pos === 1) return "text-[var(--pos-gold)] font-black";
+  if (pos === 2) return "text-[var(--pos-silver)] font-black";
+  if (pos === 3) return "text-[var(--pos-bronze)] font-black";
   return "font-bold";
 }
 
@@ -53,6 +54,7 @@ export default async function TeamDetailPage({ params }: Props) {
   const teamName = standing?.team?.name ?? teamDrivers[0]?.team ?? id;
   const f1Team = slug === "f1" ? getF1Team(id) : undefined;
   const teamColor = f1Team?.color ?? config.color;
+  const teamTextColor = f1Team?.textColor ?? config.color;
 
   const isCarBased = slug === "gt3" || slug === "gt4";
 
@@ -73,14 +75,14 @@ export default async function TeamDetailPage({ params }: Props) {
     .sort((a, b) => a.round - b.round);
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 pb-8">
-      <div className="px-4 pt-6">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 space-y-6 pb-8">
+      <div className="pt-6">
         <BackButton fallbackHref={`/${slug}/teams`} label={t("title")} />
       </div>
 
       {/* ── Hero Banner ── */}
       <div
-        className="relative px-6 py-8 overflow-hidden"
+        className="relative rounded-2xl border border-border px-6 py-8 overflow-hidden"
         style={{
           background: `linear-gradient(135deg, ${teamColor}40 0%, ${teamColor}10 50%, transparent 100%)`,
         }}
@@ -175,8 +177,8 @@ export default async function TeamDetailPage({ params }: Props) {
                                   />
                                 ) : (
                                   <div
-                                    className="w-14 h-14 rounded-full flex items-center justify-center text-sm font-black text-white"
-                                    style={{ backgroundColor: teamColor }}
+                                    className="w-14 h-14 rounded-full flex items-center justify-center text-sm font-black"
+                                    style={{ backgroundColor: teamColor, color: readableTextColor(teamColor) }}
                                   >
                                     {driver.code ?? driver.lastName[0]}
                                   </div>
@@ -232,7 +234,7 @@ export default async function TeamDetailPage({ params }: Props) {
                           {driver.number && (
                             <p
                               className="text-xs font-black mt-0.5"
-                              style={{ color: teamColor }}
+                              style={{ color: teamTextColor }}
                             >
                               #{driver.number}
                             </p>
@@ -266,7 +268,7 @@ export default async function TeamDetailPage({ params }: Props) {
                 );
                 if (teamResults.length === 0) return null;
                 return (
-                  <Link key={race.round} href={`/${slug}/races/${race.round}`}>
+                  <Link key={race.round} href={`/${slug}/races/${race.round}`} className="block">
                     <div className="rounded-lg bg-card border border-border px-3 py-2.5 hover:bg-accent/50 transition-colors">
                       <div className="flex items-center justify-between mb-1.5">
                         <p className="text-sm font-medium truncate">{race.name}</p>

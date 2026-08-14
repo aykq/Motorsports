@@ -45,7 +45,7 @@ export function DriverCard({ driver, seriesSlug, color, index, priority, points,
             </span>
           </div>
         )}
-        <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-card to-transparent" />
+        <div className="absolute bottom-0 left-0 w-full h-8 bg-gradient-to-t from-card to-transparent" />
         {hasPointsBadge && (
           <span className="absolute top-1.5 right-1.5 font-mono text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded bg-black/50 text-white">
             {points} {pointsAbbr}

@@ -51,9 +51,9 @@ export function PracticeSection({ sessionLabel, results, labels, slug, maxRows }
                 <span
                   className={cn(
                     "text-right font-mono font-bold tabular-nums shrink-0",
-                    r.position === 1 && "text-yellow-500",
-                    r.position === 2 && "text-zinc-400",
-                    r.position === 3 && "text-amber-600",
+                    r.position === 1 && "text-[var(--pos-gold)]",
+                    r.position === 2 && "text-[var(--pos-silver)]",
+                    r.position === 3 && "text-[var(--pos-bronze)]",
                     r.position > 3 && "text-muted-foreground"
                   )}
                 >
