@@ -20,7 +20,8 @@
     "timeJustNow": "şimdi",
     "timeMinutes": "{m}dk",
     "timeHours": "{h}s",
-    "timeDays": "{d}g"
+    "timeDays": "{d}g",
+    "newArticles": "{count} yeni haber"
   },
   "newsSync": {
     "idle": "Güncelle",

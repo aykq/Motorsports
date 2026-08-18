@@ -20,7 +20,8 @@
     "timeJustNow": "now",
     "timeMinutes": "{m}m",
     "timeHours": "{h}h",
-    "timeDays": "{d}d"
+    "timeDays": "{d}d",
+    "newArticles": "{count, plural, one {# new article} other {# new articles}}"
   },
   "newsSync": {
     "idle": "Refresh",
