@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { TireStint, TireCompound, RaceControlEvent, PracticeDriverResult } from "@/types/series";
+import { logError } from "@/lib/error-log";
 
 const BASE_URL = "https://api.openf1.org/v1";
 
@@ -166,27 +167,35 @@ export async function findOpenF1AllSessionKeys(
   sessions: Array<{ type: string; date: string }>
 ): Promise<Map<string, number>> {
   const keyMap = new Map<string, number>();
+  let of1Sessions: OpenF1Session[];
   try {
-    const of1Sessions = await fetchOpenF1Sessions(year);
-    for (const session of sessions) {
-      const of1Name = SESSION_TYPE_TO_OF1_NAME[session.type];
-      const dayStr = new Date(session.date).toISOString().split("T")[0];
-      let match = of1Sessions.find(
-        (s) => s.session_name === of1Name && s.date_start.startsWith(dayStr)
+    of1Sessions = await fetchOpenF1Sessions(year);
+  } catch (err) {
+    await logError({
+      source: "openf1/findOpenF1AllSessionKeys",
+      severity: "warning",
+      message: `sessions?year=${year} fetch failed: ${err instanceof Error ? err.message : String(err)}`,
+    });
+    return keyMap;
+  }
+  for (const session of sessions) {
+    const of1Name = SESSION_TYPE_TO_OF1_NAME[session.type];
+    const dayStr = new Date(session.date).toISOString().split("T")[0];
+    let match = of1Sessions.find(
+      (s) => s.session_name === of1Name && s.date_start.startsWith(dayStr)
+    );
+    if (!match) {
+      const sameDay = of1Sessions.filter((s) => s.date_start.startsWith(dayStr));
+      const ts = new Date(session.date).getTime();
+      sameDay.sort(
+        (a, b) =>
+          Math.abs(new Date(a.date_start).getTime() - ts) -
+          Math.abs(new Date(b.date_start).getTime() - ts)
       );
-      if (!match) {
-        const sameDay = of1Sessions.filter((s) => s.date_start.startsWith(dayStr));
-        const ts = new Date(session.date).getTime();
-        sameDay.sort(
-          (a, b) =>
-            Math.abs(new Date(a.date_start).getTime() - ts) -
-            Math.abs(new Date(b.date_start).getTime() - ts)
-        );
-        match = sameDay[0];
-      }
-      if (match) keyMap.set(session.type, match.session_key);
+      match = sameDay[0];
     }
-  } catch { /* silent */ }
+    if (match) keyMap.set(session.type, match.session_key);
+  }
   return keyMap;
 }
 
@@ -277,23 +286,19 @@ function isNotableRaceControlEvent(msg: string, flag: string | null | undefined,
 }
 
 export async function fetchOpenF1RaceControl(sessionKey: number): Promise<RaceControlEvent[]> {
-  try {
-    const raw = await openF1Fetch(
-      `/race_control?session_key=${sessionKey}`,
-      z.array(OpenF1RaceControlSchema)
-    );
-    return raw
-      .filter((e) => isNotableRaceControlEvent(e.message, e.flag, e.category))
-      .map((e) => ({
-        lap: e.lap_number ?? undefined,
-        category: e.category ?? "Other",
-        message: e.message,
-        flag: e.flag ?? undefined,
-        driverNumber: e.driver_number ?? undefined,
-      }));
-  } catch {
-    return [];
-  }
+  const raw = await openF1Fetch(
+    `/race_control?session_key=${sessionKey}`,
+    z.array(OpenF1RaceControlSchema)
+  );
+  return raw
+    .filter((e) => isNotableRaceControlEvent(e.message, e.flag, e.category))
+    .map((e) => ({
+      lap: e.lap_number ?? undefined,
+      category: e.category ?? "Other",
+      message: e.message,
+      flag: e.flag ?? undefined,
+      driverNumber: e.driver_number ?? undefined,
+    }));
 }
 
 export async function openf1IsF1SessionFinished(
