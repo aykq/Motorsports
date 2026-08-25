@@ -182,6 +182,11 @@ function extractBlocks($: cheerio.CheerioAPI): ContentBlock[] {
     if ($el.closest("msnt-comments-promo").length > 0) return;
     if ($el.closest(".ms-article-end").length > 0) return;
 
+    // Skip the "İlginizi Çekebilir" (related content) widget — it's its own
+    // <ul><li><a><img>...</a></li></ul> block linking to an unrelated article,
+    // sitting inline in the article body between real paragraphs.
+    if ($el.closest('[data-widget="related-content"]').length > 0) return;
+
     if ($el.is("p")) {
       const text = $el.text().trim();
       // Short standalone-bold paragraphs (e.g. "7 Ağustos Cuma" before a session
@@ -209,8 +214,14 @@ function extractBlocks($: cheerio.CheerioAPI): ContentBlock[] {
       if (w && parseInt(w) <= 10) return;
       const src = fixUrl($el.attr("src"));
       if (!src) return;
+      // motorsport.com doesn't use <figcaption> — title/photographer live as
+      // data-title/data-author on the wrapping <section data-widget="image">.
+      const $widget = $el.closest('section[data-widget="image"]');
+      const widgetTitle = $widget.attr("data-title")?.trim();
+      const widgetAuthor = $widget.attr("data-author")?.trim();
       const $figure = $el.closest("figure");
       const caption =
+        [widgetTitle, widgetAuthor ? `Fotoğraf: ${widgetAuthor}` : null].filter(Boolean).join(" — ") ||
         $figure.find("figcaption").first().text().trim() ||
         $el.closest('[class*="caption"]').text().trim() ||
         null;
