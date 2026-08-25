@@ -187,6 +187,11 @@ function extractBlocks($: cheerio.CheerioAPI): ContentBlock[] {
     // sitting inline in the article body between real paragraphs.
     if ($el.closest('[data-widget="related-content"]').length > 0) return;
 
+    // Skip <p class="title">/<p class="photographer"> inside the image widget —
+    // they duplicate the data-title/data-author the img handler below already
+    // reads into that image's own caption.
+    if ($el.is("p") && $el.closest('section[data-widget="image"]').length > 0) return;
+
     if ($el.is("p")) {
       const text = $el.text().trim();
       // Short standalone-bold paragraphs (e.g. "7 Ağustos Cuma" before a session
