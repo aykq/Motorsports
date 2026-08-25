@@ -447,6 +447,50 @@ export async function syncActiveSessionData(
   }
 }
 
+const RACE_CONTROL_CATCHUP_WINDOW_MS = 6 * 60 * 60 * 1000;
+
+// Yarış bitip aktif hafta sonu penceresi (isActiveRaceWeekend) kapandıktan sonra da
+// race control verisi hâlâ eksikse (OpenF1 gecikmeli yayınlamış/geçici hata olmuş olabilir)
+// kullanıcı sayfayı açmadan, arka planda kısa aralıklarla denemeye devam eder.
+// raceControlFetched true olan yarışlar hemen atlanır — gerçek iş sadece eksik olanda yapılır.
+export async function syncPendingRaceControl(
+  slug: string,
+  season: number,
+  races: Race[]
+): Promise<void> {
+  if (slug !== "f1") return;
+
+  const now = Date.now();
+  const pending = races.filter(
+    (r) => r.status === "completed" && now - new Date(r.date).getTime() < RACE_CONTROL_CATCHUP_WINDOW_MS
+  );
+
+  for (const race of pending) {
+    try {
+      const raw = await getRaceDetailRaw(slug, season, race.round);
+      if (raw?.raceControlFetched === true) continue;
+
+      const fresh = await fetchF1RaceDetail(season, race.round, race, true);
+      if (!fresh.raceControlFetched) continue;
+
+      if (fresh.raceControl.length > 0) {
+        const translated = await translateRaceControlMessages(
+          fresh.raceControl.map((e) => e.message)
+        );
+        if (translated.length) fresh.raceControlTr = translated;
+      }
+
+      await setCachedRaceDetail(slug, season, race.round, { ...raw, ...fresh });
+    } catch (err) {
+      logError({
+        source: "race-detail/syncPendingRaceControl",
+        severity: "warning",
+        message: `${slug} R${race.round}: ${err instanceof Error ? err.message : String(err)}`,
+      });
+    }
+  }
+}
+
 async function fetchF1RaceDetail(
   season: number,
   round: number,
@@ -530,6 +574,24 @@ async function fetchF1RaceDetail(
   }));
 
   const raceControl = raceControlResult.status === "fulfilled" ? raceControlResult.value : [];
+  // raceControl boş dönebilir (olay yoksa) ama bu, başarılı bir fetch'ten ayırt edilmeli —
+  // yoksa cacheValid hep false kalır ve her sayfa yüklemesi OpenF1'i yeniden çeker.
+  const raceControlFetchSucceeded = raceSessionKey !== null && raceControlResult.status === "fulfilled";
+  if (isCompleted && raceSessionKey === null) {
+    await logError({
+      source: "race-detail/fetchF1RaceDetail",
+      severity: "warning",
+      message: `OpenF1 race session key not found for season ${season} round ${round}`,
+    });
+  } else if (isCompleted && raceControlResult.status === "rejected") {
+    await logError({
+      source: "race-detail/fetchF1RaceDetail",
+      severity: "warning",
+      message: `race control fetch failed for season ${season} round ${round}: ${
+        raceControlResult.reason instanceof Error ? raceControlResult.reason.message : String(raceControlResult.reason)
+      }`,
+    });
+  }
 
   const qualifyingResults =
     qualifyingResult.status === "fulfilled" ? qualifyingResult.value : [];
@@ -559,7 +621,7 @@ async function fetchF1RaceDetail(
     practice1Results: attachDriverIds(fp1Result.status === "fulfilled" ? fp1Result.value : [], numberToDriverId),
     practice2Results: attachDriverIds(fp2Result.status === "fulfilled" ? fp2Result.value : [], numberToDriverId),
     practice3Results: attachDriverIds(fp3Result.status === "fulfilled" ? fp3Result.value : [], numberToDriverId),
-    raceControlFetched: isCompleted && raceControl.length > 0,
+    raceControlFetched: isCompleted && raceControlFetchSucceeded,
     stintsFetched: isCompleted,
   };
 }
