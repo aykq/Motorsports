@@ -19,7 +19,10 @@ import { lookupCircuitCoords } from "@/lib/circuit-coords";
 import { getTranslations, getLocale } from "next-intl/server";
 import type { Metadata } from "next";
 
-export const dynamic = "force-dynamic";
+// force-dynamic KALDIRILDI: zaten etkisizdi — layout.tsx her istekte auth() (cookie
+// okuyor) çağırdığı için route her koşulda dinamik render ediliyor, bu export ekstra
+// bir şey yapmıyordu. Asıl hız kazancı getRaceDetail()'in artık unstable_cache ile
+// istekler arası cache'lenmesinden geliyor (bkz. lib/race-detail.ts).
 
 interface Props {
   params: Promise<{ series: string; round: string }>;
@@ -110,7 +113,7 @@ export default async function RaceDetailPage({ params, searchParams }: Props) {
   const sprintDone = race.sessions.find((s) => s.type === "sprint") ? new Date(race.sessions.find((s) => s.type === "sprint")!.date) < now : false;
   const qualifyingDone = race.sessions.find((s) => s.type === "qualifying") ? new Date(race.sessions.find((s) => s.type === "qualifying")!.date) < now : false;
 
-  const detail = await getRaceDetail(slug, year, round, race);
+  const detail = await getRaceDetail(slug, year, round);
   const {
     tireStints,
     raceControl,

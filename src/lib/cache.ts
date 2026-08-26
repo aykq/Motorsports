@@ -78,18 +78,28 @@ export function recomputeRaceStatus(race: Race, seriesSlug?: string): Race {
 
 // ─── Schedule ─────────────────────────────────────────────────────────────────
 
-export const getCachedSchedule = cache(async (
-  slug: string,
-  season: number
-): Promise<{ races: Race[]; fresh: boolean }> => {
-  const rows = await db.query.cachedRaces.findMany({
-    where: and(eq(cachedRaces.seriesSlug, slug), eq(cachedRaces.season, season)),
-    orderBy: (t, { asc }) => [asc(t.round)],
-  });
-  if (!rows.length) return { races: [], fresh: false };
-  const fresh = isFresh(rows[rows.length - 1].fetchedAt);
-  return { races: rows.map((r) => recomputeRaceStatus(r.data as Race, r.seriesSlug)), fresh };
-});
+// unstable_cache (cross-request, Next Data Cache), not React's cache() (per-request
+// only) — the schedule is cron-fed (session-sync every 2min at the fastest), so a
+// short cross-request window avoids re-querying Postgres on every single page view
+// while still tracking cron closely. Also read internally by sync.ts/cron.ts for
+// decisions like "did this race disappear from the API" — a few seconds of staleness
+// there is harmless, those self-correct on the next cron pass regardless.
+export const getCachedSchedule = unstable_cache(
+  async (
+    slug: string,
+    season: number
+  ): Promise<{ races: Race[]; fresh: boolean }> => {
+    const rows = await db.query.cachedRaces.findMany({
+      where: and(eq(cachedRaces.seriesSlug, slug), eq(cachedRaces.season, season)),
+      orderBy: (t, { asc }) => [asc(t.round)],
+    });
+    if (!rows.length) return { races: [], fresh: false };
+    const fresh = isFresh(rows[rows.length - 1].fetchedAt);
+    return { races: rows.map((r) => recomputeRaceStatus(r.data as Race, r.seriesSlug)), fresh };
+  },
+  ["schedule"],
+  { revalidate: 60 }
+);
 
 // Backfill edilen geçmiş sezonları mevcut yılla birlikte döner. Sync/cron her
 // zaman sadece mevcut yılı çeker — bu fonksiyon sadece OKUMA amaçlı, geçmiş
@@ -130,24 +140,31 @@ export async function setCachedSchedule(
 
 // ─── Standings ────────────────────────────────────────────────────────────────
 
-export const getCachedStandings = cache(async (
-  slug: string,
-  season: number,
-  type: StandingType
-): Promise<{ standings: Standing[]; fresh: boolean }> => {
-  const row = await db.query.cachedStandings.findFirst({
-    where: and(
-      eq(cachedStandings.seriesSlug, slug),
-      eq(cachedStandings.season, season),
-      eq(cachedStandings.type, type)
-    ),
-  });
-  if (!row) return { standings: [], fresh: false };
-  return {
-    standings: row.data as Standing[],
-    fresh: isFresh(row.fetchedAt),
-  };
-});
+// unstable_cache: standings only change via full sync (6h) and post-race sync
+// (30min), nothing reads them at cron-internal sub-minute cadence, so a longer
+// window than schedule's is safe here.
+export const getCachedStandings = unstable_cache(
+  async (
+    slug: string,
+    season: number,
+    type: StandingType
+  ): Promise<{ standings: Standing[]; fresh: boolean }> => {
+    const row = await db.query.cachedStandings.findFirst({
+      where: and(
+        eq(cachedStandings.seriesSlug, slug),
+        eq(cachedStandings.season, season),
+        eq(cachedStandings.type, type)
+      ),
+    });
+    if (!row) return { standings: [], fresh: false };
+    return {
+      standings: row.data as Standing[],
+      fresh: isFresh(row.fetchedAt),
+    };
+  },
+  ["standings"],
+  { revalidate: 300 }
+);
 
 export async function setCachedStandings(
   slug: string,
