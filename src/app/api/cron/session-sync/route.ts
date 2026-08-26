@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { isActiveRaceWeekend, syncActiveSessionData, syncPendingRaceControl } from "@/lib/race-detail";
 import type { Race } from "@/types/series";
 import { logError } from "@/lib/error-log";
+import { getShowNonF1Series } from "@/lib/app-settings";
 
 // Aktif yarış hafta sonlarında FP/quali/sprint/yarış seans verisini çeker.
 // Ayrıca aktif hafta sonu penceresi kapandıktan sonra da (yarış bitti ama race
@@ -17,7 +18,10 @@ export async function POST(request: Request) {
 
   try {
     const allRows = await db.query.cachedRaces.findMany().catch(() => []);
-    const activeRows = allRows.filter((row) => isActiveRaceWeekend(row.data as Race));
+    const showNonF1 = await getShowNonF1Series();
+    const activeRows = allRows.filter(
+      (row) => (showNonF1 || row.seriesSlug === "f1") && isActiveRaceWeekend(row.data as Race)
+    );
     const season = new Date().getFullYear();
     const errors: string[] = [];
 

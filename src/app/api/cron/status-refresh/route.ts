@@ -5,6 +5,7 @@ import { isActiveRaceWeekend } from "@/lib/race-detail";
 import { syncScheduleOnly } from "@/lib/sync";
 import type { Race } from "@/types/series";
 import { logError } from "@/lib/error-log";
+import { getShowNonF1Series } from "@/lib/app-settings";
 
 // MotoGP/WEC gibi status-güdümlü serilerde yarış durumunu ("FINISHED"/"FT" →
 // "completed") tazeler; bildirim cron'u tamamlanmayı bu sayede yakalar.
@@ -13,6 +14,11 @@ const STATUS_DRIVEN_SERIES = new Set(["motogp", "moto2", "moto3", "wec"]);
 export async function POST(request: Request) {
   if (!verifyCronSecret(request.headers.get("x-cron-secret"))) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  // STATUS_DRIVEN_SERIES tamamı non-F1 — UI'da gizliyken bu route'un hiç işi yok.
+  if (!(await getShowNonF1Series())) {
+    return NextResponse.json({ ok: true, refreshed: [] });
   }
 
   try {
