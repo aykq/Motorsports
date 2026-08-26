@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import type { Race, RaceDetail, RaceResult, PracticeDriverResult } from "@/types/series";
 import { getCachedRaceDetail, getRaceDetailRaw, setCachedRaceDetail } from "@/lib/cache";
 import {
@@ -78,15 +79,18 @@ export function isActiveRaceWeekend(race: Race): boolean {
 // OpenF1 isteği anlamına geliyordu. Artık sayfa hiçbir zaman kendi fetch tetiklemiyor;
 // cron henüz yetişmediyse kullanıcı geçici olarak eksik/boş veri görür, bir sonraki
 // cron cycle'ında (veya syncPendingRaceControl'ün kısa aralığında) dolar.
-export async function getRaceDetail(
-  slug: string,
-  season: number,
-  round: number,
-  _race: Race
-): Promise<RaceDetail> {
-  const cached = await getRaceDetailRaw(slug, season, round);
-  return cached ?? EMPTY_DETAIL;
-}
+//
+// unstable_cache (istekler arası kalıcı) — session-sync'in 2 dakikalık ritmine
+// yakın bir pencere seçildi, art arda birkaç yarış sayfası arasında gezinme artık
+// Postgres'e her seferinde gitmiyor.
+export const getRaceDetail = unstable_cache(
+  async (slug: string, season: number, round: number): Promise<RaceDetail> => {
+    const cached = await getRaceDetailRaw(slug, season, round);
+    return cached ?? EMPTY_DETAIL;
+  },
+  ["race-detail"],
+  { revalidate: 60 }
+);
 
 export async function syncRaceDetails(
   slug: string,
