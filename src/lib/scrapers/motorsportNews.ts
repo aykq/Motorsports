@@ -226,7 +226,7 @@ function extractBlocks($: cheerio.CheerioAPI): ContentBlock[] {
       const widgetAuthor = $widget.attr("data-author")?.trim();
       const $figure = $el.closest("figure");
       const caption =
-        [widgetTitle, widgetAuthor ? `Fotoğraf: ${widgetAuthor}` : null].filter(Boolean).join(" — ") ||
+        [widgetTitle, widgetAuthor ? `Fotoğraf: ${widgetAuthor}` : null].filter(Boolean).join(". ") ||
         $figure.find("figcaption").first().text().trim() ||
         $el.closest('[class*="caption"]').text().trim() ||
         null;

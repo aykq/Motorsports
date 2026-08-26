@@ -221,7 +221,7 @@ export default async function NewsDetailPage({ params }: Props) {
 
                 if (isPhotoCredit || isImageLabel) {
                   return (
-                    <p key={i} className="text-xs italic text-muted-foreground/70 leading-tight text-center -mt-2">
+                    <p key={i} className="text-[11px] font-medium text-muted-foreground/60 leading-tight text-center -mt-2">
                       {isPhotoCredit
                         ? block.text.replace(/^(Fotoğraf|Foto|Photo(?:graph)?(?:\s+by)?)\s*[:;]\s*/i, "")
                         : block.text}
@@ -245,8 +245,8 @@ export default async function NewsDetailPage({ params }: Props) {
                       loading="lazy"
                     />
                     {block.caption && (
-                      <figcaption className="mt-1.5 px-0.5">
-                        <span className="text-[10px] leading-snug text-muted-foreground/50 italic tracking-wide">
+                      <figcaption className="mt-1.5 px-0.5 text-center">
+                        <span className="text-[11px] leading-snug text-muted-foreground/60 font-medium tracking-wide">
                           {block.caption}
                         </span>
                       </figcaption>
