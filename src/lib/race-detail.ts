@@ -70,70 +70,22 @@ export function isActiveRaceWeekend(race: Race): boolean {
   return firstSessionTime <= now + TWO_DAYS_MS && raceTime > now - 4 * 60 * 60 * 1000;
 }
 
+// Sadece DB'den okur — canlı OpenF1/Jolpica fetch YOK. Veri tazeliği tamamen
+// arka plan cron'una ait: syncRaceDetails() (6 saatte bir), syncPendingRaceControl()
+// ve syncActiveSessionData() (session-sync, 2 dakikada bir) bu detayları besliyor.
+// Önceden burada TTL/eksik-alan kontrolüyle sayfa açılışında canlı fetch tetikleniyordu —
+// art arda farklı yarış sayfalarına bakan bir kullanıcı için her seferinde 5-6 eşzamanlı
+// OpenF1 isteği anlamına geliyordu. Artık sayfa hiçbir zaman kendi fetch tetiklemiyor;
+// cron henüz yetişmediyse kullanıcı geçici olarak eksik/boş veri görür, bir sonraki
+// cron cycle'ında (veya syncPendingRaceControl'ün kısa aralığında) dolar.
 export async function getRaceDetail(
   slug: string,
   season: number,
   round: number,
-  race: Race
+  _race: Race
 ): Promise<RaceDetail> {
-  const isCompleted = race.status === "completed";
-  const activeWeekend = !isCompleted && isActiveRaceWeekend(race);
-
-  const cached = await getCachedRaceDetail(slug, season, round, isCompleted, race.date, activeWeekend);
-  // qualifyingResults === undefined → eski cache kaydı, yeniden çek
-  // raceControlFetched !== true → race control hiç çekilmedi, yeniden çek
-  // Yeni tamamlanmış yarış (< 6 saat) + boş raceControl → OpenF1 güncellenmiş olabilir, yeniden çek
-  const recentCompletedWithoutEvents =
-    isCompleted &&
-    Date.now() - new Date(race.date).getTime() < 6 * 60 * 60 * 1000 &&
-    (cached?.raceControl.length ?? 0) === 0;
-  // Tamamlanmış F1 yarışı stintsFetched=true değilse OpenF1'den çekilmemiş → re-fetch
-  const missingStintsData = isCompleted && slug === "f1" && cached !== null && !cached.stintsFetched;
-  // Sprint hafta sonu ama sprintComplete yoksa → sprint sonuçları hiç çekilmemiş → re-fetch
-  const hasSprintSession = race.sessions.some((s) => s.type === "sprint");
-  const missingSprintResults = isCompleted && slug === "f1" && hasSprintSession && cached !== null && !cached.sprintComplete;
-  // Yarışta olan bir practice session'ın sonucu boşsa → hiç çekilmemiş → re-fetch
-  const missingPracticeData =
-    isCompleted &&
-    slug === "f1" &&
-    cached !== null &&
-    race.sessions.some(
-      (s) =>
-        (s.type === "practice1" && (cached.practice1Results ?? []).length === 0) ||
-        (s.type === "practice2" && (cached.practice2Results ?? []).length === 0) ||
-        (s.type === "practice3" && (cached.practice3Results ?? []).length === 0)
-    );
-  const cacheValid =
-    cached !== null &&
-    cached.qualifyingResults !== undefined &&
-    (!isCompleted || cached.raceControlFetched === true) &&
-    !recentCompletedWithoutEvents &&
-    !missingStintsData &&
-    !missingSprintResults &&
-    !missingPracticeData;
-  if (cacheValid) return cached;
-
-  if (slug !== "f1") return EMPTY_DETAIL;
-
-  const detail = await fetchF1RaceDetail(season, round, race, isCompleted);
-
-  if (isCompleted && detail.raceControl.length > 0) {
-    const stale = await getRaceDetailRaw(slug, season, round);
-    if (stale?.raceControlTr?.length === detail.raceControl.length) {
-      detail.raceControlTr = stale.raceControlTr;
-    }
-    // Stale çeviri yoksa inline çevir (ilk yüklemede Gemini çağrısı)
-    if (!detail.raceControlTr.length) {
-      const translated = await translateRaceControlMessages(
-        detail.raceControl.map((e) => e.message)
-      );
-      if (translated.length) detail.raceControlTr = translated;
-    }
-  }
-
-  await setCachedRaceDetail(slug, season, round, detail);
-
-  return detail;
+  const cached = await getRaceDetailRaw(slug, season, round);
+  return cached ?? EMPTY_DETAIL;
 }
 
 export async function syncRaceDetails(
