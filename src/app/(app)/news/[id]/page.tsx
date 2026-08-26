@@ -225,7 +225,7 @@ export default async function NewsDetailPage({ params }: Props) {
                       {(isPhotoCredit
                         ? block.text.replace(/^(Fotoğraf|Foto|Photo(?:graph)?(?:\s+by)?)\s*[:;]\s*/i, "")
                         : block.text
-                      ).replace(/\s*—\s*/g, ". ")}
+                      ).replace(/\s*—\s*/g, " · ")}
                     </p>
                   );
                 }
@@ -248,7 +248,7 @@ export default async function NewsDetailPage({ params }: Props) {
                     {block.caption && (
                       <figcaption className="mt-1.5 px-0.5 text-center">
                         <span className="text-xs leading-snug text-muted-foreground/60 font-medium tracking-wide">
-                          {block.caption.replace(/\s*—\s*/g, ". ")}
+                          {block.caption.replace(/\s*—\s*/g, " · ")}
                         </span>
                       </figcaption>
                     )}
