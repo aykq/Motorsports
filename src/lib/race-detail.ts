@@ -222,14 +222,27 @@ export async function syncRaceDetails(
             (s.type === "practice2" && (rawDetail.practice2Results ?? []).length === 0) ||
             (s.type === "practice3" && (rawDetail.practice3Results ?? []).length === 0)
         );
+      // Aynı getRaceDetail()'in cacheValid'i gibi: stint ve sprint verisi de "tamamen
+      // fetch edildi" sayılmak için ayrıca kontrol edilmeli, sadece practice değil.
+      const missingStintsData = isCompleted && rawDetail !== null && !rawDetail.stintsFetched;
+      const hasSprintSession = race.sessions.some((s) => s.type === "sprint");
+      const missingSprintResults =
+        isCompleted && hasSprintSession && rawDetail !== null && !rawDetail.sprintComplete;
 
-      // Tamamlanmış yarış ve zaten tam veri varsa → sadece çeviri kontrol et (API fetch yapma)
-      // raceControl.length>0 şartı YOK: temiz bir yarışta (bayrak/olay yok) raceControl
-      // hep boş dönüyor ama bu, fetch'in başarısız olduğu anlamına gelmiyor — length
-      // şartı olsaydı böyle bir yarış her 6 saatlik full sync'te sonsuza dek yeniden
-      // OpenF1'e (5 eşzamanlı istek) çekilirdi, sırf olay yok diye.
+      // Tamamlanmış yarış ve TÜM veri (sonuçlar, standings, stint, practice, sprint,
+      // race control) zaten DB'de duruyorsa → sadece çeviri kontrol et (API fetch yapma).
+      // raceControl.length>0 şartı YOK: temiz bir yarışta (bayrak/olay yok — chequered flag
+      // dahil, isNotableRaceControlEvent() bunu "notable" saymıyor) raceControl hep boş
+      // dönüyor ama bu, fetch'in başarısız olduğu anlamına gelmiyor — length şartı olsaydı
+      // böyle bir yarış her 6 saatlik full sync'te sonsuza dek yeniden OpenF1'e (5 eşzamanlı
+      // istek) çekilirdi, sırf olay yok diye.
       if (isCompleted) {
-        if (rawDetail?.raceControlFetched === true && !missingPracticeData) {
+        if (
+          rawDetail?.raceControlFetched === true &&
+          !missingPracticeData &&
+          !missingStintsData &&
+          !missingSprintResults
+        ) {
           const needsTr =
             rawDetail.raceControl.length > 0 &&
             (!rawDetail.raceControlTr?.length ||
