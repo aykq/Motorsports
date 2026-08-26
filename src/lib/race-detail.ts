@@ -224,8 +224,12 @@ export async function syncRaceDetails(
         );
 
       // Tamamlanmış yarış ve zaten tam veri varsa → sadece çeviri kontrol et (API fetch yapma)
+      // raceControl.length>0 şartı YOK: temiz bir yarışta (bayrak/olay yok) raceControl
+      // hep boş dönüyor ama bu, fetch'in başarısız olduğu anlamına gelmiyor — length
+      // şartı olsaydı böyle bir yarış her 6 saatlik full sync'te sonsuza dek yeniden
+      // OpenF1'e (5 eşzamanlı istek) çekilirdi, sırf olay yok diye.
       if (isCompleted) {
-        if (rawDetail?.raceControlFetched === true && rawDetail.raceControl.length > 0 && !missingPracticeData) {
+        if (rawDetail?.raceControlFetched === true && !missingPracticeData) {
           const needsTr =
             rawDetail.raceControl.length > 0 &&
             (!rawDetail.raceControlTr?.length ||

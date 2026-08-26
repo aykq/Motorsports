@@ -12,6 +12,7 @@ import { notifySessions } from "@/lib/notify-sessions";
 import { fetchAndCacheNews, cleanAllNewsContent } from "@/lib/scrapers/motorsportNews";
 import type { Race } from "@/types/series";
 import { logError } from "@/lib/error-log";
+import { getShowNonF1Series } from "@/lib/app-settings";
 
 const POST_RACE_WINDOW_MS = 12 * 60 * 60 * 1000;
 const STATUS_DRIVEN_SERIES = new Set(["motogp", "moto2", "moto3", "wec"]);
@@ -23,7 +24,9 @@ cron.schedule(
   "0 */6 * * *",
   async () => {
     console.log("[cron] full sync started");
-    for (const slug of Object.keys(adapters)) {
+    const showNonF1 = await getShowNonF1Series();
+    const slugsToSync = showNonF1 ? Object.keys(adapters) : Object.keys(adapters).filter((s) => s === "f1");
+    for (const slug of slugsToSync) {
       try {
         const result = await syncSeries(slug, SEASON);
         console.log(`[cron] ${slug}: ${result.racesCount} races, ${result.driversCount} drivers`);
@@ -77,9 +80,10 @@ cron.schedule(
   async () => {
     const allRows = await db.query.cachedRaces.findMany().catch(() => []);
     const season = new Date().getFullYear();
+    const showNonF1 = await getShowNonF1Series();
 
-    const activeRows = allRows.filter((row) =>
-      isActiveRaceWeekend(row.data as Race)
+    const activeRows = allRows.filter(
+      (row) => (showNonF1 || row.seriesSlug === "f1") && isActiveRaceWeekend(row.data as Race)
     );
     if (!activeRows.length) return;
 
@@ -100,6 +104,8 @@ cron.schedule(
 cron.schedule(
   "3-59/10 * * * *",
   async () => {
+    if (!(await getShowNonF1Series())) return;
+
     const allRows = await db.query.cachedRaces.findMany().catch(() => []);
     const season = new Date().getFullYear();
 
@@ -148,7 +154,11 @@ cron.schedule(
 
     if (!needsRefresh.length) return;
 
-    const slugs = [...new Set(needsRefresh.map((r) => r.seriesSlug))];
+    const showNonF1 = await getShowNonF1Series();
+    const slugs = [...new Set(needsRefresh.map((r) => r.seriesSlug))].filter(
+      (s) => showNonF1 || s === "f1"
+    );
+    if (!slugs.length) return;
     console.log(`[cron] post-race results refresh: ${slugs.join(", ")}`);
     const season = new Date().getFullYear();
     for (const slug of slugs) {
@@ -168,13 +178,15 @@ cron.schedule(
   "30 */2 * * *",
   async () => {
     console.log("[cron] news fetch started");
-    const results = await Promise.allSettled(NEWS_SERIES.map(fetchAndCacheNews));
+    const showNonF1 = await getShowNonF1Series();
+    const seriesToFetch = showNonF1 ? NEWS_SERIES : NEWS_SERIES.filter((s) => s === "f1");
+    const results = await Promise.allSettled(seriesToFetch.map(fetchAndCacheNews));
     results.forEach((r, i) => {
       if (r.status === "fulfilled") {
         const { urlsFound, inserted } = r.value;
-        if (inserted > 0) console.log(`[cron] news ${NEWS_SERIES[i]}: +${inserted}/${urlsFound}`);
+        if (inserted > 0) console.log(`[cron] news ${seriesToFetch[i]}: +${inserted}/${urlsFound}`);
       } else {
-        logError({ source: "cron.ts/news", severity: "warning", message: `${NEWS_SERIES[i]}: ${String(r.reason)}` });
+        logError({ source: "cron.ts/news", severity: "warning", message: `${seriesToFetch[i]}: ${String(r.reason)}` });
       }
     });
     const cleanedCount = await cleanAllNewsContent();
