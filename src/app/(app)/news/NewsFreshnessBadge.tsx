@@ -20,6 +20,7 @@ export function NewsFreshnessBadge({ sinceIso }: { sinceIso: string }) {
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
+    getNewNewsCountAction(sinceIso).then(setNewCount); // check immediately, don't wait a full poll
     const interval = setInterval(() => {
       if (document.visibilityState !== "visible") return;
       getNewNewsCountAction(sinceIso).then(setNewCount);
