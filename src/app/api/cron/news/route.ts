@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { revalidateTag } from "next/cache";
 import { verifyCronSecret } from "@/lib/cron-auth";
 import { fetchAndCacheNews } from "@/lib/scrapers/motorsportNews";
 import { getShowNonF1Series } from "@/lib/app-settings";
@@ -26,8 +25,7 @@ export async function POST(request: Request) {
     })
   );
 
-  // "max" → stale-while-revalidate. Boş obje ({}) geçmek tavsiye edilen kullanım
-  // değil; expire tanımsız kaldığı için invalidation güvenilir çalışmıyordu.
-  revalidateTag("news", "max");
+  // News reads are no longer cross-request cached (see src/lib/cache.ts), so
+  // there is no tag to revalidate — fresh rows land on the next page render.
   return NextResponse.json({ ok: true, results });
 }
