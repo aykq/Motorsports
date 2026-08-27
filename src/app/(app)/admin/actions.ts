@@ -3,7 +3,6 @@
 import { db } from "@/db";
 import { cachedRaceDetails, cachedDrivers, notificationLog, errorLog } from "@/db/schema";
 import { eq, and, desc, gt, count } from "drizzle-orm";
-import { updateTag } from "next/cache";
 import {
   syncSeries,
   syncScheduleOnly,
@@ -235,9 +234,8 @@ export async function syncNewsAction(): Promise<{ ok: boolean; message: string }
     }
   });
   await cleanAllNewsContent();
-  // Server Action → updateTag: kullanıcı "Güncelle"ye bastığında bayat içerik
-  // değil, kendi tetiklediği taze veriyi görsün (read-your-own-writes).
-  updateTag("news");
+  // News reads aren't cached (see src/lib/cache.ts); the client refreshes after
+  // this returns, so the admin sees their freshly-synced rows.
   return { ok: true, message: lines.join("\n") };
 }
 
