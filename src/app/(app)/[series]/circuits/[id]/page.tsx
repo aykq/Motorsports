@@ -222,6 +222,7 @@ export default async function CircuitDetailPage({ params }: Props) {
                         day: "numeric",
                         month: "long",
                         year: "numeric",
+                        timeZone: "Europe/Istanbul",
                       })}
                     </p>
                   )}
