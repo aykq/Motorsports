@@ -16,14 +16,13 @@ export default async function NewsPage() {
     requireAdmin(),
   ]);
   const isAdmin = !!adminId;
-  const sinceIso = (
-    news.length ? new Date(Math.max(...news.map((n) => n.scrapedAt.getTime()))) : new Date()
-  ).toISOString();
+  const displayedIds = news.map((n) => n.id);
+  const displayedKey = displayedIds.join(",");
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 pb-24 space-y-5">
       <PageHeader title={t("title")} action={isAdmin && <NewsSyncButton />} />
-      <NewsFreshnessBadge key={sinceIso} sinceIso={sinceIso} />
+      <NewsFreshnessBadge key={displayedKey} displayedIds={displayedIds} />
 
       {news.length === 0 && (
         <p className="text-sm text-muted-foreground text-center py-16">

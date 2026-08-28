@@ -11,22 +11,30 @@ const POLL_INTERVAL_MS = 60_000;
 // a silent page refresh on the reader. Shows a badge instead; clicking it
 // runs router.refresh() and NewsListSection's own diff animates the new
 // rows in (see NewsListSection.tsx's prevNews/newIndexMap logic).
-// Caller must render with `key={sinceIso}` so a refresh remounts this with
-// newCount reset to 0 instead of needing to reset state from an effect.
-export function NewsFreshnessBadge({ sinceIso }: { sinceIso: string }) {
+// `displayedIds` are the ids currently on screen — after a refresh brings the
+// new rows in they drop out of the "new" count and the badge disappears; the
+// count query compares scraped_at in Postgres so it never phantom-counts a
+// row that's already visible.
+// Caller must render with `key` derived from the displayed set so a refresh
+// remounts this with newCount reset to 0 instead of resetting state from an
+// effect.
+export function NewsFreshnessBadge({ displayedIds }: { displayedIds: string[] }) {
   const t = useTranslations("newsPage");
   const router = useRouter();
   const [newCount, setNewCount] = useState(0);
   const [isPending, startTransition] = useTransition();
+  const idsKey = displayedIds.join(",");
 
   useEffect(() => {
-    getNewNewsCountAction(sinceIso).then(setNewCount); // check immediately, don't wait a full poll
+    getNewNewsCountAction(displayedIds).then(setNewCount);
     const interval = setInterval(() => {
       if (document.visibilityState !== "visible") return;
-      getNewNewsCountAction(sinceIso).then(setNewCount);
+      getNewNewsCountAction(displayedIds).then(setNewCount);
     }, POLL_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, [sinceIso]);
+    // idsKey is the stable serialization of displayedIds
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idsKey]);
 
   if (newCount === 0) return null;
 
