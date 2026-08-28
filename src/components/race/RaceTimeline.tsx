@@ -52,6 +52,7 @@ function formatDate(date: Date, locale: string): string {
   return date.toLocaleDateString(locale === "tr" ? "tr-TR" : "en-GB", {
     day: "numeric",
     month: "short",
+    timeZone: "Europe/Istanbul",
   });
 }
 

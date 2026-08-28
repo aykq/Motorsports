@@ -10,11 +10,16 @@ export function formatRaceWeekend(race: Race, locale: string): string {
   const last = dates[dates.length - 1];
   if (!first || !last) return "";
   const dateLocale = locale === "tr" ? "tr-TR" : "en-US";
-  const mo = (d: Date) => d.toLocaleDateString(dateLocale, { month: "short" });
-  if (first.getMonth() === last.getMonth()) {
-    return `${mo(first)} ${first.getDate()} – ${last.getDate()}`;
+  // Render the weekend day/month in the app's zone, not the server's (UTC) —
+  // getDate()/getMonth() would put a late-night session on the wrong day.
+  const tz = "Europe/Istanbul";
+  const mo = (d: Date) => d.toLocaleDateString(dateLocale, { month: "short", timeZone: tz });
+  const day = (d: Date) => d.toLocaleDateString(dateLocale, { day: "numeric", timeZone: tz });
+  const ym = (d: Date) => d.toLocaleDateString("en-CA", { year: "numeric", month: "2-digit", timeZone: tz });
+  if (ym(first) === ym(last)) {
+    return `${mo(first)} ${day(first)} – ${day(last)}`;
   }
-  return `${mo(first)} ${first.getDate()} – ${mo(last)} ${last.getDate()}`;
+  return `${mo(first)} ${day(first)} – ${mo(last)} ${day(last)}`;
 }
 
 export interface NextRaceHeroCardProps {
