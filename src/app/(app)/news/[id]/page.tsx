@@ -98,8 +98,12 @@ function formatDate(date: Date | null, locale: string): string {
     day: "numeric",
     month: "long",
     year: "numeric",
-    hour: "2-digit",
+    hour: "numeric",
     minute: "2-digit",
+    hour12: true,
+    // stored instant is UTC; the container runs in UTC, so pin the display zone
+    // like every other time-of-day render in the app (e.g. RaceCard.tsx:31)
+    timeZone: "Europe/Istanbul",
   });
 }
 
