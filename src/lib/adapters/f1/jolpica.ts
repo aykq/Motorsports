@@ -183,27 +183,38 @@ const FETCH_TIMEOUT_MS = 30_000;
 // Paralel çağrılarda aynı URL'e tek HTTP isteği gönderilir
 const inflight = new Map<string, Promise<unknown>>();
 
-async function jolpicaFetch<T>(path: string, schema: z.ZodType<T>): Promise<T> {
-  const url = `${BASE_URL}${path}`;
-
-  let req = inflight.get(url);
-  if (!req) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-    req = fetch(url, {
+// Jolpica rate-limits with 429 and no retry-after. A schedule sync fires several
+// paginated requests near-simultaneously, so an unretried 429 on one page used to
+// silently truncate results. Retry 429/503 a couple of times with backoff.
+async function jolpicaRequest(url: string, attempt = 0): Promise<unknown> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, {
       headers: {
         Accept: "application/json",
         "User-Agent": "MotorsportsHub/1.0 (personal project)",
       },
       signal: controller.signal,
       next: { revalidate: 0 },
-    }).then(async (res) => {
-      if (!res.ok) throw new Error(`Jolpica error ${res.status}: ${path}`);
-      return res.json();
-    }).finally(() => {
-      clearTimeout(timer);
-      inflight.delete(url);
     });
+    if ((res.status === 429 || res.status === 503) && attempt < 2) {
+      await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+      return jolpicaRequest(url, attempt + 1);
+    }
+    if (!res.ok) throw new Error(`Jolpica error ${res.status}: ${url}`);
+    return res.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function jolpicaFetch<T>(path: string, schema: z.ZodType<T>): Promise<T> {
+  const url = `${BASE_URL}${path}`;
+
+  let req = inflight.get(url);
+  if (!req) {
+    req = jolpicaRequest(url).finally(() => inflight.delete(url));
     inflight.set(url, req);
   }
 

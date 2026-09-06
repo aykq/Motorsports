@@ -1,7 +1,7 @@
 import { cache } from "react";
 import type { Race, RaceDetail, RaceResult, PracticeDriverResult } from "@/types/series";
 import { getCachedRaceDetail, getRaceDetailRaw, setCachedRaceDetail } from "@/lib/cache";
-import { mergeFetchedRaceDetail } from "@/lib/race-detail-merge";
+import { mergeFetchedRaceDetail, reconcilePracticeDriverIds } from "@/lib/race-detail-merge";
 import {
   jolpicaFetchPitStops,
   jolpicaFetchRoundDriverStandings,
@@ -148,6 +148,33 @@ export async function syncRaceDetails(
           !missingStintsData &&
           !missingSprintResults
         ) {
+          // Practice driver ids are derived from race.results by car number and
+          // written once; if race.results ids were later corrected, re-derive.
+          const numberToDriverId = buildNumberToDriverIdMap([
+            ...(race.results ?? []),
+            ...(rawDetail.sprintResults ?? []),
+          ]);
+          if (numberToDriverId.size > 0) {
+            const cur1 = rawDetail.practice1Results ?? [];
+            const cur2 = rawDetail.practice2Results ?? [];
+            const cur3 = rawDetail.practice3Results ?? [];
+            const p1 = reconcilePracticeDriverIds(cur1, numberToDriverId);
+            const p2 = reconcilePracticeDriverIds(cur2, numberToDriverId);
+            const p3 = reconcilePracticeDriverIds(cur3, numberToDriverId);
+            if (p1 !== cur1 || p2 !== cur2 || p3 !== cur3) {
+              await setCachedRaceDetail(slug, season, race.round, {
+                ...rawDetail,
+                practice1Results: p1,
+                practice2Results: p2,
+                practice3Results: p3,
+              });
+              synced++;
+              rawDetail.practice1Results = p1;
+              rawDetail.practice2Results = p2;
+              rawDetail.practice3Results = p3;
+            }
+          }
+
           const needsTr =
             rawDetail.raceControl.length > 0 &&
             (!rawDetail.raceControlTr?.length ||
