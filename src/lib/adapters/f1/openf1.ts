@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { TireStint, TireCompound, RaceControlEvent, PracticeDriverResult } from "@/types/series";
 import { logError } from "@/lib/error-log";
+import { makeRequestSpacer } from "@/lib/request-spacer";
 
 const BASE_URL = "https://api.openf1.org/v1";
 
@@ -61,7 +62,15 @@ export type OpenF1Driver = z.infer<typeof OpenF1DriverSchema>;
 
 const FETCH_TIMEOUT_MS = 15_000;
 
+// OpenF1 rejects sustained bursts with 429. A backfill run touches every race
+// and fires ~8 calls each, so without spacing it hits ~100 requests in a second
+// and every one fails. Space all OpenF1 traffic to ~2.5/s.
+const spaceOpenF1Request = makeRequestSpacer(400);
+
 async function openF1Fetch<T>(path: string, schema: z.ZodType<T>): Promise<T> {
+  const wait = spaceOpenF1Request();
+  if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
@@ -80,14 +89,10 @@ async function openF1Fetch<T>(path: string, schema: z.ZodType<T>): Promise<T> {
   }
 }
 
-// /sessions?year= yarış hafta sonunda birden çok yerden çağrılıyor
-// (findOpenF1AllSessionKeys, openf1IsF1SessionFinished, weather) ve her çağrı
-// cache'siz — bu kendi kendine 429/401 yaratıyordu. Process içi kısa TTL'li
-// memoize: aynı sezon için ard arda gelen çağrılar tek isteği paylaşır.
 const SESSIONS_TTL_MS = 2 * 60 * 1000;
 const sessionsCache = new Map<number, { at: number; data: OpenF1Session[] }>();
 
-/** Test-only: memoize edilmiş /sessions kayıtlarını temizler. */
+/** Test-only: reset the memoized /sessions responses. */
 export function __clearOpenF1SessionCache(): void {
   sessionsCache.clear();
 }
@@ -148,9 +153,8 @@ function normalizeCompound(raw: string | null | undefined): TireCompound {
   return "UNKNOWN";
 }
 
-// Fetch hatasında BİLEREK throw eder (eskiden [] dönüyordu) — çağıran taraf
-// (Promise.allSettled) "boş sonuç" ile "fetch patladı"yı ayırt edebilsin diye.
-// Boş bir dizi artık yalnızca gerçekten stint verisi olmadığı anlamına gelir.
+// Throws on fetch failure — callers rely on empty vs. thrown to tell "no data"
+// from "fetch failed" (see race-detail-merge).
 export async function fetchOpenF1Stints(sessionKey: number): Promise<TireStint[]> {
   const raw = await openF1Fetch(
     `/stints?session_key=${sessionKey}`,
@@ -226,10 +230,7 @@ function lapTimeToMs(timeStr: string): number {
   return (parseInt(minStr) * 60 + parseFloat(secStr)) * 1000;
 }
 
-// Fetch hatasında BİLEREK throw eder (eskiden [] dönüyordu). Boş dizi artık
-// yalnızca "session'da geçerli tur yok" demek; 429/401/timeout çağırana
-// (Promise.allSettled → status: "rejected") yansır ve practiceNFetched=false
-// olur, böylece mevcut dolu veri ezilmez. Bkz. race-detail-merge.ts
+// Throws on fetch failure — see fetchOpenF1Stints.
 export async function fetchOpenF1PracticeResults(
   sessionKey: number
 ): Promise<PracticeDriverResult[]> {

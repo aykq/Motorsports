@@ -81,12 +81,8 @@ export function isActiveRaceWeekend(race: Race): boolean {
 // cron henüz yetişmediyse kullanıcı geçici olarak eksik/boş veri görür, bir sonraki
 // cron cycle'ında (veya syncPendingRaceControl'ün kısa aralığında) dolar.
 //
-// React cache() — SADECE tek istek içi memoize (generateMetadata + sayfa gövdesi
-// aynı round'u okuyabiliyor). unstable_cache DEĞİL: o, revalidate penceresi
-// dolduğunda senkron doldurma yapmadan "stale" işaretliyor (SWR) — düşük trafikli
-// bir sayfada cron veriyi güncelledikten sonra ilk ziyaretçi saatlerce eski
-// snapshot'ı yiyordu, F5 taze gösteriyordu. Aynı hata haberde `e6d3b37` ile
-// çözülmüştü; burada da aynı çözüm. Sayfa zaten auth() yüzünden dynamic.
+// Must stay React cache() (per-request only), not unstable_cache: its SWR
+// revalidate serves a stale entry to the first visitor after a quiet gap.
 export const getRaceDetail = cache(
   async (slug: string, season: number, round: number): Promise<RaceDetail> => {
     const cached = await getRaceDetailRaw(slug, season, round);
@@ -104,13 +100,9 @@ export async function syncRaceDetails(
   const errors: string[] = [];
   let synced = 0;
 
-  // Mevcut sezonun TÜM tamamlanmış (+ live) yarışları. Eskiden Pass 1 eski
-  // yarışlarda sadece çeviri backfill yapardı, Pass 2 sadece son 14 günü tam
-  // yenilerdi — 14 günden eski bir yarışta seans verisi (429/401 yüzünden)
-  // eksik kalırsa bir daha asla toparlanmıyordu. Artık tek geçiş: her yarış
-  // kontrol edilir, tam verisi olan hızlı yolda tek DB okumasıyla atlanır,
-  // yalnızca gerçekten eksik olan OpenF1'e gider (ve *Fetched bayrağı set
-  // edilince bir daha gitmez).
+  // Whole current season, not a 14-day window. Fully-populated races take the
+  // fast path below (one DB read, no API); only real gaps hit OpenF1, and the
+  // *Fetched flags stop them retrying once healed.
   for (const race of races.filter((r) => r.status === "completed" || r.status === "live")) {
     try {
       const isCompleted = race.status === "completed";
@@ -118,9 +110,8 @@ export async function syncRaceDetails(
       // Fetch existing raw detail upfront — used for translation check and preserving completion flags
       const rawDetail = await getRaceDetailRaw(slug, season, race.round);
 
-      // Bir practice session'ı "eksik" sayılır: seans yapıldı, sonucu boş VE
-      // fetch bayrağı set değil (yani başarılı bir çekim hiç olmadı). Dolu
-      // veriyi veya "fetched=true, 0 sonuç" durumunu tekrar çekmeye çalışmaz.
+      // Missing = the session happened, its result is empty, and no fetch ever
+      // succeeded (flag unset). A genuinely empty "fetched" session is left alone.
       const practiceMissing = (
         type: "practice1" | "practice2" | "practice3",
         results: PracticeDriverResult[] | undefined,
@@ -200,10 +191,8 @@ export async function syncRaceDetails(
         if (translated.length) raceControlTr = translated;
       }
 
-      // mergeFetchedRaceDetail: fresh fetch'te başarısız olan OpenF1 alanları
-      // (429/401 → boş dizi) mevcut dolu veriyi EZMESİN. Bkz. race-detail-merge.ts
-      // Preserve completion flags set by active session sync — fresh fetch only sets
-      // qualifyingComplete and sprintComplete; the rest come from syncActiveSessionData
+      // mergeFetchedRaceDetail guards OpenF1 arrays; a failed refetch must not
+      // wipe them. Completion flags below come from syncActiveSessionData.
       await setCachedRaceDetail(slug, season, race.round, {
         ...mergeFetchedRaceDetail(rawDetail, fresh),
         raceControlTr,
@@ -272,7 +261,7 @@ export async function syncActiveSessionData(
         const sessionKey = sessionKeyMap.get(type);
         if (!sessionKey) continue;
 
-        // Buraya ulaştıysak fetch başarılı (hata olsa throw ederdi) → *Fetched=true.
+        // Reaching here means the fetch succeeded (it throws otherwise).
         const results = attachDriverIds(await fetchOpenF1PracticeResults(sessionKey), numberToDriverId);
         if (type === "practice1") { updated.practice1Results = results; updated.practice1Fetched = true; if (results.length >= 15) updated.practice1Complete = true; }
         if (type === "practice2") { updated.practice2Results = results; updated.practice2Fetched = true; if (results.length >= 15) updated.practice2Complete = true; }
@@ -309,8 +298,7 @@ export async function syncActiveSessionData(
         if (!updated.sprintComplete) {
           const sessionKey = sessionKeyMap.get("sprint");
           if (sessionKey) {
-            // allSettled + fulfilled kontrolü: bir OpenF1 çağrısı patlarsa (fetch*
-            // artık throw ediyor) diğerinin sonucunu ve mevcut veriyi kaybetme.
+            // allSettled: one call failing must not drop the other's result.
             const [stintsR, rcR] = await Promise.allSettled([
               fetchOpenF1Stints(sessionKey),
               fetchOpenF1RaceControl(sessionKey),
@@ -352,9 +340,7 @@ export async function syncActiveSessionData(
             }
           }
 
-          // mergeFetchedRaceDetail: yarış biterken yapılan bu tek fetch'te OpenF1
-          // practice/stint çağrıları 429 yerse, hafta sonu boyunca doldurulmuş
-          // FP1/FP2/FP3 sonuçlarını EZME. (Monza R13'te tam bu oldu.)
+          // Guard the weekend's practice/stint data against a failed fetch here.
           Object.assign(updated, mergeFetchedRaceDetail(updated, fresh), { raceControlTr });
           updated.raceDataComplete = true;
           console.log(`[cron] session sync: ${slug} R${race.round} race COMPLETE`);
@@ -566,9 +552,8 @@ async function fetchF1RaceDetail(
     practice1Results: attachDriverIds(fp1Result.status === "fulfilled" ? fp1Result.value : [], numberToDriverId),
     practice2Results: attachDriverIds(fp2Result.status === "fulfilled" ? fp2Result.value : [], numberToDriverId),
     practice3Results: attachDriverIds(fp3Result.status === "fulfilled" ? fp3Result.value : [], numberToDriverId),
-    // *Fetched: OpenF1 çağrısı GERÇEKTEN çalıştı mı (key bulundu + Promise fulfilled).
-    // Boş sonuç ≠ başarısız. Bir hata (429/401) fpNResult'ı "rejected" yapar → false.
-    // Bu bayraklar mergeFetchedRaceDetail'in dolu veriyi ezmesini engellemesini sağlar.
+    // *Fetched is true only when the OpenF1 call actually ran; an empty result
+    // then means "no data", a rejection means "failed" (see race-detail-merge).
     practice1Fetched: fp1Key !== null && fp1Result.status === "fulfilled",
     practice2Fetched: fp2Key !== null && fp2Result.status === "fulfilled",
     practice3Fetched: fp3Key !== null && fp3Result.status === "fulfilled",
