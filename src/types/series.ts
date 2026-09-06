@@ -173,8 +173,7 @@ export interface RaceDetail {
   practice3Results?: PracticeDriverResult[];
   raceControlFetched?: boolean;
   stintsFetched?: boolean;
-  // OpenF1 practice fetch'i gerçekten başarılı oldu mu (boş sonuç ≠ başarısız).
-  // raceControlFetched ile aynı semantik — bkz. race-detail-merge.ts
+  // Whether the OpenF1 practice fetch actually ran (empty result != failure).
   practice1Fetched?: boolean;
   practice2Fetched?: boolean;
   practice3Fetched?: boolean;

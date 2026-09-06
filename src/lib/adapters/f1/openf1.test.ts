@@ -54,11 +54,12 @@ describe("fetchOpenF1Sessions", () => {
   });
 
   it("re-fetches after the TTL expires", async () => {
-    vi.useFakeTimers();
+    let nowMock = 1_000_000;
+    vi.spyOn(Date, "now").mockImplementation(() => nowMock);
     const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async () => jsonResponse([SESSION]));
 
     await fetchOpenF1Sessions(2026);
-    vi.advanceTimersByTime(3 * 60 * 1000);
+    nowMock += 3 * 60 * 1000;
     await fetchOpenF1Sessions(2026);
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -68,12 +69,12 @@ describe("fetchOpenF1Sessions", () => {
     const fetchMock = vi
       .spyOn(globalThis, "fetch")
       .mockResolvedValueOnce(new Response("nope", { status: 429 }))
-      .mockResolvedValueOnce(jsonResponse([SESSION]));
+      .mockImplementation(async () => jsonResponse([SESSION]));
 
-    await expect(fetchOpenF1Sessions(2026)).rejects.toThrow();
+    await expect(fetchOpenF1Sessions(2026)).rejects.toThrow(/429/);
     const ok = await fetchOpenF1Sessions(2026);
 
-    expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(ok).toHaveLength(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });

@@ -35,8 +35,7 @@ cron.schedule(
         logError({ source: "cron.ts/full-sync", severity: "error", message: `${slug}: ${err instanceof Error ? err.message : String(err)}` });
       }
     }
-    // F1 race details backfill — mevcut sezonun tüm tamamlanmış yarışları
-    // (eksik seans verisi olanlar onarılır; tam olanlar hızlı yolda atlanır)
+    // F1 race details backfill — whole current season
     try {
       const { races } = await getCachedSchedule("f1", SEASON);
       const recentCompleted = races.filter((r) => r.status === "completed");

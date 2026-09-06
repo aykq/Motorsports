@@ -1,14 +1,9 @@
 const CACHE_NAME = "motorsports-hub-v3";
 
-// Cache'lenmiş bir sayfa navigasyonu, ağ hatası halinde en fazla bu kadar süre
-// geri-servis edilir. Öncesi: yaş sınırı yoktu — yarış hafta sonunda açılan bir
-// sayfa (ör. countdown "Started!" gösterirken) mobilde ağ takıldığında saatlerce
-// bayat kalıyordu, ancak deploy'da (CACHE_NAME değişince) temizleniyordu.
+// Cap how long the offline fallback may serve a cached page, so a race-weekend
+// snapshot can't linger for hours on a flaky connection.
 const NAV_CACHE_MAX_AGE_MS = 10 * 60 * 1000;
 const CACHED_AT_HEADER = "x-sw-cached-at";
-// "/" precache edilmiyor: kimliksiz istekte login'e 307 dönüyor (işe yaramaz) ve
-// network-first zaten canlı içeriği veriyor. Navigasyon cache'i tamamen çalışma
-// anında, yaş damgasıyla doluyor.
 const PRECACHE_ASSETS = ["/manifest.json"];
 
 self.addEventListener("install", (event) => {
@@ -58,7 +53,7 @@ self.addEventListener("fetch", (event) => {
     fetch(request)
       .then((response) => {
         if (response.ok) {
-          // Yanıtı, ne zaman cache'lendiğini işaretleyen bir header'la sakla.
+          // Re-store with a timestamp header so the offline fallback can age it out.
           response
             .clone()
             .blob()
@@ -85,11 +80,9 @@ self.addEventListener("fetch", (event) => {
         if (cached) {
           const cachedAt = Number(cached.headers.get(CACHED_AT_HEADER)) || 0;
           if (Date.now() - cachedAt < NAV_CACHE_MAX_AGE_MS) return cached;
-          // Fazla bayat — sil, tarayıcının kendi çevrimdışı hatasını göster.
           caches.open(CACHE_NAME).then((cache) => cache.delete(request)).catch(() => {});
         }
-        // Cache'lenmemiş / bayat sayfaya ağ hatasıyla ulaşılamazsa "/" a sessizce
-        // düşme — tarayıcının kendi çevrimdışı hata sayfasını göstermesine izin ver.
+        // Let the browser show its own offline page rather than a stale/other route.
         throw new Error("network-and-cache-miss");
       })
   );
