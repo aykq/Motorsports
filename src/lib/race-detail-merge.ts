@@ -1,4 +1,22 @@
-import type { RaceDetail } from "@/types/series";
+import type { PracticeDriverResult, RaceDetail } from "@/types/series";
+
+// Practice driver ids are a projection of race.results (mapped by car number).
+// When race.results ids get corrected, re-derive these; only rewrite an id that
+// has a canonical match, never blank one out.
+export function reconcilePracticeDriverIds(
+  results: PracticeDriverResult[],
+  numberToDriverId: Map<number, string>
+): PracticeDriverResult[] {
+  let changed = false;
+  const out = results.map((r) => {
+    if (r.driverNumber == null) return r;
+    const canonical = numberToDriverId.get(r.driverNumber);
+    if (!canonical || canonical === r.driverId) return r;
+    changed = true;
+    return { ...r, driverId: canonical };
+  });
+  return changed ? out : results;
+}
 
 // [field, fetched-flag] pairs. An empty array is only trusted when the flag is
 // set; otherwise it means the OpenF1 fetch failed and the stored value wins.

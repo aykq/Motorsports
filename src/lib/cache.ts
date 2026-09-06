@@ -2,9 +2,10 @@ import { cache } from "react";
 import { unstable_cache } from "next/cache";
 import { db } from "@/db";
 import { cachedRaces, cachedStandings, cachedDrivers, cachedRaceDetails, cachedNews, cachedCircuits } from "@/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, inArray, sql } from "drizzle-orm";
 import type { Race, RaceWithYear, Standing, Driver, StandingType, RaceDetail, ScrapedCircuitData } from "@/types/series";
 import { getF1DriverImage } from "@/lib/adapters/f1/driver-images";
+import { keepFullerResults } from "@/lib/adapters/f1/results-completeness";
 
 function resolveDriverImage(slug: string, driver: Driver): string | undefined {
   if (slug === "f1") return getF1DriverImage(driver.id) ?? driver.image;
@@ -114,10 +115,23 @@ export async function setCachedSchedule(
   races: Race[]
 ): Promise<void> {
   if (!races.length) return;
+
+  // A partial results fetch must not overwrite a completed race that already has
+  // more results stored.
+  const existingRows = await db.query.cachedRaces.findMany({
+    where: and(
+      eq(cachedRaces.seriesSlug, slug),
+      eq(cachedRaces.season, season),
+      inArray(cachedRaces.round, races.map((r) => r.round))
+    ),
+  });
+  const existingByRound = new Map(existingRows.map((row) => [row.round, row.data as Race]));
+  const guarded = races.map((r) => keepFullerResults(r, existingByRound.get(r.round)));
+
   await db
     .insert(cachedRaces)
     .values(
-      races.map((r) => ({
+      guarded.map((r) => ({
         seriesSlug: slug,
         season,
         round: r.round,
