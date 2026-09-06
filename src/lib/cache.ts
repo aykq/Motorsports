@@ -78,13 +78,14 @@ export function recomputeRaceStatus(race: Race, seriesSlug?: string): Race {
 
 // ─── Schedule ─────────────────────────────────────────────────────────────────
 
-// unstable_cache (cross-request, Next Data Cache), not React's cache() (per-request
-// only) — the schedule is cron-fed (session-sync every 2min at the fastest), so a
-// short cross-request window avoids re-querying Postgres on every single page view
-// while still tracking cron closely. Also read internally by sync.ts/cron.ts for
-// decisions like "did this race disappear from the API" — a few seconds of staleness
-// there is harmless, those self-correct on the next cron pass regardless.
-export const getCachedSchedule = unstable_cache(
+// React cache() — per-request memoize only, NOT unstable_cache. unstable_cache'in
+// revalidate penceresi dolduğunda senkron doldurma yapmadan "stale" işaretlemesi
+// (SWR), düşük trafikli bir sayfada şu soruna yol açıyordu: yarış bitip cron
+// cached_race'i güncelledikten sonra ana sayfa/hub'daki "sıradaki yarış" widget'ı
+// saatlerce eski snapshot'ı gösteriyor ("Started!" takılması), F5 taze gösteriyordu.
+// Aynı SWR hatası haberde `e6d3b37` ile kaldırılmıştı. Sayfa zaten auth() yüzünden
+// dynamic; cross-request cache pratikte sadece bayatlık getiriyordu.
+export const getCachedSchedule = cache(
   async (
     slug: string,
     season: number
@@ -96,9 +97,7 @@ export const getCachedSchedule = unstable_cache(
     if (!rows.length) return { races: [], fresh: false };
     const fresh = isFresh(rows[rows.length - 1].fetchedAt);
     return { races: rows.map((r) => recomputeRaceStatus(r.data as Race, r.seriesSlug)), fresh };
-  },
-  ["schedule"],
-  { revalidate: 60 }
+  }
 );
 
 // Backfill edilen geçmiş sezonları mevcut yılla birlikte döner. Sync/cron her
