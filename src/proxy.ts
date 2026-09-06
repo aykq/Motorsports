@@ -61,5 +61,9 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|manifest.json|icons|sw.js).*)"],
+  // Skip API, Next internals, and anything with a file extension so public/
+  // assets (driver photos etc.) stay reachable without an auth redirect —
+  // otherwise the image optimizer can't fetch them. Kept in sync with
+  // MIDDLEWARE_MATCHER (see middleware-matcher.test.ts); Next needs a literal here.
+  matcher: ["/((?!api|_next/static|_next/image|.*\\..*).*)"],
 };
