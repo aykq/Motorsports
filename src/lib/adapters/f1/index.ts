@@ -2,6 +2,7 @@ import type { SeriesAdapter, Race, Standing, Driver, Circuit, StandingType } fro
 import {
   jolpicaFetchSchedule,
   jolpicaFetchResults,
+  jolpicaFetchRaceResults,
   jolpicaFetchDriverStandings,
   jolpicaFetchTeamStandings,
   jolpicaFetchDrivers,
@@ -11,6 +12,7 @@ import { fetchLatestOpenF1Drivers } from "./openf1";
 import { getF1DriverImage } from "./driver-images";
 import { scrapeF1RaceResults } from "./motorsport-com-scraper";
 import { normalizeScrapedResults } from "./normalize-scraped-results";
+import { raceResultsLookIncomplete } from "./results-completeness";
 
 async function mergeDriverHeadshots(
   drivers: Driver[],
@@ -50,10 +52,22 @@ export const f1Adapter: SeriesAdapter = {
     ]);
 
     const now = Date.now();
+    // Only backfill individual rounds when the bulk fetch partly succeeded — a
+    // total Jolpica outage shouldn't fan out into a request per race.
+    const bulkPartlyWorked = resultsMap.size > 0;
     return Promise.all(
       races.map(async (race) => {
-        const jolpicaResults = resultsMap.get(race.round);
-        if (jolpicaResults?.length) return { ...race, results: jolpicaResults };
+        let jolpicaResults = resultsMap.get(race.round) ?? [];
+
+        // The bulk paginated results fetch drops rows when a page fails; a
+        // completed race with a near-empty result set means that, not a short
+        // race. Backfill from the single-round endpoint, which doesn't paginate.
+        if (bulkPartlyWorked && raceResultsLookIncomplete(race, jolpicaResults.length)) {
+          const single = await jolpicaFetchRaceResults(season, race.round).catch(() => []);
+          if (single.length > jolpicaResults.length) jolpicaResults = single;
+        }
+
+        if (jolpicaResults.length) return { ...race, results: jolpicaResults };
 
         // Jolpica sonuçları yayınlamadan önce (genellikle birkaç saat) motorsport.com
         // kullan — sadece son 48 saatte bitmiş, iptal olmayan yarışlar için.

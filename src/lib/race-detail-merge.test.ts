@@ -1,6 +1,41 @@
 import { describe, it, expect } from "vitest";
-import { mergeFetchedRaceDetail } from "./race-detail-merge";
+import { mergeFetchedRaceDetail, reconcilePracticeDriverIds } from "./race-detail-merge";
 import type { RaceDetail, PracticeDriverResult } from "@/types/series";
+
+describe("reconcilePracticeDriverIds", () => {
+  const map = new Map<number, string>([
+    [63, "russell"],
+    [1, "max_verstappen"],
+  ]);
+
+  it("rewrites a stale driver id to the canonical one by number", () => {
+    const input: PracticeDriverResult[] = [
+      { position: 1, driverNumber: 63, driverId: "george-russell", driverName: "G. Russell", lapTime: "1:19" },
+    ];
+    expect(reconcilePracticeDriverIds(input, map)[0].driverId).toBe("russell");
+  });
+
+  it("returns the same array reference when nothing needs changing", () => {
+    const input: PracticeDriverResult[] = [
+      { position: 1, driverNumber: 63, driverId: "russell", driverName: "George Russell", lapTime: "1:19" },
+    ];
+    expect(reconcilePracticeDriverIds(input, map)).toBe(input);
+  });
+
+  it("never blanks a driver id when the number is not in the map", () => {
+    const input: PracticeDriverResult[] = [
+      { position: 1, driverNumber: 99, driverId: "someone", driverName: "S", lapTime: "1:19" },
+    ];
+    expect(reconcilePracticeDriverIds(input, map)[0].driverId).toBe("someone");
+  });
+
+  it("leaves a result with no driver number alone", () => {
+    const input: PracticeDriverResult[] = [
+      { position: 1, driverId: "george-russell", driverName: "G. Russell", lapTime: "1:19" },
+    ];
+    expect(reconcilePracticeDriverIds(input, map)).toBe(input);
+  });
+});
 
 function practice(n: number): PracticeDriverResult[] {
   return Array.from({ length: n }, (_, i) => ({
