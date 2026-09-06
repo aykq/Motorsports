@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { Race, Standing, Driver, Circuit, PitStop, QualifyingDriverResult } from "@/types/series";
 import { getCancelledRaceOverrides } from "./cancelled-races";
+import { isLastResultsPage, RESULTS_PAGE_SIZE, MAX_RESULT_PAGES } from "./jolpica-paging";
 
 const BASE_URL = "https://api.jolpi.ca/ergast/f1";
 
@@ -282,21 +283,19 @@ export async function jolpicaFetchSchedule(season: number): Promise<Race[]> {
 /** Sadece hangi round'ların sonucu olduğunu çeker; tam result verisi değil. */
 async function jolpicaFetchResultRounds(season: number): Promise<Set<number> | null> {
   const rounds = new Set<number>();
-  const PAGE = 100;
-  let offset = 0;
 
   try {
-    while (true) {
+    for (let page = 0; page < MAX_RESULT_PAGES; page++) {
       const data = await jolpicaFetch(
-        `/${season}/results.json?limit=${PAGE}&offset=${offset}`,
+        `/${season}/results.json?limit=${RESULTS_PAGE_SIZE}&offset=${page * RESULTS_PAGE_SIZE}`,
         AllResultsResponseSchema
       );
+      let rowsOnPage = 0;
       for (const race of data.MRData.RaceTable.Races) {
         rounds.add(parseInt(race.round));
+        rowsOnPage += race.Results.length;
       }
-      const total = parseInt(data.MRData.total);
-      offset += PAGE;
-      if (offset >= total) break;
+      if (isLastResultsPage(rowsOnPage)) break;
     }
   } catch {
     // API hatası → null döndür; detectStatus "cancelled" kararı vermez
@@ -310,17 +309,17 @@ export async function jolpicaFetchResults(
   season: number
 ): Promise<Map<number, import("@/types/series").RaceResult[]>> {
   const map = new Map<number, import("@/types/series").RaceResult[]>();
-  const PAGE = 100;
-  let offset = 0;
 
   try {
-    while (true) {
+    for (let page = 0; page < MAX_RESULT_PAGES; page++) {
       const data = await jolpicaFetch(
-        `/${season}/results.json?limit=${PAGE}&offset=${offset}`,
+        `/${season}/results.json?limit=${RESULTS_PAGE_SIZE}&offset=${page * RESULTS_PAGE_SIZE}`,
         AllResultsResponseSchema
       );
 
+      let rowsOnPage = 0;
       for (const race of data.MRData.RaceTable.Races) {
+        rowsOnPage += race.Results.length;
         const round = parseInt(race.round);
         const existing = map.get(round) ?? [];
         map.set(round, [
@@ -344,9 +343,7 @@ export async function jolpicaFetchResults(
         ]);
       }
 
-      const total = parseInt(data.MRData.total);
-      offset += PAGE;
-      if (offset >= total) break;
+      if (isLastResultsPage(rowsOnPage)) break;
     }
   } catch {
     // map'te ne kadar veri toplanmışsa onu döndür
