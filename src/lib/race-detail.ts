@@ -1,6 +1,7 @@
-import { unstable_cache } from "next/cache";
+import { cache } from "react";
 import type { Race, RaceDetail, RaceResult, PracticeDriverResult } from "@/types/series";
 import { getCachedRaceDetail, getRaceDetailRaw, setCachedRaceDetail } from "@/lib/cache";
+import { mergeFetchedRaceDetail } from "@/lib/race-detail-merge";
 import {
   jolpicaFetchPitStops,
   jolpicaFetchRoundDriverStandings,
@@ -80,16 +81,17 @@ export function isActiveRaceWeekend(race: Race): boolean {
 // cron henüz yetişmediyse kullanıcı geçici olarak eksik/boş veri görür, bir sonraki
 // cron cycle'ında (veya syncPendingRaceControl'ün kısa aralığında) dolar.
 //
-// unstable_cache (istekler arası kalıcı) — session-sync'in 2 dakikalık ritmine
-// yakın bir pencere seçildi, art arda birkaç yarış sayfası arasında gezinme artık
-// Postgres'e her seferinde gitmiyor.
-export const getRaceDetail = unstable_cache(
+// React cache() — SADECE tek istek içi memoize (generateMetadata + sayfa gövdesi
+// aynı round'u okuyabiliyor). unstable_cache DEĞİL: o, revalidate penceresi
+// dolduğunda senkron doldurma yapmadan "stale" işaretliyor (SWR) — düşük trafikli
+// bir sayfada cron veriyi güncelledikten sonra ilk ziyaretçi saatlerce eski
+// snapshot'ı yiyordu, F5 taze gösteriyordu. Aynı hata haberde `e6d3b37` ile
+// çözülmüştü; burada da aynı çözüm. Sayfa zaten auth() yüzünden dynamic.
+export const getRaceDetail = cache(
   async (slug: string, season: number, round: number): Promise<RaceDetail> => {
     const cached = await getRaceDetailRaw(slug, season, round);
     return cached ?? EMPTY_DETAIL;
-  },
-  ["race-detail"],
-  { revalidate: 60 }
+  }
 );
 
 export async function syncRaceDetails(
@@ -102,85 +104,41 @@ export async function syncRaceDetails(
   const errors: string[] = [];
   let synced = 0;
 
-  const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-
-  const completedRaces = races.filter((r) => r.status === "completed" || r.status === "live");
-
-  // Pass 1 — eski yarışlar: sadece DB'den çeviri backfill (fresh API fetch yok)
-  for (const race of completedRaces) {
-    const isRecent = new Date(race.date).getTime() > sevenDaysAgo;
-    if (isRecent || race.status === "live") continue;
-
-    try {
-      const raw = await getRaceDetailRaw(slug, season, race.round);
-      if (!raw) continue;
-
-      // raceControlFetched !== true → önceki fetch OpenF1'den veri alamadı, tekrar dene
-      if (!raw.raceControlFetched) {
-        const fresh = await fetchF1RaceDetail(season, race.round, race, true);
-        if (fresh.raceControl.length > 0) {
-          await new Promise((r) => setTimeout(r, 2000));
-          const translated = await translateRaceControlMessages(
-            fresh.raceControl.map((e) => e.message)
-          );
-          await setCachedRaceDetail(slug, season, race.round, {
-            ...raw,
-            ...fresh,
-            raceControlTr: translated,
-          });
-          synced++;
-        }
-        continue;
-      }
-
-      const needsTr =
-        raw.raceControl.length > 0 &&
-        (!raw.raceControlTr?.length ||
-          raw.raceControlTr[0] === raw.raceControl[0]?.message);
-      if (!needsTr) continue;
-
-      await new Promise((r) => setTimeout(r, 2000));
-      const translated = await translateRaceControlMessages(
-        raw.raceControl.map((e) => e.message)
-      );
-      if (translated.length) {
-        await setCachedRaceDetail(slug, season, race.round, {
-          ...raw,
-          raceControlTr: translated,
-        });
-        synced++;
-      }
-    } catch (err) {
-      errors.push(`round ${race.round} (backfill): ${err instanceof Error ? err.message : String(err)}`);
-    }
-  }
-
-  // Pass 2 — son 14 gün + live: tam veri yenileme
-  const fourteenDaysAgo = Date.now() - 14 * 24 * 60 * 60 * 1000;
-  const recentRaces = completedRaces.filter(
-    (r) => r.status === "live" || new Date(r.date).getTime() > fourteenDaysAgo
-  );
-
-  for (const race of recentRaces) {
+  // Mevcut sezonun TÜM tamamlanmış (+ live) yarışları. Eskiden Pass 1 eski
+  // yarışlarda sadece çeviri backfill yapardı, Pass 2 sadece son 14 günü tam
+  // yenilerdi — 14 günden eski bir yarışta seans verisi (429/401 yüzünden)
+  // eksik kalırsa bir daha asla toparlanmıyordu. Artık tek geçiş: her yarış
+  // kontrol edilir, tam verisi olan hızlı yolda tek DB okumasıyla atlanır,
+  // yalnızca gerçekten eksik olan OpenF1'e gider (ve *Fetched bayrağı set
+  // edilince bir daha gitmez).
+  for (const race of races.filter((r) => r.status === "completed" || r.status === "live")) {
     try {
       const isCompleted = race.status === "completed";
 
       // Fetch existing raw detail upfront — used for translation check and preserving completion flags
       const rawDetail = await getRaceDetailRaw(slug, season, race.round);
 
-      // Yarışta olan bir practice session'ın sonucu boşsa → hiç çekilmemiş → tam yenilemeye düş
+      // Bir practice session'ı "eksik" sayılır: seans yapıldı, sonucu boş VE
+      // fetch bayrağı set değil (yani başarılı bir çekim hiç olmadı). Dolu
+      // veriyi veya "fetched=true, 0 sonuç" durumunu tekrar çekmeye çalışmaz.
+      const practiceMissing = (
+        type: "practice1" | "practice2" | "practice3",
+        results: PracticeDriverResult[] | undefined,
+        fetched: boolean | undefined
+      ) =>
+        race.sessions.some((s) => s.type === type) &&
+        fetched !== true &&
+        (results ?? []).length === 0;
+
       const missingPracticeData =
         isCompleted &&
         rawDetail !== null &&
-        race.sessions.some(
-          (s) =>
-            (s.type === "practice1" && (rawDetail.practice1Results ?? []).length === 0) ||
-            (s.type === "practice2" && (rawDetail.practice2Results ?? []).length === 0) ||
-            (s.type === "practice3" && (rawDetail.practice3Results ?? []).length === 0)
-        );
+        (practiceMissing("practice1", rawDetail.practice1Results, rawDetail.practice1Fetched) ||
+          practiceMissing("practice2", rawDetail.practice2Results, rawDetail.practice2Fetched) ||
+          practiceMissing("practice3", rawDetail.practice3Results, rawDetail.practice3Fetched));
       // Aynı getRaceDetail()'in cacheValid'i gibi: stint ve sprint verisi de "tamamen
       // fetch edildi" sayılmak için ayrıca kontrol edilmeli, sadece practice değil.
-      const missingStintsData = isCompleted && rawDetail !== null && !rawDetail.stintsFetched;
+      const missingStintsData = isCompleted && rawDetail !== null && rawDetail.stintsFetched !== true;
       const hasSprintSession = race.sessions.some((s) => s.type === "sprint");
       const missingSprintResults =
         isCompleted && hasSprintSession && rawDetail !== null && !rawDetail.sprintComplete;
@@ -242,10 +200,12 @@ export async function syncRaceDetails(
         if (translated.length) raceControlTr = translated;
       }
 
+      // mergeFetchedRaceDetail: fresh fetch'te başarısız olan OpenF1 alanları
+      // (429/401 → boş dizi) mevcut dolu veriyi EZMESİN. Bkz. race-detail-merge.ts
       // Preserve completion flags set by active session sync — fresh fetch only sets
       // qualifyingComplete and sprintComplete; the rest come from syncActiveSessionData
       await setCachedRaceDetail(slug, season, race.round, {
-        ...fresh,
+        ...mergeFetchedRaceDetail(rawDetail, fresh),
         raceControlTr,
         qualifyingComplete: fresh.qualifyingComplete ?? rawDetail?.qualifyingComplete,
         sprintQualiComplete: rawDetail?.sprintQualiComplete,
@@ -312,10 +272,11 @@ export async function syncActiveSessionData(
         const sessionKey = sessionKeyMap.get(type);
         if (!sessionKey) continue;
 
+        // Buraya ulaştıysak fetch başarılı (hata olsa throw ederdi) → *Fetched=true.
         const results = attachDriverIds(await fetchOpenF1PracticeResults(sessionKey), numberToDriverId);
-        if (type === "practice1") { updated.practice1Results = results; if (results.length >= 15) updated.practice1Complete = true; }
-        if (type === "practice2") { updated.practice2Results = results; if (results.length >= 15) updated.practice2Complete = true; }
-        if (type === "practice3") { updated.practice3Results = results; if (results.length >= 15) updated.practice3Complete = true; }
+        if (type === "practice1") { updated.practice1Results = results; updated.practice1Fetched = true; if (results.length >= 15) updated.practice1Complete = true; }
+        if (type === "practice2") { updated.practice2Results = results; updated.practice2Fetched = true; if (results.length >= 15) updated.practice2Complete = true; }
+        if (type === "practice3") { updated.practice3Results = results; updated.practice3Fetched = true; if (results.length >= 15) updated.practice3Complete = true; }
         changed = true;
         console.log(`[cron] session sync: ${slug} R${race.round} ${type} (${results.length} drivers, complete: ${results.length >= 15})`);
       }
@@ -348,18 +309,23 @@ export async function syncActiveSessionData(
         if (!updated.sprintComplete) {
           const sessionKey = sessionKeyMap.get("sprint");
           if (sessionKey) {
-            const [stints, raceControl] = await Promise.all([
+            // allSettled + fulfilled kontrolü: bir OpenF1 çağrısı patlarsa (fetch*
+            // artık throw ediyor) diğerinin sonucunu ve mevcut veriyi kaybetme.
+            const [stintsR, rcR] = await Promise.allSettled([
               fetchOpenF1Stints(sessionKey),
               fetchOpenF1RaceControl(sessionKey),
             ]);
-            updated.tireStints = stints;
-            const hasNewEvents = raceControl.length > updated.raceControl.length;
-            updated.raceControl = raceControl;
-            if (hasNewEvents && raceControl.length > 0) {
-              const translated = await translateRaceControlMessages(
-                raceControl.map((e) => e.message)
-              );
-              if (translated.length) updated.raceControlTr = translated;
+            if (stintsR.status === "fulfilled") updated.tireStints = stintsR.value;
+            if (rcR.status === "fulfilled") {
+              const raceControl = rcR.value;
+              const hasNewEvents = raceControl.length > updated.raceControl.length;
+              updated.raceControl = raceControl;
+              if (hasNewEvents && raceControl.length > 0) {
+                const translated = await translateRaceControlMessages(
+                  raceControl.map((e) => e.message)
+                );
+                if (translated.length) updated.raceControlTr = translated;
+              }
             }
           }
         }
@@ -386,24 +352,30 @@ export async function syncActiveSessionData(
             }
           }
 
-          Object.assign(updated, { ...fresh, raceControlTr });
+          // mergeFetchedRaceDetail: yarış biterken yapılan bu tek fetch'te OpenF1
+          // practice/stint çağrıları 429 yerse, hafta sonu boyunca doldurulmuş
+          // FP1/FP2/FP3 sonuçlarını EZME. (Monza R13'te tam bu oldu.)
+          Object.assign(updated, mergeFetchedRaceDetail(updated, fresh), { raceControlTr });
           updated.raceDataComplete = true;
           console.log(`[cron] session sync: ${slug} R${race.round} race COMPLETE`);
         } else {
           const sessionKey = sessionKeyMap.get("race");
           if (sessionKey) {
-            const [stints, raceControl] = await Promise.all([
+            const [stintsR, rcR] = await Promise.allSettled([
               fetchOpenF1Stints(sessionKey),
               fetchOpenF1RaceControl(sessionKey),
             ]);
-            updated.tireStints = stints;
-            const hasNewEvents = raceControl.length > updated.raceControl.length;
-            updated.raceControl = raceControl;
-            if (hasNewEvents && raceControl.length > 0) {
-              const translated = await translateRaceControlMessages(
-                raceControl.map((e) => e.message)
-              );
-              if (translated.length) updated.raceControlTr = translated;
+            if (stintsR.status === "fulfilled") updated.tireStints = stintsR.value;
+            if (rcR.status === "fulfilled") {
+              const raceControl = rcR.value;
+              const hasNewEvents = raceControl.length > updated.raceControl.length;
+              updated.raceControl = raceControl;
+              if (hasNewEvents && raceControl.length > 0) {
+                const translated = await translateRaceControlMessages(
+                  raceControl.map((e) => e.message)
+                );
+                if (translated.length) updated.raceControlTr = translated;
+              }
             }
           }
           console.log(`[cron] session sync: ${slug} R${race.round} race live (results: ${race.results?.length ?? 0})`);
@@ -594,7 +566,13 @@ async function fetchF1RaceDetail(
     practice1Results: attachDriverIds(fp1Result.status === "fulfilled" ? fp1Result.value : [], numberToDriverId),
     practice2Results: attachDriverIds(fp2Result.status === "fulfilled" ? fp2Result.value : [], numberToDriverId),
     practice3Results: attachDriverIds(fp3Result.status === "fulfilled" ? fp3Result.value : [], numberToDriverId),
+    // *Fetched: OpenF1 çağrısı GERÇEKTEN çalıştı mı (key bulundu + Promise fulfilled).
+    // Boş sonuç ≠ başarısız. Bir hata (429/401) fpNResult'ı "rejected" yapar → false.
+    // Bu bayraklar mergeFetchedRaceDetail'in dolu veriyi ezmesini engellemesini sağlar.
+    practice1Fetched: fp1Key !== null && fp1Result.status === "fulfilled",
+    practice2Fetched: fp2Key !== null && fp2Result.status === "fulfilled",
+    practice3Fetched: fp3Key !== null && fp3Result.status === "fulfilled",
     raceControlFetched: isCompleted && raceControlFetchSucceeded,
-    stintsFetched: isCompleted,
+    stintsFetched: raceSessionKey !== null && stintsResult.status === "fulfilled",
   };
 }
