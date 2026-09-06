@@ -10,6 +10,7 @@ import {
 import { fetchLatestOpenF1Drivers } from "./openf1";
 import { getF1DriverImage } from "./driver-images";
 import { scrapeF1RaceResults } from "./motorsport-com-scraper";
+import { normalizeScrapedResults } from "./normalize-scraped-results";
 
 async function mergeDriverHeadshots(
   drivers: Driver[],
@@ -42,9 +43,10 @@ export const f1Adapter: SeriesAdapter = {
   name: "Formula 1",
 
   fetchSchedule: async (season: number): Promise<Race[]> => {
-    const [races, resultsMap] = await Promise.all([
+    const [races, resultsMap, roster] = await Promise.all([
       jolpicaFetchSchedule(season),
       jolpicaFetchResults(season),
+      jolpicaFetchDrivers(season).catch(() => [] as Driver[]),
     ]);
 
     const now = Date.now();
@@ -63,7 +65,9 @@ export const f1Adapter: SeriesAdapter = {
 
         if (isRecentFinished) {
           const msResults = await scrapeF1RaceResults(season, race.name).catch(() => []);
-          if (msResults.length > 0) return { ...race, results: msResults };
+          if (msResults.length > 0) {
+            return { ...race, results: normalizeScrapedResults(msResults, roster) };
+          }
         }
 
         return race;
