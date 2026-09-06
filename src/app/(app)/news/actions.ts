@@ -4,15 +4,12 @@ import { db } from "@/db";
 import { cachedNews } from "@/db/schema";
 import { and, count, gt, inArray, notInArray, sql } from "drizzle-orm";
 
-// Counts articles that have been scraped since the freshest one the reader is
-// currently looking at and aren't already in their list. Takes the displayed
-// row ids (not a timestamp) so the comparison stays in Postgres at full
-// precision — a JS Date cursor truncated microseconds and made the newest
-// on-screen row count as "new" forever.
+// Rank by published_at to match the list; scraped_at lets old-dated backfills
+// count as "new" forever because a refresh never surfaces them.
 export async function getNewNewsCountAction(displayedIds: string[]): Promise<number> {
   if (displayedIds.length === 0) return 0;
 
-  const freshestDisplayed = sql`(select max(${cachedNews.scrapedAt}) from ${cachedNews} where ${inArray(
+  const oldestDisplayed = sql`(select min(${cachedNews.publishedAt}) from ${cachedNews} where ${inArray(
     cachedNews.id,
     displayedIds,
   )})`;
@@ -23,7 +20,7 @@ export async function getNewNewsCountAction(displayedIds: string[]): Promise<num
     .where(
       and(
         notInArray(cachedNews.id, displayedIds),
-        gt(cachedNews.scrapedAt, freshestDisplayed),
+        gt(cachedNews.publishedAt, oldestDisplayed),
       ),
     );
 
