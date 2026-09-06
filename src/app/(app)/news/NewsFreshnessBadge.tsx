@@ -7,17 +7,8 @@ import { getNewNewsCountAction } from "./actions";
 
 const POLL_INTERVAL_MS = 60_000;
 
-// Cheap count-only poll (no data fetch) so freshly-scraped news don't force
-// a silent page refresh on the reader. Shows a badge instead; clicking it
-// runs router.refresh() and NewsListSection's own diff animates the new
-// rows in (see NewsListSection.tsx's prevNews/newIndexMap logic).
-// `displayedIds` are the ids currently on screen — after a refresh brings the
-// new rows in they drop out of the "new" count and the badge disappears; the
-// count query compares scraped_at in Postgres so it never phantom-counts a
-// row that's already visible.
-// Caller must render with `key` derived from the displayed set so a refresh
-// remounts this with newCount reset to 0 instead of resetting state from an
-// effect.
+// Caller must key this by the displayed set so a refresh remounts it with
+// newCount reset to 0.
 export function NewsFreshnessBadge({ displayedIds }: { displayedIds: string[] }) {
   const t = useTranslations("newsPage");
   const router = useRouter();
