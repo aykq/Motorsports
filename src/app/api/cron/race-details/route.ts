@@ -15,12 +15,10 @@ export async function POST(request: Request) {
   try {
     const season = new Date().getFullYear();
     const { races } = await getCachedSchedule("f1", season);
-    const fourteenDaysAgo = Date.now() - 14 * 24 * 60 * 60 * 1000;
-    const recent = races.filter(
-      (r) =>
-        (r.status === "completed" && new Date(r.date).getTime() > fourteenDaysAgo) ||
-        r.status === "live"
-    );
+    // Mevcut sezonun tüm tamamlanmış/live yarışları — syncRaceDetails içindeki
+    // hızlı yol tam verisi olanları tek DB okumasıyla atlıyor, sadece seans
+    // verisi eksik kalanlar OpenF1'e gidiyor (14 gün penceresi kaldırıldı).
+    const recent = races.filter((r) => r.status === "completed" || r.status === "live");
 
     if (!recent.length) return NextResponse.json({ ok: true, synced: 0 });
 

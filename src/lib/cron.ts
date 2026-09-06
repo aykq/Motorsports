@@ -35,13 +35,11 @@ cron.schedule(
         logError({ source: "cron.ts/full-sync", severity: "error", message: `${slug}: ${err instanceof Error ? err.message : String(err)}` });
       }
     }
-    // F1 race details backfill — son 14 gündeki tamamlanmış yarışlar için race control + çeviri kontrol
+    // F1 race details backfill — mevcut sezonun tüm tamamlanmış yarışları
+    // (eksik seans verisi olanlar onarılır; tam olanlar hızlı yolda atlanır)
     try {
       const { races } = await getCachedSchedule("f1", SEASON);
-      const fourteenDaysAgo = Date.now() - 14 * 24 * 60 * 60 * 1000;
-      const recentCompleted = races.filter(
-        (r) => r.status === "completed" && new Date(r.date).getTime() > fourteenDaysAgo
-      );
+      const recentCompleted = races.filter((r) => r.status === "completed");
       if (recentCompleted.length) {
         const detailResult = await syncRaceDetails("f1", SEASON, recentCompleted);
         if (detailResult.synced) console.log(`[cron] race details: ${detailResult.synced} updated`);

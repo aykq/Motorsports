@@ -80,8 +80,24 @@ async function openF1Fetch<T>(path: string, schema: z.ZodType<T>): Promise<T> {
   }
 }
 
+// /sessions?year= yarış hafta sonunda birden çok yerden çağrılıyor
+// (findOpenF1AllSessionKeys, openf1IsF1SessionFinished, weather) ve her çağrı
+// cache'siz — bu kendi kendine 429/401 yaratıyordu. Process içi kısa TTL'li
+// memoize: aynı sezon için ard arda gelen çağrılar tek isteği paylaşır.
+const SESSIONS_TTL_MS = 2 * 60 * 1000;
+const sessionsCache = new Map<number, { at: number; data: OpenF1Session[] }>();
+
+/** Test-only: memoize edilmiş /sessions kayıtlarını temizler. */
+export function __clearOpenF1SessionCache(): void {
+  sessionsCache.clear();
+}
+
 export async function fetchOpenF1Sessions(year: number): Promise<OpenF1Session[]> {
-  return openF1Fetch(`/sessions?year=${year}`, z.array(OpenF1SessionSchema));
+  const hit = sessionsCache.get(year);
+  if (hit && Date.now() - hit.at < SESSIONS_TTL_MS) return hit.data;
+  const data = await openF1Fetch(`/sessions?year=${year}`, z.array(OpenF1SessionSchema));
+  sessionsCache.set(year, { at: Date.now(), data });
+  return data;
 }
 
 export async function fetchOpenF1Drivers(sessionKey: number): Promise<OpenF1Driver[]> {
@@ -132,24 +148,23 @@ function normalizeCompound(raw: string | null | undefined): TireCompound {
   return "UNKNOWN";
 }
 
+// Fetch hatasında BİLEREK throw eder (eskiden [] dönüyordu) — çağıran taraf
+// (Promise.allSettled) "boş sonuç" ile "fetch patladı"yı ayırt edebilsin diye.
+// Boş bir dizi artık yalnızca gerçekten stint verisi olmadığı anlamına gelir.
 export async function fetchOpenF1Stints(sessionKey: number): Promise<TireStint[]> {
-  try {
-    const raw = await openF1Fetch(
-      `/stints?session_key=${sessionKey}`,
-      z.array(OpenF1StintSchema)
-    );
-    return raw
-      .filter((s) => s.lap_end != null)
-      .map((s) => ({
-        driverNumber: s.driver_number,
-        compound: normalizeCompound(s.compound),
-        lapStart: s.lap_start,
-        lapEnd: s.lap_end!,
-        tyreAgeAtStart: s.tyre_age_at_start ?? 0,
-      }));
-  } catch {
-    return [];
-  }
+  const raw = await openF1Fetch(
+    `/stints?session_key=${sessionKey}`,
+    z.array(OpenF1StintSchema)
+  );
+  return raw
+    .filter((s) => s.lap_end != null)
+    .map((s) => ({
+      driverNumber: s.driver_number,
+      compound: normalizeCompound(s.compound),
+      lapStart: s.lap_start,
+      lapEnd: s.lap_end!,
+      tyreAgeAtStart: s.tyre_age_at_start ?? 0,
+    }));
 }
 
 const SESSION_TYPE_TO_OF1_NAME: Record<string, string> = {
@@ -211,62 +226,62 @@ function lapTimeToMs(timeStr: string): number {
   return (parseInt(minStr) * 60 + parseFloat(secStr)) * 1000;
 }
 
+// Fetch hatasında BİLEREK throw eder (eskiden [] dönüyordu). Boş dizi artık
+// yalnızca "session'da geçerli tur yok" demek; 429/401/timeout çağırana
+// (Promise.allSettled → status: "rejected") yansır ve practiceNFetched=false
+// olur, böylece mevcut dolu veri ezilmez. Bkz. race-detail-merge.ts
 export async function fetchOpenF1PracticeResults(
   sessionKey: number
 ): Promise<PracticeDriverResult[]> {
-  try {
-    // z.record ile raw fetch — API field type değişimlerine karşı dayanıklı
-    const [rawLaps, drivers] = await Promise.all([
-      openF1Fetch(`/laps?session_key=${sessionKey}`, z.array(z.record(z.string(), z.unknown()))),
-      fetchOpenF1Drivers(sessionKey),
-    ]);
+  // z.record ile raw fetch — API field type değişimlerine karşı dayanıklı
+  const [rawLaps, drivers] = await Promise.all([
+    openF1Fetch(`/laps?session_key=${sessionKey}`, z.array(z.record(z.string(), z.unknown()))),
+    fetchOpenF1Drivers(sessionKey),
+  ]);
 
-    const driverMap = new Map(drivers.map((d) => [d.driver_number, d]));
-    const bestByDriver = new Map<number, number>();
+  const driverMap = new Map(drivers.map((d) => [d.driver_number, d]));
+  const bestByDriver = new Map<number, number>();
 
-    for (const lap of rawLaps) {
-      const driverNum = typeof lap.driver_number === "number" ? lap.driver_number : null;
-      const lapDuration = typeof lap.lap_duration === "number" ? lap.lap_duration : null;
-      const isPitOut = lap.is_pit_out_lap === true;
+  for (const lap of rawLaps) {
+    const driverNum = typeof lap.driver_number === "number" ? lap.driver_number : null;
+    const lapDuration = typeof lap.lap_duration === "number" ? lap.lap_duration : null;
+    const isPitOut = lap.is_pit_out_lap === true;
 
-      if (!driverNum || !lapDuration || isPitOut || lapDuration <= 0) continue;
+    if (!driverNum || !lapDuration || isPitOut || lapDuration <= 0) continue;
 
-      const current = bestByDriver.get(driverNum);
-      if (current == null || lapDuration < current) {
-        bestByDriver.set(driverNum, lapDuration);
-      }
+    const current = bestByDriver.get(driverNum);
+    if (current == null || lapDuration < current) {
+      bestByDriver.set(driverNum, lapDuration);
     }
-
-    const results: PracticeDriverResult[] = [];
-    for (const [driverNum, bestSecs] of bestByDriver) {
-      const driver = driverMap.get(driverNum);
-      results.push({
-        position: 0,
-        driverNumber: driverNum,
-        driverName: driver?.full_name ?? `#${driverNum}`,
-        driverCode: driver?.name_acronym,
-        team: driver?.team_name,
-        lapTime: formatLapTime(bestSecs),
-      });
-    }
-
-    results.sort((a, b) => lapTimeToMs(a.lapTime) - lapTimeToMs(b.lapTime));
-    results.forEach((r, i) => { r.position = i + 1; });
-
-    if (results.length > 0) {
-      const fastestMs = lapTimeToMs(results[0]!.lapTime);
-      results.forEach((r, i) => {
-        if (i > 0) {
-          const gapMs = lapTimeToMs(r.lapTime) - fastestMs;
-          r.gap = `+${(gapMs / 1000).toFixed(3)}`;
-        }
-      });
-    }
-
-    return results;
-  } catch {
-    return [];
   }
+
+  const results: PracticeDriverResult[] = [];
+  for (const [driverNum, bestSecs] of bestByDriver) {
+    const driver = driverMap.get(driverNum);
+    results.push({
+      position: 0,
+      driverNumber: driverNum,
+      driverName: driver?.full_name ?? `#${driverNum}`,
+      driverCode: driver?.name_acronym,
+      team: driver?.team_name,
+      lapTime: formatLapTime(bestSecs),
+    });
+  }
+
+  results.sort((a, b) => lapTimeToMs(a.lapTime) - lapTimeToMs(b.lapTime));
+  results.forEach((r, i) => { r.position = i + 1; });
+
+  if (results.length > 0) {
+    const fastestMs = lapTimeToMs(results[0]!.lapTime);
+    results.forEach((r, i) => {
+      if (i > 0) {
+        const gapMs = lapTimeToMs(r.lapTime) - fastestMs;
+        r.gap = `+${(gapMs / 1000).toFixed(3)}`;
+      }
+    });
+  }
+
+  return results;
 }
 
 function isNotableRaceControlEvent(msg: string, flag: string | null | undefined, category: string | undefined): boolean {
