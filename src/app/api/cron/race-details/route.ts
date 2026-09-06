@@ -4,9 +4,8 @@ import { getCachedSchedule } from "@/lib/cache";
 import { syncRaceDetails } from "@/lib/race-detail";
 import { logError } from "@/lib/error-log";
 
-// F1 yarış detayı backfill'i — son 14 gündeki tamamlanmış yarışlar için
-// race control çevirisi, eksik practice/stint/sprint verisi tamamlanır.
-// Tam sync'ten (6 saat) sonra çalışacak şekilde crontab'a eklenmeli.
+// F1 race detail backfill — race control translation + missing practice/stint/
+// sprint data for the current season. Runs on crontab after the 6h full sync.
 export async function POST(request: Request) {
   if (!verifyCronSecret(request.headers.get("x-cron-secret"))) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -15,9 +14,6 @@ export async function POST(request: Request) {
   try {
     const season = new Date().getFullYear();
     const { races } = await getCachedSchedule("f1", season);
-    // Mevcut sezonun tüm tamamlanmış/live yarışları — syncRaceDetails içindeki
-    // hızlı yol tam verisi olanları tek DB okumasıyla atlıyor, sadece seans
-    // verisi eksik kalanlar OpenF1'e gidiyor (14 gün penceresi kaldırıldı).
     const recent = races.filter((r) => r.status === "completed" || r.status === "live");
 
     if (!recent.length) return NextResponse.json({ ok: true, synced: 0 });

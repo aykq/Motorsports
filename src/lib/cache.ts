@@ -78,13 +78,9 @@ export function recomputeRaceStatus(race: Race, seriesSlug?: string): Race {
 
 // ─── Schedule ─────────────────────────────────────────────────────────────────
 
-// React cache() — per-request memoize only, NOT unstable_cache. unstable_cache'in
-// revalidate penceresi dolduğunda senkron doldurma yapmadan "stale" işaretlemesi
-// (SWR), düşük trafikli bir sayfada şu soruna yol açıyordu: yarış bitip cron
-// cached_race'i güncelledikten sonra ana sayfa/hub'daki "sıradaki yarış" widget'ı
-// saatlerce eski snapshot'ı gösteriyor ("Started!" takılması), F5 taze gösteriyordu.
-// Aynı SWR hatası haberde `e6d3b37` ile kaldırılmıştı. Sayfa zaten auth() yüzünden
-// dynamic; cross-request cache pratikte sadece bayatlık getiriyordu.
+// Must stay React cache() (per-request only), not unstable_cache: its SWR
+// revalidate serves a stale entry to the first visitor after a quiet gap, which
+// stuck the "next race" widget on a finished race. Page is already dynamic.
 export const getCachedSchedule = cache(
   async (
     slug: string,
