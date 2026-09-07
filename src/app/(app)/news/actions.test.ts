@@ -34,9 +34,6 @@ describe("getNewNewsCountAction", () => {
   });
 
   it("does NOT count a freshly-scraped article whose publish date predates the list", async () => {
-    // Regression: the badge compared scraped_at, so a MotoGP backfill (scraped
-    // now, published a week ago) counted as "new" forever — a refresh never
-    // pulled it into the published_at-ordered list, so the badge never cleared.
     const shown = await insertNews({ publishedAt: daysAgo(1) });
     await insertNews({ publishedAt: daysAgo(8), scrapedAt: new Date() });
 
