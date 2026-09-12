@@ -2,7 +2,7 @@ import { eq, and } from "drizzle-orm";
 import { db } from "@/db";
 import { sentNotifications } from "@/db/schema";
 import { sendPushToSubscribers } from "@/lib/push";
-import { openf1IsF1SessionFinished } from "@/lib/adapters/f1/openf1";
+import { openf1IsF1SessionFinished, openf1ArePracticeResultsComplete } from "@/lib/adapters/f1/openf1";
 import { isMScomF1RaceFinished } from "@/lib/adapters/f1/motorsport-com-scraper";
 import { getSeriesConfig } from "@/lib/series-config";
 import { recomputeRaceStatus } from "@/lib/cache";
@@ -12,6 +12,9 @@ import type { Race } from "@/types/series";
 const STATUS_DRIVEN_SERIES = new Set(["motogp", "moto2", "moto3", "wec"]);
 
 const RESULTS_WINDOW: Record<string, number> = {
+  practice1:    3 * 60 * 60 * 1000,
+  practice2:    3 * 60 * 60 * 1000,
+  practice3:    3 * 60 * 60 * 1000,
   qualifying:  12 * 60 * 60 * 1000,
   sprintQuali:  2 * 60 * 60 * 1000,
   sprint:       2 * 60 * 60 * 1000,
@@ -154,6 +157,8 @@ export async function notifySessions(): Promise<NotifySessionsResult> {
         if (row.seriesSlug === "f1") {
           if (session.type === "race") {
             resultsReady = await isMScomF1RaceFinished(row.season, race.name);
+          } else if (session.type.startsWith("practice")) {
+            resultsReady = await openf1ArePracticeResultsComplete(row.season, session.date, session.type);
           } else {
             resultsReady = await openf1IsF1SessionFinished(row.season, session.date, session.type);
           }
