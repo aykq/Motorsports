@@ -19,11 +19,15 @@ import { fetchRaceWeather } from "@/lib/weather";
 import { translateRaceControlMessages } from "@/lib/gemini";
 import { logError } from "@/lib/error-log";
 
+// Bir session'ın burada ne kadar süre "aktif" sayılıp yeniden denendiğini belirler.
+// notify-sessions.ts'teki RESULTS_WINDOW ile eşit veya daha geniş olmalı — daha dar
+// olursa (qualifying'de olduğu gibi 2h/12h) sonuç geç gelen bir session'ın complete
+// flag'i hiç set edilmeden pencere kapanır ve bir daha asla denenmez.
 const SESSION_WINDOW_MS: Record<string, number> = {
   practice1: 3 * 60 * 60 * 1000,
   practice2: 3 * 60 * 60 * 1000,
   practice3: 3 * 60 * 60 * 1000,
-  qualifying: 2 * 60 * 60 * 1000,
+  qualifying: 12 * 60 * 60 * 1000,
   sprintQuali: 2 * 60 * 60 * 1000,
   sprint: 4 * 60 * 60 * 1000,
   race: 4 * 60 * 60 * 1000,
