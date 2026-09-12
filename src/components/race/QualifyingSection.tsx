@@ -15,6 +15,23 @@ interface Props {
   slug: string;
 }
 
+// Ergast/Jolpica lap time formatı "M:SS.mmm" (ör. "1:31.824"); bazı kısa pistlerde
+// dakikasız "SS.mmm" da olabilir.
+export function parseLapTimeMs(time: string): number | null {
+  const parts = time.split(":");
+  if (parts.length === 2) {
+    const mins = parseInt(parts[0], 10);
+    const secs = parseFloat(parts[1]);
+    return Number.isNaN(mins) || Number.isNaN(secs) ? null : (mins * 60 + secs) * 1000;
+  }
+  const secs = parseFloat(time);
+  return Number.isNaN(secs) ? null : secs * 1000;
+}
+
+export function formatGapToLeader(diffMs: number): string {
+  return `+${(diffMs / 1000).toFixed(3).replace(".", ",")}`;
+}
+
 function SegmentHeader({ label, accent }: { label: string; accent?: "gold" }) {
   return (
     <div className={cn(
@@ -32,12 +49,20 @@ function QualifyingRow({
   result,
   timeKey,
   slug,
+  poleMs,
 }: {
   result: QualifyingDriverResult;
   timeKey: "q1" | "q2" | "q3";
   slug: string;
+  poleMs: number | null;
 }) {
   const time = result[timeKey];
+  const timeMs = time ? parseLapTimeMs(time) : null;
+  const isPoleTime = poleMs != null && timeMs != null && timeMs <= poleMs;
+  const displayTime =
+    !time || timeMs == null || poleMs == null || isPoleTime
+      ? (time ?? "—")
+      : formatGapToLeader(timeMs - poleMs);
   const isPole = result.position === 1;
   const displayName = result.driverCode ?? result.driverName.split(" ").pop()!;
 
@@ -72,7 +97,7 @@ function QualifyingRow({
         <span className="text-[10px] text-muted-foreground truncate block">{result.team}</span>
       </div>
       <span className={cn("text-right font-mono text-[11px] shrink-0", isPole && "text-[var(--pos-gold)] font-semibold")}>
-        {time ?? "—"}
+        {displayTime}
       </span>
     </div>
   );
@@ -85,13 +110,17 @@ export function QualifyingSection({ results, labels, slug }: Props) {
   const q2Eliminated = results.filter((r) => r.q2 != null && r.q3 == null);
   const q1Eliminated = results.filter((r) => r.q1 != null && r.q2 == null);
 
+  // Tek referans: pole zamanı (Q3'ün en hızlısı). Herkes buna göre "+fark" gösterir,
+  // sadece pole kendi ham zamanını gösterir — Q1/Q2'de elenenler dahil.
+  const poleMs = q3[0]?.q3 ? parseLapTimeMs(q3[0].q3) : null;
+
   return (
     <div className="space-y-3">
       {q3.length > 0 && (
         <div className="rounded-lg border border-yellow-500/20 overflow-hidden">
           <SegmentHeader label="Q3" accent="gold" />
           {q3.map((r) => (
-            <QualifyingRow key={r.driverId} result={r} timeKey="q3" slug={slug} />
+            <QualifyingRow key={r.driverId} result={r} timeKey="q3" slug={slug} poleMs={poleMs} />
           ))}
         </div>
       )}
@@ -100,7 +129,7 @@ export function QualifyingSection({ results, labels, slug }: Props) {
         <div className="rounded-lg border border-border overflow-hidden">
           <SegmentHeader label={labels.q2Eliminated} />
           {q2Eliminated.map((r) => (
-            <QualifyingRow key={r.driverId} result={r} timeKey="q2" slug={slug} />
+            <QualifyingRow key={r.driverId} result={r} timeKey="q2" slug={slug} poleMs={poleMs} />
           ))}
         </div>
       )}
@@ -109,7 +138,7 @@ export function QualifyingSection({ results, labels, slug }: Props) {
         <div className="rounded-lg border border-border overflow-hidden opacity-70">
           <SegmentHeader label={labels.q1Eliminated} />
           {q1Eliminated.map((r) => (
-            <QualifyingRow key={r.driverId} result={r} timeKey="q1" slug={slug} />
+            <QualifyingRow key={r.driverId} result={r} timeKey="q1" slug={slug} poleMs={poleMs} />
           ))}
         </div>
       )}
