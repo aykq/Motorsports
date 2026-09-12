@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { Race, Standing, Driver, Circuit, PitStop, QualifyingDriverResult } from "@/types/series";
 import { getCancelledRaceOverrides } from "./cancelled-races";
 import { isLastResultsPage, RESULTS_PAGE_SIZE, MAX_RESULT_PAGES } from "./jolpica-paging";
+import { logError } from "@/lib/error-log";
 
 const BASE_URL = "https://api.jolpi.ca/ergast/f1";
 
@@ -379,7 +380,12 @@ export async function jolpicaFetchRaceResults(
       gridPosition: r.grid ? parseInt(r.grid) : undefined,
       laps: r.laps ? parseInt(r.laps) : undefined,
     }));
-  } catch {
+  } catch (err) {
+    await logError({
+      source: "jolpica/jolpicaFetchRaceResults",
+      severity: "warning",
+      message: `${season}/${round}/results.json failed: ${err instanceof Error ? err.message : String(err)}`,
+    });
     return [];
   }
 }
@@ -411,7 +417,12 @@ export async function jolpicaFetchSprintResults(
       gridPosition: r.grid ? parseInt(r.grid) : undefined,
       laps: r.laps ? parseInt(r.laps) : undefined,
     }));
-  } catch {
+  } catch (err) {
+    await logError({
+      source: "jolpica/jolpicaFetchSprintResults",
+      severity: "warning",
+      message: `${season}/${round}/sprint.json failed: ${err instanceof Error ? err.message : String(err)}`,
+    });
     return [];
   }
 }
@@ -457,7 +468,12 @@ export async function jolpicaFetchQualifyingResults(
       q2: r.Q2,
       q3: r.Q3,
     }));
-  } catch {
+  } catch (err) {
+    await logError({
+      source: "jolpica/jolpicaFetchQualifyingResults",
+      severity: "warning",
+      message: `${season}/${round}/qualifying.json failed: ${err instanceof Error ? err.message : String(err)}`,
+    });
     return [];
   }
 }
