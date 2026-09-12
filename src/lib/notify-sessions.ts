@@ -2,14 +2,42 @@ import { eq, and } from "drizzle-orm";
 import { db } from "@/db";
 import { sentNotifications } from "@/db/schema";
 import { sendPushToSubscribers } from "@/lib/push";
-import { openf1IsF1SessionFinished, openf1ArePracticeResultsComplete } from "@/lib/adapters/f1/openf1";
 import { isMScomF1RaceFinished } from "@/lib/adapters/f1/motorsport-com-scraper";
 import { getSeriesConfig } from "@/lib/series-config";
-import { recomputeRaceStatus } from "@/lib/cache";
+import { recomputeRaceStatus, getRaceDetailRaw } from "@/lib/cache";
 import { getShowNonF1Series } from "@/lib/app-settings";
-import type { Race } from "@/types/series";
+import type { Race, RaceDetail } from "@/types/series";
 
 const STATUS_DRIVEN_SERIES = new Set(["motogp", "moto2", "moto3", "wec"]);
+
+// syncActiveSessionData() (race-detail.ts, runs every 2 min) already computes these
+// flags with tuned thresholds (Q3 driver count, sprint classification size, etc.) and
+// writes them into the same cached RaceDetail the results pages read. Re-deriving
+// readiness here from raw OpenF1/Jolpica calls would just duplicate that logic with a
+// second, divergent definition of "complete" — reading the flag keeps one source of truth.
+const F1_RESULTS_COMPLETE_FLAG: Partial<Record<string, keyof RaceDetail>> = {
+  practice1: "practice1Complete",
+  practice2: "practice2Complete",
+  practice3: "practice3Complete",
+  qualifying: "qualifyingComplete",
+  sprintQuali: "sprintQualiComplete",
+  sprint: "sprintComplete",
+};
+
+/** Exported for testing. */
+export async function isF1SessionResultsReady(
+  seriesSlug: string,
+  season: number,
+  round: number,
+  sessionType: string,
+  raceName: string
+): Promise<boolean> {
+  if (sessionType === "race") return isMScomF1RaceFinished(season, raceName);
+  const flagKey = F1_RESULTS_COMPLETE_FLAG[sessionType];
+  if (!flagKey) return false;
+  const detail = await getRaceDetailRaw(seriesSlug, season, round);
+  return Boolean(detail?.[flagKey]);
+}
 
 const RESULTS_WINDOW: Record<string, number> = {
   practice1:    3 * 60 * 60 * 1000,
@@ -155,13 +183,9 @@ export async function notifySessions(): Promise<NotifySessionsResult> {
         let resultsReady = false;
 
         if (row.seriesSlug === "f1") {
-          if (session.type === "race") {
-            resultsReady = await isMScomF1RaceFinished(row.season, race.name);
-          } else if (session.type.startsWith("practice")) {
-            resultsReady = await openf1ArePracticeResultsComplete(row.season, session.date, session.type);
-          } else {
-            resultsReady = await openf1IsF1SessionFinished(row.season, session.date, session.type);
-          }
+          resultsReady = await isF1SessionResultsReady(
+            row.seriesSlug, row.season, race.round, session.type, race.name
+          );
         } else {
           if (session.type === "race") {
             if (STATUS_DRIVEN_SERIES.has(row.seriesSlug)) {
