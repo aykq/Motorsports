@@ -41,32 +41,19 @@ export function formatGapToLeader(diffMs: number): string {
 function SegmentHeader({
   label,
   accent,
-  columnLabels,
 }: {
   label: string;
   accent?: "gold";
-  columnLabels: Pick<QualifyingLabels, "colPos" | "colDriverTeam" | "colGap" | "colLap">;
 }) {
   return (
-    <>
-      <div className={cn(
-        "flex items-center px-3 py-1.5 border-b border-border",
-        accent === "gold" ? "bg-yellow-500/5" : "bg-muted/30"
-      )}>
-        <span className="font-display text-[10px] font-semibold text-muted-foreground tracking-wide">
-          {label}
-        </span>
-      </div>
-      <div className={cn(
-        "grid grid-cols-[2rem_1fr_4rem_4rem] font-display text-[10px] font-medium text-muted-foreground px-3 py-1 border-b border-border gap-1",
-        accent === "gold" ? "bg-yellow-500/5" : "bg-muted/30"
-      )}>
-        <span className="text-center">{columnLabels.colPos}</span>
-        <span className="ml-1">{columnLabels.colDriverTeam}</span>
-        <span className="text-right">{columnLabels.colGap}</span>
-        <span className="text-right font-mono">{columnLabels.colLap}</span>
-      </div>
-    </>
+    <div className={cn(
+      "flex items-center px-3 py-1.5 border-b border-border",
+      accent === "gold" ? "bg-yellow-500/5" : "bg-muted/30"
+    )}>
+      <span className="font-display text-[10px] font-semibold text-muted-foreground tracking-wide">
+        {label}
+      </span>
+    </div>
   );
 }
 
@@ -145,7 +132,7 @@ export function QualifyingSection({ results, labels, slug }: Props) {
     <div className="space-y-3">
       {q3.length > 0 && (
         <div className="rounded-lg border border-yellow-500/20 overflow-hidden">
-          <SegmentHeader label="Q3" accent="gold" columnLabels={labels} />
+          <SegmentHeader label="Q3" accent="gold" />
           {q3.map((r) => (
             <QualifyingRow key={r.driverId} result={r} timeKey="q3" slug={slug} poleMs={poleMs} />
           ))}
@@ -154,7 +141,7 @@ export function QualifyingSection({ results, labels, slug }: Props) {
 
       {q2Eliminated.length > 0 && (
         <div className="rounded-lg border border-border overflow-hidden">
-          <SegmentHeader label={labels.q2Eliminated} columnLabels={labels} />
+          <SegmentHeader label={labels.q2Eliminated} />
           {q2Eliminated.map((r) => (
             <QualifyingRow key={r.driverId} result={r} timeKey="q2" slug={slug} poleMs={poleMs} />
           ))}
@@ -163,7 +150,7 @@ export function QualifyingSection({ results, labels, slug }: Props) {
 
       {q1Eliminated.length > 0 && (
         <div className="rounded-lg border border-border overflow-hidden opacity-70">
-          <SegmentHeader label={labels.q1Eliminated} columnLabels={labels} />
+          <SegmentHeader label={labels.q1Eliminated} />
           {q1Eliminated.map((r) => (
             <QualifyingRow key={r.driverId} result={r} timeKey="q1" slug={slug} poleMs={poleMs} />
           ))}
