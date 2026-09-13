@@ -57,7 +57,10 @@ function SegmentHeader({
           {label}
         </span>
       </div>
-      <div className="grid grid-cols-[2rem_1fr_4rem_4rem] font-display text-[10px] font-medium text-muted-foreground px-3 py-1 border-b border-border gap-1">
+      <div className={cn(
+        "grid grid-cols-[2rem_1fr_4rem_4rem] font-display text-[10px] font-medium text-muted-foreground px-3 py-1 border-b border-border gap-1",
+        accent === "gold" ? "bg-yellow-500/5" : "bg-muted/30"
+      )}>
         <span className="text-center">{columnLabels.colPos}</span>
         <span className="ml-1">{columnLabels.colDriverTeam}</span>
         <span className="text-right">{columnLabels.colGap}</span>

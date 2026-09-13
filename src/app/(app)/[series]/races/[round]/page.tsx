@@ -72,10 +72,13 @@ export default async function RaceDetailPage({ params, searchParams }: Props) {
   }
   if (!race) notFound();
 
-  // Tamamlanmış yarış ama sonuç yok → ilgili kaynaktan çek + cache'e yaz
-  // Geçmiş sezonlar için canlı fetch yapılmıyor — backfill edilen veri zaten
-  // tam olmalı, eksikse kaynak (Jolpica/scraper) da muhtemelen sonuç vermez.
-  if (isCurrentYear && race.status === "completed" && !race.results?.length) {
+  // Tamamlanmış YA DA hâlâ "live" pencerede ama sonuç yok → ilgili kaynaktan
+  // çek + cache'e yaz. "live" da dahil çünkü recomputeRaceStatus() ile cron'un
+  // post-race refresh eşiği (raceTime + 3h) arasında yarış fiilen bitmiş
+  // olabiliyor; o aralıkta status hâlâ "live" kalıyor ve sayfa boş/eksik
+  // tablo gösteriyordu. Jolpica henüz yayınlamadıysa çağrı sessizce [] döner,
+  // zararsız — geçmiş sezonlarda canlı fetch yapılmıyor, backfill zaten tam.
+  if (isCurrentYear && (race.status === "completed" || race.status === "live") && !race.results?.length) {
     if (slug === "f1") {
       const freshResults = await jolpicaFetchRaceResults(year, round);
       if (freshResults.length) {
