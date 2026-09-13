@@ -79,7 +79,7 @@ describe("QualifyingSection rendering", () => {
     expect(html).toContain("+3.500"); // Q1-eliminated driver's gap to pole, not to Q1's own fastest
   });
 
-  it("renders the same column headers (pos/driver/gap/lap) as the practice table for every segment", () => {
+  it("does not render a separate column-header row — only the segment label", () => {
     const results = [
       driver({ position: 1, driverId: "pole", q1: "1:33.000", q2: "1:32.000", q3: "1:31.000" }),
       driver({ position: 11, driverId: "eliminated", q1: "1:33.100", q2: "1:32.500" }),
@@ -87,6 +87,9 @@ describe("QualifyingSection rendering", () => {
 
     const html = renderToStaticMarkup(<QualifyingSection results={results} labels={LABELS} slug="f1" />);
 
-    expect(html.match(new RegExp(LABELS.colLap, "g"))).toHaveLength(2); // Q3 table + Q2-eliminated table
+    expect(html).toContain("Q3");
+    expect(html).toContain("elendi"); // segment label still renders (apostrophe gets HTML-escaped)
+    expect(html).not.toContain(LABELS.colLap);
+    expect(html).not.toContain(LABELS.colGap);
   });
 });
