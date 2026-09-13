@@ -17,17 +17,27 @@ describe("parseLapTimeMs", () => {
   });
 });
 
+// Matches PracticeSection's own gap format exactly (openf1.ts: `+${(gapMs / 1000).toFixed(3)}`)
+// so the app doesn't mix decimal conventions between the practice and qualifying tables.
 describe("formatGapToLeader", () => {
-  it("formats the gap with a leading + and Turkish comma decimal", () => {
-    expect(formatGapToLeader(245)).toBe("+0,245");
+  it("formats the gap with a leading + and a period decimal", () => {
+    expect(formatGapToLeader(245)).toBe("+0.245");
   });
 
   it("handles a gap over a minute", () => {
-    expect(formatGapToLeader(65_123)).toBe("+65,123");
+    expect(formatGapToLeader(65_123)).toBe("+65.123");
   });
 });
 
-const LABELS = { qualifyingResults: "Sıralama", q2Eliminated: "Q2'de elendi", q1Eliminated: "Q1'de elendi" };
+const LABELS = {
+  qualifyingResults: "Sıralama",
+  q2Eliminated: "Q2'de elendi",
+  q1Eliminated: "Q1'de elendi",
+  colPos: "P",
+  colDriverTeam: "Sürücü",
+  colGap: "Fark",
+  colLap: "Tur",
+};
 
 function driver(overrides: Partial<QualifyingDriverResult>): QualifyingDriverResult {
   return {
@@ -40,7 +50,7 @@ function driver(overrides: Partial<QualifyingDriverResult>): QualifyingDriverRes
 }
 
 describe("QualifyingSection rendering", () => {
-  it("shows the pole time as-is and every other Q3 row as a gap to pole", () => {
+  it("shows both the pole's own lap time and every other Q3 row's lap time plus its gap to pole", () => {
     const results = [
       driver({ position: 1, driverId: "norris", q1: "1:33.469", q2: "1:32.873", q3: "1:31.824" }),
       driver({ position: 2, driverId: "antonelli", q1: "1:33.267", q2: "1:32.591", q3: "1:32.069" }),
@@ -48,24 +58,35 @@ describe("QualifyingSection rendering", () => {
 
     const html = renderToStaticMarkup(<QualifyingSection results={results} labels={LABELS} slug="f1" />);
 
-    expect(html).toContain("1:31.824"); // pole shows its own time
-    expect(html).toContain("+0,245"); // 1:32.069 - 1:31.824 = 0.245s
-    expect(html).not.toContain("1:32.069"); // raw time must not leak through for a non-leader row
+    expect(html).toContain("1:31.824"); // pole's own lap time
+    expect(html).toContain("1:32.069"); // non-leader's own lap time is still shown, like practice
+    expect(html).toContain("+0.245"); // 1:32.069 - 1:31.824 = 0.245s
   });
 
-  it("shows every Q1/Q2-eliminated driver's gap relative to the overall pole, not their own segment's fastest", () => {
+  it("shows every Q1/Q2-eliminated driver's gap relative to the overall pole, alongside their own lap time", () => {
     const results = [
       driver({ position: 1, driverId: "pole", q1: "1:33.000", q2: "1:32.000", q3: "1:31.000" }),
       driver({ position: 11, driverId: "q2-fastest", q1: "1:33.100", q2: "1:32.500" }),
-      driver({ position: 12, driverId: "q2-second", q1: "1:33.200", q2: "1:32.750" }),
       driver({ position: 20, driverId: "q1-last", q1: "1:34.500" }),
     ];
 
     const html = renderToStaticMarkup(<QualifyingSection results={results} labels={LABELS} slug="f1" />);
 
-    expect(html).toContain("1:31.000"); // pole shows its own time
-    expect(html).toContain("+1,500"); // Q2-eliminated fastest (1:32.500) vs pole (1:31.000)
-    expect(html).toContain("+1,750"); // second Q2-eliminated driver vs pole
-    expect(html).toContain("+3,500"); // Q1-eliminated driver vs pole, not vs Q1's own fastest
+    expect(html).toContain("1:31.000"); // pole's own time
+    expect(html).toContain("1:32.500"); // Q2-eliminated driver's own time, still shown
+    expect(html).toContain("+1.500"); // Q2-eliminated driver's gap to pole
+    expect(html).toContain("1:34.500"); // Q1-eliminated driver's own time
+    expect(html).toContain("+3.500"); // Q1-eliminated driver's gap to pole, not to Q1's own fastest
+  });
+
+  it("renders the same column headers (pos/driver/gap/lap) as the practice table for every segment", () => {
+    const results = [
+      driver({ position: 1, driverId: "pole", q1: "1:33.000", q2: "1:32.000", q3: "1:31.000" }),
+      driver({ position: 11, driverId: "eliminated", q1: "1:33.100", q2: "1:32.500" }),
+    ];
+
+    const html = renderToStaticMarkup(<QualifyingSection results={results} labels={LABELS} slug="f1" />);
+
+    expect(html.match(new RegExp(LABELS.colLap, "g"))).toHaveLength(2); // Q3 table + Q2-eliminated table
   });
 });
