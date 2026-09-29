@@ -61,3 +61,6 @@ next-env.d.ts
 docs/superpowers/
 .superpowers/
 .worktrees/
+
+# downloaded MotoGP driver photos (sync.ts fetches them; prod uses a docker volume)
+public/motogp/drivers/
