@@ -17,7 +17,7 @@ Takvim, bildirim, puan durumu ve haberler. Telefonuna uygulama gibi kurulur.
 <div align="center">
   <img src="docs/screenshots/home.png" width="260" alt="Ana sayfa" />
   <img src="docs/screenshots/race.png" width="260" alt="Yarış detayı" />
-  <img src="docs/screenshots/standings.png" width="260" alt="Puan durumu" />
+  <img src="docs/screenshots/news.png" width="260" alt="Haberler" />
 </div>
 
 ## Ne yapar
