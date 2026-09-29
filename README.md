@@ -1,36 +1,45 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+<div align="center">
 
-## Getting Started
+# Motorsports Hub
 
-First, run the development server:
+**Motorsporlarını tek yerden takip et.**
+Takvim, puan durumu, canlı seans verisi, haberler ve bildirimler. Telefonuna uygulama gibi kurulur.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+[Canlı uygulama](https://mshub.aykq.org.tr)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=nextdotjs)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-compose-2496ed?logo=docker&logoColor=white)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+</div>
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+<div align="center">
+  <img src="docs/screenshots/home.png" width="260" alt="Ana sayfa" />
+  <img src="docs/screenshots/race.png" width="260" alt="Yarış detayı" />
+  <img src="docs/screenshots/standings.png" width="260" alt="Puan durumu" />
+</div>
 
-## Learn More
+## Ne yapar
 
-To learn more about Next.js, take a look at the following resources:
+Formula 1 başta olmak üzere birden fazla motorsporu serisini tek bir mobil öncelikli arayüzde toplar.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Özellikler
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Takvim ve geri sayım:** Sıradaki yarış hafta sonu, tüm seanslar yerel saatinle.
+- **Puan durumu:** Sürücüler ve takımlar için güncel sıralama.
+- **Yarış hafta sonu detayı:** Antrenman, sıralama ve yarış sonuçları; hafta sonu boyunca canlı güncellenir.
+- **Sürücü, takım ve pist sayfaları:** Pist krokileri ve pist bilgileriyle.
+- **Hava durumu:** Pist için seans saatlerine göre tahmin.
+- **Haberler:** Motorsporlarından son haberler, Türkçe ve İngilizce.
+- **Bildirimler:** Seans başlamadan ve sonuçlar açıklanınca telefonuna anlık bildirim.
+- **Favoriler:** Takip ettiğin sürücü ve takımları öne çıkar.
+- **Koyu ve açık tema, Türkçe ve İngilizce arayüz.**
+- **Uygulama gibi kurulur (PWA):** Ana ekrana ekle, tam ekran ve çevrimdışı kabuk.
 
-## Deploy on Vercel
+## Kapsam
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Şu an F1 tam desteklenir. WEC, MotoGP, Moto2, Moto3, GT3, GT4 ve Porsche Carrera Cup için adaptörler hazırdır, veri
+kapsamı genişletiliyor.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Yeni kayıtlar yönetici onayından sonra aktif olur.
