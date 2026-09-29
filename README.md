@@ -3,7 +3,7 @@
 # Motorsports Hub
 
 **Motorsporlarını tek yerden takip et.**
-Takvim, puan durumu, canlı seans verisi, haberler ve bildirimler. Telefonuna uygulama gibi kurulur.
+Takvim, bildirim, puan durumu ve haberler. Telefonuna uygulama gibi kurulur.
 
 [Canlı uygulama](https://mshub.aykq.org.tr)
 
@@ -28,7 +28,7 @@ Formula 1 başta olmak üzere birden fazla motorsporu serisini tek bir mobil ön
 
 - **Takvim ve geri sayım:** Sıradaki yarış hafta sonu, tüm seanslar yerel saatinle.
 - **Puan durumu:** Sürücüler ve takımlar için güncel sıralama.
-- **Yarış hafta sonu detayı:** Antrenman, sıralama ve yarış sonuçları; hafta sonu boyunca canlı güncellenir.
+- **Yarış hafta sonu detayı:** Antrenman, sıralama ve yarış sonuçları.
 - **Sürücü, takım ve pist sayfaları:** Pist krokileri ve pist bilgileriyle.
 - **Hava durumu:** Pist için seans saatlerine göre tahmin.
 - **Haberler:** Motorsporlarından son haberler, Türkçe ve İngilizce.
