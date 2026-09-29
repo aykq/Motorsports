@@ -241,6 +241,7 @@ const F1_CIRCUIT_PHOTOS: Record<string, string> = {
   vegas:         "/f1/circuits/las-vegas.webp",
   losail:        "/f1/circuits/qatar.webp",
   yas_marina:    "/f1/circuits/abu-dhabi.webp",
+  sepang:        "/f1/circuits/sepang.webp",
 };
 
 export function getF1CircuitPhotoUrl(circuitId: string): string | null {
