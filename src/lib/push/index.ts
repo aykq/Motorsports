@@ -5,11 +5,17 @@ import { inArray, eq } from "drizzle-orm";
 import { DEFAULT_SESSION_TYPES } from "@/lib/session-types";
 import { logError } from "@/lib/error-log";
 
-webpush.setVapidDetails(
-  process.env.VAPID_EMAIL!,
-  process.env.VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-);
+// Lazy on purpose: next build imports this module in CI where VAPID env is absent and setVapidDetails throws.
+let vapidConfigured = false;
+function ensureVapid() {
+  if (vapidConfigured) return;
+  webpush.setVapidDetails(
+    process.env.VAPID_EMAIL!,
+    process.env.VAPID_PUBLIC_KEY!,
+    process.env.VAPID_PRIVATE_KEY!
+  );
+  vapidConfigured = true;
+}
 
 export interface PushPayload {
   title: string;
@@ -22,6 +28,7 @@ export async function sendPushToSubscribers(
   sessionType: string | null,
   payload: PushPayload
 ): Promise<{ sent: number; failed: number }> {
+  ensureVapid();
   const subs = await db.query.pushSubscriptions.findMany();
 
   const targets = subs.filter((s) => {
@@ -87,6 +94,7 @@ export async function sendPushToSubscribers(
 export async function sendPushToAdmins(
   payload: PushPayload
 ): Promise<{ sent: number; failed: number }> {
+  ensureVapid();
   const subs = await db
     .select({
       id: pushSubscriptions.id,
