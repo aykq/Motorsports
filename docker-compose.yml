@@ -1,5 +1,6 @@
 services:
   migrate:
+    image: ghcr.io/aykq/motorsports-migrate:${IMAGE_TAG:-local}
     build:
       context: .
       dockerfile: Dockerfile
@@ -14,6 +15,7 @@ services:
       - internal
 
   app:
+    image: ghcr.io/aykq/motorsports-app:${IMAGE_TAG:-local}
     build:
       context: .
       dockerfile: Dockerfile

@@ -2,26 +2,103 @@ name: Deploy to VPS
 
 on:
   push:
-    branches:
-      - main
+    branches: [main, ghcr-deploy]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-
+    timeout-minutes: 40
+    permissions:
+      contents: read
+      packages: write
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.2.0
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build app
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: runner
+          push: true
+          tags: |
+            ghcr.io/aykq/motorsports-app:${{ github.sha }}
+            ghcr.io/aykq/motorsports-app:latest
+          labels: org.opencontainers.image.source=https://github.com/aykq/Motorsports
+          build-args: |
+            NEXT_PUBLIC_APP_URL=${{ vars.NEXT_PUBLIC_APP_URL }}
+            NEXT_PUBLIC_VAPID_PUBLIC_KEY=${{ vars.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}
+          cache-from: type=gha,scope=app
+          cache-to: type=gha,mode=max,scope=app
+      - name: Build migrate
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: migrator
+          push: true
+          tags: |
+            ghcr.io/aykq/motorsports-migrate:${{ github.sha }}
+            ghcr.io/aykq/motorsports-migrate:latest
+          labels: org.opencontainers.image.source=https://github.com/aykq/Motorsports
+          cache-from: type=gha,scope=migrate
+          cache-to: type=gha,mode=max,scope=migrate
+      - name: Verify image
+        env:
+          IMG: ghcr.io/aykq/motorsports-app:${{ github.sha }}
+          APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL }}
+          VAPID: ${{ vars.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}
+        run: |
+          test -n "$APP_URL" && test -n "$VAPID"
+          docker run --rm --entrypoint sh "$IMG" -c 'test ! -e /app/.env'
+          docker run --rm --entrypoint sh "$IMG" -c "grep -rqF '$APP_URL' /app/.next"
+          docker run --rm --entrypoint sh "$IMG" -c "grep -rqF '$VAPID' /app/.next/static"
+          docker run --rm --entrypoint sh "${IMG/motorsports-app/motorsports-migrate}" -c 'test ! -e /app/.env && test -f /app/scripts/migrate.cjs'
+      - uses: actions/delete-package-versions@v5
+        with:
+          package-name: motorsports-app
+          package-type: container
+          min-versions-to-keep: 10
+      - uses: actions/delete-package-versions@v5
+        with:
+          package-name: motorsports-migrate
+          package-type: container
+          min-versions-to-keep: 10
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Copy compose file
+        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.VDS_HOST }}
           username: root
           key: ${{ secrets.VDS_SSH_KEY }}
+          source: docker-compose.yml
+          target: /opt/motorsports
+      - name: Deploy
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          host: ${{ secrets.VDS_HOST }}
+          username: root
+          key: ${{ secrets.VDS_SSH_KEY }}
+          envs: GHCR_TOKEN
           command_timeout: 20m
-          script: |
-            set -e
-            cd /opt/motorsports
-            git pull origin main
-            docker compose build
-            docker compose run --rm migrate
-            docker compose up -d
-            docker image prune -f
+          script: printf '%s\n' "$GHCR_TOKEN" | /opt/scripts/deploy-app.sh motorsports ${{ github.sha }}
