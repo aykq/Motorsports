@@ -17,7 +17,10 @@ jobs:
       contents: read
       packages: write
     steps:
+      # Images live in Git LFS; without lfs the image ships 131-byte pointer files.
       - uses: actions/checkout@v4
+        with:
+          lfs: true
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with:
@@ -59,6 +62,7 @@ jobs:
         run: |
           test -n "$APP_URL" && test -n "$VAPID"
           docker run --rm --entrypoint sh "$IMG" -c 'test ! -e /app/.env'
+          docker run --rm --entrypoint sh "$IMG" -c '! grep -rlq "version https://git-lfs" /app/public'
           docker run --rm --entrypoint sh "$IMG" -c "grep -rqF '$APP_URL' /app/.next"
           docker run --rm --entrypoint sh "$IMG" -c "grep -rqF '$VAPID' /app/.next/static"
           docker run --rm --entrypoint sh "${IMG/motorsports-app/motorsports-migrate}" -c 'test ! -e /app/.env && test -f /app/scripts/migrate.cjs'
@@ -66,12 +70,12 @@ jobs:
         with:
           package-name: motorsports-app
           package-type: container
-          min-versions-to-keep: 10
+          min-versions-to-keep: 3
       - uses: actions/delete-package-versions@v5
         with:
           package-name: motorsports-migrate
           package-type: container
-          min-versions-to-keep: 10
+          min-versions-to-keep: 3
 
   deploy:
     needs: build
