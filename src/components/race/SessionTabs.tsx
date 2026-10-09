@@ -135,6 +135,7 @@ export function SessionTabs({
               results={active === "sprintQuali" ? sprintQualiResults : qualifyingResults}
               labels={qualifyingLabels}
               slug={slug}
+              sprint={active === "sprintQuali"}
             />
           </div>
         )}

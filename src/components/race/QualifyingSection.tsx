@@ -7,6 +7,8 @@ export interface QualifyingLabels {
   qualifyingResults: string;
   q2Eliminated: string;
   q1Eliminated: string;
+  sq2Eliminated?: string;
+  sq1Eliminated?: string;
   colPos: string;
   colDriverTeam: string;
   colGap: string;
@@ -17,6 +19,7 @@ interface Props {
   results: QualifyingDriverResult[];
   labels: QualifyingLabels;
   slug: string;
+  sprint?: boolean;
 }
 
 // Ergast/Jolpica lap time formatı "M:SS.mmm" (ör. "1:31.824"); bazı kısa pistlerde
@@ -117,7 +120,7 @@ function QualifyingRow({
   );
 }
 
-export function QualifyingSection({ results, labels, slug }: Props) {
+export function QualifyingSection({ results, labels, slug, sprint }: Props) {
   if (!results.length) return null;
 
   const q3 = results.filter((r) => r.q3 != null);
@@ -132,7 +135,7 @@ export function QualifyingSection({ results, labels, slug }: Props) {
     <div className="space-y-3">
       {q3.length > 0 && (
         <div className="rounded-lg border border-yellow-500/20 overflow-hidden">
-          <SegmentHeader label="Q3" accent="gold" />
+          <SegmentHeader label={sprint ? "SQ3" : "Q3"} accent="gold" />
           {q3.map((r) => (
             <QualifyingRow key={r.driverId} result={r} timeKey="q3" slug={slug} poleMs={poleMs} />
           ))}
@@ -141,7 +144,7 @@ export function QualifyingSection({ results, labels, slug }: Props) {
 
       {q2Eliminated.length > 0 && (
         <div className="rounded-lg border border-border overflow-hidden">
-          <SegmentHeader label={labels.q2Eliminated} />
+          <SegmentHeader label={(sprint && labels.sq2Eliminated) || labels.q2Eliminated} />
           {q2Eliminated.map((r) => (
             <QualifyingRow key={r.driverId} result={r} timeKey="q2" slug={slug} poleMs={poleMs} />
           ))}
@@ -150,7 +153,7 @@ export function QualifyingSection({ results, labels, slug }: Props) {
 
       {q1Eliminated.length > 0 && (
         <div className="rounded-lg border border-border overflow-hidden opacity-70">
-          <SegmentHeader label={labels.q1Eliminated} />
+          <SegmentHeader label={(sprint && labels.sq1Eliminated) || labels.q1Eliminated} />
           {q1Eliminated.map((r) => (
             <QualifyingRow key={r.driverId} result={r} timeKey="q1" slug={slug} poleMs={poleMs} />
           ))}
