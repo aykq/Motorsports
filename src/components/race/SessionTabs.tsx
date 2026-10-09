@@ -29,6 +29,7 @@ interface Props {
   practice2Results: PracticeDriverResult[];
   practice3Results: PracticeDriverResult[];
   qualifyingResults: QualifyingDriverResult[];
+  sprintQualiResults: QualifyingDriverResult[];
   sprintResults: RaceResult[];
   raceResults: RaceResult[];
   tireStints: TireStint[];
@@ -49,6 +50,7 @@ export function SessionTabs({
   practice2Results,
   practice3Results,
   qualifyingResults,
+  sprintQualiResults,
   sprintResults,
   raceResults,
   tireStints,
@@ -124,13 +126,13 @@ export function SessionTabs({
           />
         )}
 
-        {active === "qualifying" && (
+        {(active === "qualifying" || active === "sprintQuali") && (
           <div className="space-y-3">
             <h2 className="font-display text-xs font-semibold text-muted-foreground tracking-wide">
-              {qualifyingLabels.qualifyingResults}
+              {active === "sprintQuali" ? activeTab.fullLabel : qualifyingLabels.qualifyingResults}
             </h2>
             <QualifyingSection
-              results={qualifyingResults}
+              results={active === "sprintQuali" ? sprintQualiResults : qualifyingResults}
               labels={qualifyingLabels}
               slug={slug}
             />

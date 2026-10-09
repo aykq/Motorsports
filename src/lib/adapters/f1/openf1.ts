@@ -1,5 +1,11 @@
 import { z } from "zod";
-import type { TireStint, TireCompound, RaceControlEvent, PracticeDriverResult } from "@/types/series";
+import type {
+  TireStint,
+  TireCompound,
+  RaceControlEvent,
+  PracticeDriverResult,
+  QualifyingDriverResult,
+} from "@/types/series";
 import { logError } from "@/lib/error-log";
 import { makeRequestSpacer } from "@/lib/request-spacer";
 
@@ -283,6 +289,46 @@ export async function fetchOpenF1PracticeResults(
   }
 
   return results;
+}
+
+// Jolpica has no sprint qualifying endpoint, so SQ1/SQ2/SQ3 come from OpenF1's
+// session_result (duration = [SQ1, SQ2, SQ3] seconds, null when eliminated).
+// Throws on fetch failure — see fetchOpenF1Stints.
+export async function fetchOpenF1QualifyingResults(
+  sessionKey: number,
+  driverIdByCode: Map<string, string>
+): Promise<QualifyingDriverResult[]> {
+  const [rows, drivers] = await Promise.all([
+    openF1Fetch(
+      `/session_result?session_key=${sessionKey}`,
+      z.array(z.record(z.string(), z.unknown()))
+    ),
+    fetchOpenF1Drivers(sessionKey),
+  ]);
+  const driverMap = new Map(drivers.map((d) => [d.driver_number, d]));
+
+  const lap = (v: unknown) => (typeof v === "number" && v > 0 ? formatLapTime(v) : undefined);
+
+  const results: QualifyingDriverResult[] = [];
+  for (const row of rows) {
+    const num = typeof row.driver_number === "number" ? row.driver_number : null;
+    if (num === null) continue;
+    const driver = driverMap.get(num);
+    const code = driver?.name_acronym;
+    const [q1, q2, q3] = Array.isArray(row.duration) ? row.duration : [];
+    results.push({
+      position: typeof row.position === "number" ? row.position : results.length + 1,
+      driverId: (code && driverIdByCode.get(code)) ?? code?.toLowerCase() ?? String(num),
+      driverName: driver?.full_name ?? `#${num}`,
+      driverCode: code,
+      team: driver?.team_name ?? "",
+      q1: lap(q1),
+      q2: lap(q2),
+      q3: lap(q3),
+    });
+  }
+
+  return results.sort((a, b) => a.position - b.position);
 }
 
 function isNotableRaceControlEvent(msg: string, flag: string | null | undefined, category: string | undefined): boolean {
