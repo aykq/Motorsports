@@ -1,6 +1,6 @@
 import { cache } from "react";
 import type { Race, RaceDetail, RaceResult, PracticeDriverResult } from "@/types/series";
-import { getCachedRaceDetail, getRaceDetailRaw, setCachedRaceDetail } from "@/lib/cache";
+import { getCachedDrivers, getCachedRaceDetail, getRaceDetailRaw, setCachedRaceDetail } from "@/lib/cache";
 import { mergeFetchedRaceDetail, reconcilePracticeDriverIds } from "@/lib/race-detail-merge";
 import {
   jolpicaFetchPitStops,
@@ -14,6 +14,7 @@ import {
   fetchOpenF1Stints,
   fetchOpenF1RaceControl,
   fetchOpenF1PracticeResults,
+  fetchOpenF1QualifyingResults,
 } from "@/lib/adapters/f1/openf1";
 import { fetchRaceWeather } from "@/lib/weather";
 import { translateRaceControlMessages } from "@/lib/gemini";
@@ -28,7 +29,7 @@ const SESSION_WINDOW_MS: Record<string, number> = {
   practice2: 3 * 60 * 60 * 1000,
   practice3: 3 * 60 * 60 * 1000,
   qualifying: 12 * 60 * 60 * 1000,
-  sprintQuali: 2 * 60 * 60 * 1000,
+  sprintQuali: 12 * 60 * 60 * 1000,
   sprint: 4 * 60 * 60 * 1000,
   race: 4 * 60 * 60 * 1000,
 };
@@ -229,6 +230,7 @@ export async function syncRaceDetails(
         raceControlTr,
         qualifyingComplete: fresh.qualifyingComplete ?? rawDetail?.qualifyingComplete,
         sprintQualiComplete: rawDetail?.sprintQualiComplete,
+        sprintQualiResults: rawDetail?.sprintQualiResults,
         practice1Complete: rawDetail?.practice1Complete,
         practice2Complete: rawDetail?.practice2Complete,
         practice3Complete: rawDetail?.practice3Complete,
@@ -275,7 +277,7 @@ export async function syncActiveSessionData(
     ...(existing.sprintResults ?? []),
   ]);
 
-  const of1Types = new Set(["practice1", "practice2", "practice3", "race", "sprint"]);
+  const of1Types = new Set(["practice1", "practice2", "practice3", "sprintQuali", "race", "sprint"]);
   const of1Sessions = activeSessions.filter((s) => of1Types.has(s.type));
   const sessionKeyMap =
     of1Sessions.length > 0
@@ -311,12 +313,23 @@ export async function syncActiveSessionData(
       }
 
       if (type === "sprintQuali") {
-        const results = await jolpicaFetchQualifyingResults(season, race.round);
-        updated.qualifyingResults = results;
-        const q1Count = results.filter((r) => r.q1).length;
-        if (q1Count >= 15) updated.sprintQualiComplete = true;
-        changed = true;
-        console.log(`[cron] session sync: ${slug} R${race.round} sprintQuali (Q1 drivers: ${q1Count})`);
+        const sessionKey = sessionKeyMap.get(type);
+        if (!sessionKey) continue;
+
+        // The weekend's race.results is still empty here, so ids come from the drivers table.
+        const { drivers } = await getCachedDrivers(slug);
+        const driverIdByCode = new Map(
+          drivers.flatMap((d) => (d.code ? [[d.code, d.id] as const] : []))
+        );
+        const results = await fetchOpenF1QualifyingResults(sessionKey, driverIdByCode);
+        // Same completeness rule as the main qualifying session (Q3 = top 10).
+        const q3Count = results.filter((r) => r.q3).length;
+        if (results.length > 0) {
+          updated.sprintQualiResults = results;
+          if (q3Count >= 9) updated.sprintQualiComplete = true;
+          changed = true;
+        }
+        console.log(`[cron] session sync: ${slug} R${race.round} sprintQuali (SQ3 drivers: ${q3Count})`);
       }
 
       if (type === "sprint") {
