@@ -166,6 +166,8 @@ export default async function RaceDetailPage({ params, searchParams }: Props) {
     qualifyingResults: t("qualifyingResults"),
     q2Eliminated: t("q2Eliminated"),
     q1Eliminated: t("q1Eliminated"),
+    sq2Eliminated: t("sq2Eliminated"),
+    sq1Eliminated: t("sq1Eliminated"),
     colPos: t("colPos"),
     colDriverTeam: t("colDriverTeam"),
     colGap: t("colGap"),
