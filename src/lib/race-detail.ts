@@ -15,6 +15,7 @@ import {
   fetchOpenF1RaceControl,
   fetchOpenF1PracticeResults,
   fetchOpenF1QualifyingResults,
+  fetchOpenF1SprintResults,
 } from "@/lib/adapters/f1/openf1";
 import { fetchRaceWeather } from "@/lib/weather";
 import { translateRaceControlMessages } from "@/lib/gemini";
@@ -30,7 +31,7 @@ const SESSION_WINDOW_MS: Record<string, number> = {
   practice3: 3 * 60 * 60 * 1000,
   qualifying: 12 * 60 * 60 * 1000,
   sprintQuali: 12 * 60 * 60 * 1000,
-  sprint: 4 * 60 * 60 * 1000,
+  sprint: 12 * 60 * 60 * 1000,
   race: 4 * 60 * 60 * 1000,
 };
 
@@ -337,6 +338,18 @@ export async function syncActiveSessionData(
         if (sprintResults.length > 0) {
           updated.sprintResults = sprintResults;
           if (sprintResults.length >= 18) updated.sprintComplete = true;
+        } else if (!updated.sprintResults?.length) {
+          // Jolpica sprint'i geç yayınlıyor; OpenF1 session_result geçici sonuç olarak yazılır
+          // (complete işaretlenmez, Jolpica gelince üzerine yazılır).
+          const sessionKey = sessionKeyMap.get("sprint");
+          if (sessionKey) {
+            const { drivers } = await getCachedDrivers(slug);
+            const driverIdByCode = new Map(
+              drivers.flatMap((d) => (d.code ? [[d.code, d.id] as const] : []))
+            );
+            const fallback = await fetchOpenF1SprintResults(sessionKey, driverIdByCode);
+            if (fallback.length > 0) updated.sprintResults = fallback;
+          }
         }
         // Also pull live OpenF1 data while sprint is ongoing
         if (!updated.sprintComplete) {

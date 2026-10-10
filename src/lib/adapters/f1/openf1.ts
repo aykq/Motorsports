@@ -5,6 +5,7 @@ import type {
   RaceControlEvent,
   PracticeDriverResult,
   QualifyingDriverResult,
+  RaceResult,
 } from "@/types/series";
 import { logError } from "@/lib/error-log";
 import { makeRequestSpacer } from "@/lib/request-spacer";
@@ -73,6 +74,8 @@ const FETCH_TIMEOUT_MS = 15_000;
 // and every one fails. Space all OpenF1 traffic to ~2.5/s.
 const spaceOpenF1Request = makeRequestSpacer(400);
 
+export class OpenF1LiveLockError extends Error {}
+
 async function openF1Fetch<T>(path: string, schema: z.ZodType<T>): Promise<T> {
   const wait = spaceOpenF1Request();
   if (wait > 0) await new Promise((r) => setTimeout(r, wait));
@@ -88,6 +91,8 @@ async function openF1Fetch<T>(path: string, schema: z.ZodType<T>): Promise<T> {
       signal: controller.signal,
       next: { revalidate: 0 },
     });
+    // OpenF1 canlı seans boyunca anahtarsız tüm erişimi 401 ile kapatır; arıza değil.
+    if (res.status === 401) throw new OpenF1LiveLockError(`OpenF1 error 401: ${path}`);
     if (!res.ok) throw new Error(`OpenF1 error ${res.status}: ${path}`);
     return schema.parse(await res.json());
   } finally {
@@ -196,6 +201,10 @@ export async function findOpenF1AllSessionKeys(
   try {
     of1Sessions = await fetchOpenF1Sessions(year);
   } catch (err) {
+    if (err instanceof OpenF1LiveLockError) {
+      console.warn(`[openf1/findOpenF1AllSessionKeys] live session lock, skipping: ${err.message}`);
+      return keyMap;
+    }
     await logError({
       source: "openf1/findOpenF1AllSessionKeys",
       severity: "warning",
@@ -328,6 +337,47 @@ export async function fetchOpenF1QualifyingResults(
     });
   }
 
+  return results.sort((a, b) => a.position - b.position);
+}
+
+const SPRINT_POINTS = [8, 7, 6, 5, 4, 3, 2, 1];
+
+export async function fetchOpenF1SprintResults(
+  sessionKey: number,
+  driverIdByCode: Map<string, string>
+): Promise<RaceResult[]> {
+  const [rows, drivers] = await Promise.all([
+    openF1Fetch(
+      `/session_result?session_key=${sessionKey}`,
+      z.array(z.record(z.string(), z.unknown()))
+    ),
+    fetchOpenF1Drivers(sessionKey),
+  ]);
+  const driverMap = new Map(drivers.map((d) => [d.driver_number, d]));
+
+  const results: RaceResult[] = [];
+  for (const row of rows) {
+    const num = typeof row.driver_number === "number" ? row.driver_number : null;
+    if (num === null || typeof row.position !== "number") continue;
+    const driver = driverMap.get(num);
+    const code = driver?.name_acronym;
+    const out = row.dsq === true ? "Disqualified" : row.dns === true ? "Did not start" : row.dnf === true ? "Retired" : null;
+    const gap = row.gap_to_leader;
+    const gapStr = typeof gap === "number" ? `+${gap.toFixed(3)}` : typeof gap === "string" && gap ? gap : undefined;
+    results.push({
+      position: row.position,
+      driverId: (code && driverIdByCode.get(code)) ?? code?.toLowerCase() ?? String(num),
+      driverName: driver?.full_name ?? `#${num}`,
+      driverCode: code,
+      driverNumber: num,
+      team: driver?.team_name ?? "",
+      time: row.position === 1 && typeof row.duration === "number" ? formatLapTime(row.duration) : undefined,
+      gap: row.position !== 1 && !out ? gapStr : undefined,
+      points: out ? 0 : (SPRINT_POINTS[row.position - 1] ?? 0),
+      status: out ?? "Finished",
+      laps: typeof row.number_of_laps === "number" ? row.number_of_laps : undefined,
+    });
+  }
   return results.sort((a, b) => a.position - b.position);
 }
 
