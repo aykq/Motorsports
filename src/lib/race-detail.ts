@@ -338,9 +338,10 @@ export async function syncActiveSessionData(
         if (sprintResults.length > 0) {
           updated.sprintResults = sprintResults;
           if (sprintResults.length >= 18) updated.sprintComplete = true;
-        } else if (!updated.sprintResults?.length) {
+        } else if (!updated.sprintComplete) {
           // Jolpica sprint'i geç yayınlıyor; OpenF1 session_result geçici sonuç olarak yazılır
-          // (complete işaretlenmez, Jolpica gelince üzerine yazılır).
+          // (complete işaretlenmez, Jolpica gelince üzerine yazılır). Dolu ama tamamlanmamış
+          // önbellek de yenilenir; yoksa eksik ilk yazım kalıcı olur.
           const sessionKey = sessionKeyMap.get("sprint");
           if (sessionKey) {
             const { drivers } = await getCachedDrivers(slug);
