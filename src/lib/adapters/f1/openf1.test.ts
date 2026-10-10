@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 vi.mock("@/lib/error-log", () => ({ logError: vi.fn() }));
 
-import { fetchOpenF1Sessions, __clearOpenF1SessionCache } from "./openf1";
+import { fetchOpenF1Sessions, fetchOpenF1SprintResults, __clearOpenF1SessionCache } from "./openf1";
 
 const SESSION = {
   session_key: 9999,
@@ -76,5 +76,31 @@ describe("fetchOpenF1Sessions", () => {
 
     expect(ok).toHaveLength(1);
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("fetchOpenF1SprintResults", () => {
+  it("keeps retirements that have no position, after the classified drivers", async () => {
+    const driver = (n: number, code: string) => ({
+      driver_number: n, full_name: `Driver ${code}`, name_acronym: code, team_name: "Team", session_key: 1, meeting_key: 1,
+    });
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) =>
+      String(input).includes("/drivers")
+        ? jsonResponse([driver(1, "AAA"), driver(2, "BBB"), driver(3, "CCC"), driver(4, "DDD")])
+        : jsonResponse([
+            { driver_number: 3, position: null, dnf: true },
+            { driver_number: 1, position: 1, duration: 2400, dnf: false },
+            { driver_number: 4, position: null, dnf: true },
+            { driver_number: 2, position: 2, gap_to_leader: 1.5, dnf: false },
+          ])
+    );
+    const results = await fetchOpenF1SprintResults(1, new Map());
+    expect(results.map((r) => [r.position, r.driverCode, r.status])).toEqual([
+      [1, "AAA", "Finished"],
+      [2, "BBB", "Finished"],
+      [3, "CCC", "Retired"],
+      [4, "DDD", "Retired"],
+    ]);
+    expect(results[2].points).toBe(0);
   });
 });

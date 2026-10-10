@@ -355,25 +355,31 @@ export async function fetchOpenF1SprintResults(
   ]);
   const driverMap = new Map(drivers.map((d) => [d.driver_number, d]));
 
+  // Retirements come back with position null; classified rows first, then those in feed order.
+  const usable = rows.filter((r) => typeof r.driver_number === "number");
+  const classified = usable.filter((r) => typeof r.position === "number");
+  const unclassified = usable.filter((r) => typeof r.position !== "number");
+  let nextPosition = Math.max(0, ...classified.map((r) => r.position as number)) + 1;
+
   const results: RaceResult[] = [];
-  for (const row of rows) {
-    const num = typeof row.driver_number === "number" ? row.driver_number : null;
-    if (num === null || typeof row.position !== "number") continue;
+  for (const row of [...classified, ...unclassified]) {
+    const num = row.driver_number as number;
+    const position = typeof row.position === "number" ? row.position : nextPosition++;
     const driver = driverMap.get(num);
     const code = driver?.name_acronym;
     const out = row.dsq === true ? "Disqualified" : row.dns === true ? "Did not start" : row.dnf === true ? "Retired" : null;
     const gap = row.gap_to_leader;
     const gapStr = typeof gap === "number" ? `+${gap.toFixed(3)}` : typeof gap === "string" && gap ? gap : undefined;
     results.push({
-      position: row.position,
+      position,
       driverId: (code && driverIdByCode.get(code)) ?? code?.toLowerCase() ?? String(num),
       driverName: driver?.full_name ?? `#${num}`,
       driverCode: code,
       driverNumber: num,
       team: driver?.team_name ?? "",
-      time: row.position === 1 && typeof row.duration === "number" ? formatLapTime(row.duration) : undefined,
-      gap: row.position !== 1 && !out ? gapStr : undefined,
-      points: out ? 0 : (SPRINT_POINTS[row.position - 1] ?? 0),
+      time: position === 1 && typeof row.duration === "number" ? formatLapTime(row.duration) : undefined,
+      gap: position !== 1 && !out ? gapStr : undefined,
+      points: out ? 0 : (SPRINT_POINTS[position - 1] ?? 0),
       status: out ?? "Finished",
       laps: typeof row.number_of_laps === "number" ? row.number_of_laps : undefined,
     });
