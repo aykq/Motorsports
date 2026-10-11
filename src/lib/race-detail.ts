@@ -278,7 +278,7 @@ export async function syncActiveSessionData(
     ...(existing.sprintResults ?? []),
   ]);
 
-  const of1Types = new Set(["practice1", "practice2", "practice3", "sprintQuali", "race", "sprint"]);
+  const of1Types = new Set(["practice1", "practice2", "practice3", "qualifying", "sprintQuali", "race", "sprint"]);
   const of1Sessions = activeSessions.filter((s) => of1Types.has(s.type));
   const sessionKeyMap =
     of1Sessions.length > 0
@@ -306,11 +306,29 @@ export async function syncActiveSessionData(
 
       if (type === "qualifying") {
         const results = await jolpicaFetchQualifyingResults(season, race.round);
-        updated.qualifyingResults = results;
-        const q3Count = results.filter((r) => r.q3).length;
-        if (q3Count >= 9) updated.qualifyingComplete = true;
-        changed = true;
-        console.log(`[cron] session sync: ${slug} R${race.round} qualifying (Q3 drivers: ${q3Count})`);
+        if (results.length > 0) {
+          updated.qualifyingResults = results;
+          const q3Count = results.filter((r) => r.q3).length;
+          if (q3Count >= 9) updated.qualifyingComplete = true;
+          changed = true;
+          console.log(`[cron] session sync: ${slug} R${race.round} qualifying (Q3 drivers: ${q3Count})`);
+        } else {
+          // Jolpica publishes hours late; OpenF1 stands in but never sets qualifyingComplete,
+          // so the next Jolpica result still overwrites it.
+          const sessionKey = sessionKeyMap.get(type);
+          if (sessionKey) {
+            const { drivers } = await getCachedDrivers(slug);
+            const driverIdByCode = new Map(
+              drivers.flatMap((d) => (d.code ? [[d.code, d.id] as const] : []))
+            );
+            const fallback = await fetchOpenF1QualifyingResults(sessionKey, driverIdByCode);
+            if (fallback.length > 0) {
+              updated.qualifyingResults = fallback;
+              changed = true;
+            }
+            console.log(`[cron] session sync: ${slug} R${race.round} qualifying OpenF1 fallback (${fallback.length} drivers)`);
+          }
+        }
       }
 
       if (type === "sprintQuali") {
