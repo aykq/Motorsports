@@ -39,7 +39,20 @@ Formula 1 başta olmak üzere birden fazla motorsporu serisini tek bir mobil ön
 
 ## Kapsam
 
-Şu an F1 tam desteklenir. WEC, MotoGP, Moto2, Moto3, GT3, GT4 ve Porsche Carrera Cup için adaptörler hazırdır, veri
-kapsamı genişletiliyor.
+Şu an F1 tam desteklenir. WEC, MotoGP, Moto2, Moto3, GT3, GT4 ve Porsche Carrera Cup için adaptörler hazırdır.
 
 Yeni kayıtlar yönetici onayından sonra aktif olur.
+
+## Veri ve markalar
+
+Yarış, sonuç ve hava durumu verileri üçüncü taraf kaynaklardan gelir: [OpenF1](https://openf1.org),
+[Jolpica](https://github.com/jolpica/jolpica-f1), [Open-Meteo](https://open-meteo.com) ve serilerin
+resmi siteleri. Bu veriler kaynaklarının koşullarına tabidir, bu reponun lisansı kapsamında değildir.
+
+Formula 1, F1, FIA, MotoGP, WEC ve diğer seri adları, logoları ve fotoğrafları sahiplerine aittir.
+Motorsports Hub resmi olmayan bir hayran projesidir; bu kuruluşlarla bağlantısı yoktur ve onlar
+tarafından onaylanmamıştır.
+
+## Lisans
+
+Kaynak kod okunabilsin diye açıktır, kullanım lisansı verilmez. Ayrıntı için [LICENSE](LICENSE).
