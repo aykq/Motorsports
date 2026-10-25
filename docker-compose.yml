@@ -52,7 +52,7 @@ services:
       - internal
 
   cron:
-    image: alpine:3.19
+    image: alpine:3.24
     restart: unless-stopped
     environment:
       CRON_SECRET: ${CRON_SECRET}
