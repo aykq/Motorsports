@@ -96,13 +96,13 @@ jobs:
           source: docker-compose.yml
           target: /opt/motorsports
       - name: Deploy
-        uses: appleboy/ssh-action@v1.2.0
         env:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          host: ${{ secrets.VDS_HOST }}
-          username: root
-          key: ${{ secrets.VDS_SSH_KEY }}
-          envs: GHCR_TOKEN
-          command_timeout: 20m
-          script: printf '%s\n' "$GHCR_TOKEN" | /opt/scripts/deploy-app.sh motorsports ${{ github.sha }}
+          SSH_KEY: ${{ secrets.VDS_SSH_KEY }}
+          VDS_HOST: ${{ secrets.VDS_HOST }}
+        # Token goes over ssh stdin: ssh-action "envs" exported it into the remote argv, visible in ps.
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
+          printf '%s ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOYB62m9tGM798r6emxd5RFoirrJRXIuJpUxHYTaTHrs\n' "$VDS_HOST" > ~/.ssh/known_hosts
+          printf '%s\n' "$GHCR_TOKEN" | timeout 20m ssh -i ~/.ssh/deploy_key -o BatchMode=yes "root@$VDS_HOST" /opt/scripts/deploy-app.sh motorsports ${{ github.sha }}
