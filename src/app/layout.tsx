@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Manrope, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { ServiceWorkerRegistrar } from "@/components/pwa/ServiceWorkerRegistrar";
+import { ThemeColorSync } from "@/components/pwa/ThemeColorSync";
 import { Providers } from "@/lib/providers";
 import { ThemeProvider } from "next-themes";
 import { NextIntlClientProvider } from "next-intl";
@@ -40,7 +41,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#e11d48",
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#0b0f14" },
+    { media: "(prefers-color-scheme: light)", color: "#f5f7f9" },
+  ],
   width: "device-width",
   initialScale: 1,
 };
@@ -59,6 +63,7 @@ export default async function RootLayout({
         <ServiceWorkerRegistrar />
         <NextIntlClientProvider locale={locale} messages={messages}>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem storageKey="motorsports-theme">
+            <ThemeColorSync />
             <Providers>{children}</Providers>
           </ThemeProvider>
         </NextIntlClientProvider>
