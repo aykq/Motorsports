@@ -34,9 +34,9 @@ import { firstNonEmpty, isSessionComplete, type ResultSource, type SourceStep } 
 // olursa (qualifying'de olduğu gibi 2h/12h) sonuç geç gelen bir session'ın complete
 // flag'i hiç set edilmeden pencere kapanır ve bir daha asla denenmez.
 const SESSION_WINDOW_MS: Record<string, number> = {
-  practice1: 3 * 60 * 60 * 1000,
-  practice2: 3 * 60 * 60 * 1000,
-  practice3: 3 * 60 * 60 * 1000,
+  practice1: 12 * 60 * 60 * 1000,
+  practice2: 12 * 60 * 60 * 1000,
+  practice3: 12 * 60 * 60 * 1000,
   qualifying: 12 * 60 * 60 * 1000,
   sprintQuali: 12 * 60 * 60 * 1000,
   sprint: 12 * 60 * 60 * 1000,
