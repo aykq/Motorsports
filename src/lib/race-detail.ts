@@ -1,5 +1,5 @@
 import { cache } from "react";
-import type { Race, RaceDetail, RaceResult, PracticeDriverResult } from "@/types/series";
+import type { Driver, Race, RaceDetail, RaceResult, PracticeDriverResult, QualifyingDriverResult, TireStint } from "@/types/series";
 import { getCachedDrivers, getCachedRaceDetail, getRaceDetailRaw, setCachedRaceDetail } from "@/lib/cache";
 import { mergeFetchedRaceDetail, reconcilePracticeDriverIds } from "@/lib/race-detail-merge";
 import {
@@ -16,10 +16,18 @@ import {
   fetchOpenF1PracticeResults,
   fetchOpenF1QualifyingResults,
   fetchOpenF1SprintResults,
+  OpenF1NoDataError,
 } from "@/lib/adapters/f1/openf1";
+import {
+  scrapeF1PracticeResults,
+  scrapeF1QualifyingResults,
+  scrapeF1RaceStints,
+  scrapeF1SprintResults,
+} from "@/lib/adapters/f1/motorsport-com-scraper";
 import { fetchRaceWeather } from "@/lib/weather";
 import { translateRaceControlMessages } from "@/lib/gemini";
 import { logError } from "@/lib/error-log";
+import { firstNonEmpty, isSessionComplete, type ResultSource, type SourceStep } from "@/lib/source-chain";
 
 // Bir session'ın burada ne kadar süre "aktif" sayılıp yeniden denendiğini belirler.
 // notify-sessions.ts'teki RESULTS_WINDOW ile eşit veya daha geniş olmalı — daha dar
@@ -64,8 +72,64 @@ function attachDriverIds(
 ): PracticeDriverResult[] {
   return results.map((r) => ({
     ...r,
-    driverId: r.driverNumber != null ? numberToDriverId.get(r.driverNumber) : undefined,
+    driverId: (r.driverNumber != null ? numberToDriverId.get(r.driverNumber) : undefined) ?? r.driverId,
   }));
+}
+
+const SPRINT_FINAL_SOURCE: ResultSource = "jolpica";
+
+const MSCOM_PRACTICE = { practice1: "FP1", practice2: "FP2", practice3: "FP3" } as const;
+
+function practiceSources(
+  type: keyof typeof MSCOM_PRACTICE,
+  sessionKey: number | undefined,
+  season: number,
+  raceName: string,
+  getRoster: () => Promise<Driver[]>
+): SourceStep<PracticeDriverResult>[] {
+  return [
+    ["mscom", async () => scrapeF1PracticeResults(season, raceName, MSCOM_PRACTICE[type], await getRoster())],
+    ["openf1", sessionKey ? () => fetchOpenF1PracticeResults(sessionKey) : null],
+  ];
+}
+
+function qualifyingSources(
+  type: "qualifying" | "sprintQuali",
+  sessionKey: number | undefined,
+  season: number,
+  round: number,
+  raceName: string,
+  getRoster: () => Promise<Driver[]>
+): SourceStep<QualifyingDriverResult>[] {
+  const openF1: SourceStep<QualifyingDriverResult> = [
+    "openf1",
+    sessionKey ? async () => fetchOpenF1QualifyingResults(sessionKey, driverIdByCode(await getRoster())) : null,
+  ];
+  const mscom: SourceStep<QualifyingDriverResult> = [
+    "mscom",
+    async () => scrapeF1QualifyingResults(season, raceName, type === "sprintQuali", await getRoster()),
+  ];
+  return type === "qualifying"
+    ? [["jolpica", () => jolpicaFetchQualifyingResults(season, round)], mscom, openF1]
+    : [mscom, openF1];
+}
+
+function sprintSources(
+  sessionKey: number | undefined,
+  season: number,
+  round: number,
+  raceName: string,
+  getRoster: () => Promise<Driver[]>
+): SourceStep<RaceResult>[] {
+  return [
+    ["jolpica", () => jolpicaFetchSprintResults(season, round)],
+    ["mscom", async () => scrapeF1SprintResults(season, raceName, await getRoster())],
+    ["openf1", sessionKey ? async () => fetchOpenF1SprintResults(sessionKey, driverIdByCode(await getRoster())) : null],
+  ];
+}
+
+function driverIdByCode(drivers: Driver[]): Map<string, string> {
+  return new Map(drivers.flatMap((d) => (d.code ? [[d.code, d.id] as const] : [])));
 }
 
 export function isActiveRaceWeekend(race: Race): boolean {
@@ -285,6 +349,9 @@ export async function syncActiveSessionData(
       ? await findOpenF1AllSessionKeys(season, of1Sessions)
       : new Map<string, number>();
 
+  let roster: Promise<Driver[]> | null = null;
+  const getRoster = () => (roster ??= getCachedDrivers(slug).then((r) => r.drivers));
+
   const updated = { ...existing };
   let changed = false;
 
@@ -293,82 +360,44 @@ export async function syncActiveSessionData(
     try {
       if (type === "practice1" || type === "practice2" || type === "practice3") {
         const sessionKey = sessionKeyMap.get(type);
-        if (!sessionKey) continue;
-
-        // Reaching here means the fetch succeeded (it throws otherwise).
-        const results = attachDriverIds(await fetchOpenF1PracticeResults(sessionKey), numberToDriverId);
-        if (type === "practice1") { updated.practice1Results = results; updated.practice1Fetched = true; if (results.length >= 15) updated.practice1Complete = true; }
-        if (type === "practice2") { updated.practice2Results = results; updated.practice2Fetched = true; if (results.length >= 15) updated.practice2Complete = true; }
-        if (type === "practice3") { updated.practice3Results = results; updated.practice3Fetched = true; if (results.length >= 15) updated.practice3Complete = true; }
-        changed = true;
-        console.log(`[cron] session sync: ${slug} R${race.round} ${type} (${results.length} drivers, complete: ${results.length >= 15})`);
-      }
-
-      if (type === "qualifying") {
-        const results = await jolpicaFetchQualifyingResults(season, race.round);
-        if (results.length > 0) {
-          updated.qualifyingResults = results;
-          const q3Count = results.filter((r) => r.q3).length;
-          if (q3Count >= 9) updated.qualifyingComplete = true;
-          changed = true;
-          console.log(`[cron] session sync: ${slug} R${race.round} qualifying (Q3 drivers: ${q3Count})`);
-        } else {
-          // Jolpica publishes hours late; OpenF1 stands in but never sets qualifyingComplete,
-          // so the next Jolpica result still overwrites it.
-          const sessionKey = sessionKeyMap.get(type);
-          if (sessionKey) {
-            const { drivers } = await getCachedDrivers(slug);
-            const driverIdByCode = new Map(
-              drivers.flatMap((d) => (d.code ? [[d.code, d.id] as const] : []))
-            );
-            const fallback = await fetchOpenF1QualifyingResults(sessionKey, driverIdByCode);
-            if (fallback.length > 0) {
-              updated.qualifyingResults = fallback;
-              changed = true;
-            }
-            console.log(`[cron] session sync: ${slug} R${race.round} qualifying OpenF1 fallback (${fallback.length} drivers)`);
-          }
-        }
-      }
-
-      if (type === "sprintQuali") {
-        const sessionKey = sessionKeyMap.get(type);
-        if (!sessionKey) continue;
-
-        // The weekend's race.results is still empty here, so ids come from the drivers table.
-        const { drivers } = await getCachedDrivers(slug);
-        const driverIdByCode = new Map(
-          drivers.flatMap((d) => (d.code ? [[d.code, d.id] as const] : []))
+        const { results: raw, source, succeeded } = await firstNonEmpty(
+          practiceSources(type, sessionKey, season, race.name, getRoster)
         );
-        const results = await fetchOpenF1QualifyingResults(sessionKey, driverIdByCode);
-        // Same completeness rule as the main qualifying session (Q3 = top 10).
+        const results = attachDriverIds(raw, numberToDriverId);
+        // "Fetched" is the OpenF1 retry flag (see race-detail-merge); completion is separate.
+        const fetched = succeeded.includes("openf1");
+        const complete = isSessionComplete("practice", source, results);
+        if (!fetched && !results.length) continue;
+        if (type === "practice1") { updated.practice1Results = results; if (fetched) updated.practice1Fetched = true; if (complete) updated.practice1Complete = true; }
+        if (type === "practice2") { updated.practice2Results = results; if (fetched) updated.practice2Fetched = true; if (complete) updated.practice2Complete = true; }
+        if (type === "practice3") { updated.practice3Results = results; if (fetched) updated.practice3Fetched = true; if (complete) updated.practice3Complete = true; }
+        changed = true;
+        console.log(`[cron] session sync: ${slug} R${race.round} ${type} via ${source ?? "none"} (${results.length} drivers, complete: ${complete})`);
+      }
+
+      if (type === "qualifying" || type === "sprintQuali") {
+        const { results, source } = await firstNonEmpty(
+          qualifyingSources(type, sessionKeyMap.get(type), season, race.round, race.name, getRoster)
+        );
         const q3Count = results.filter((r) => r.q3).length;
+        const complete = isSessionComplete(type, source, results);
         if (results.length > 0) {
-          updated.sprintQualiResults = results;
-          if (q3Count >= 9) updated.sprintQualiComplete = true;
+          if (type === "qualifying") { updated.qualifyingResults = results; if (complete) updated.qualifyingComplete = true; }
+          else { updated.sprintQualiResults = results; if (complete) updated.sprintQualiComplete = true; }
           changed = true;
         }
-        console.log(`[cron] session sync: ${slug} R${race.round} sprintQuali (SQ3 drivers: ${q3Count})`);
+        console.log(`[cron] session sync: ${slug} R${race.round} ${type} via ${source ?? "none"} (Q3 drivers: ${q3Count})`);
       }
 
       if (type === "sprint") {
-        const sprintResults = await jolpicaFetchSprintResults(season, race.round);
-        if (sprintResults.length > 0) {
+        const { results: sprintResults, source } = await firstNonEmpty(
+          sprintSources(sessionKeyMap.get("sprint"), season, race.round, race.name, getRoster)
+        );
+        if (source === SPRINT_FINAL_SOURCE) {
           updated.sprintResults = sprintResults;
           if (sprintResults.length >= 18) updated.sprintComplete = true;
-        } else if (!updated.sprintComplete) {
-          // Jolpica sprint'i geç yayınlıyor; OpenF1 session_result geçici sonuç olarak yazılır
-          // (complete işaretlenmez, Jolpica gelince üzerine yazılır). Dolu ama tamamlanmamış
-          // önbellek de yenilenir; yoksa eksik ilk yazım kalıcı olur.
-          const sessionKey = sessionKeyMap.get("sprint");
-          if (sessionKey) {
-            const { drivers } = await getCachedDrivers(slug);
-            const driverIdByCode = new Map(
-              drivers.flatMap((d) => (d.code ? [[d.code, d.id] as const] : []))
-            );
-            const fallback = await fetchOpenF1SprintResults(sessionKey, driverIdByCode);
-            if (fallback.length > 0) updated.sprintResults = fallback;
-          }
+        } else if (sprintResults.length > 0 && !updated.sprintComplete) {
+          updated.sprintResults = sprintResults;
         }
         // Also pull live OpenF1 data while sprint is ongoing
         if (!updated.sprintComplete) {
@@ -445,7 +474,7 @@ export async function syncActiveSessionData(
         changed = true;
       }
     } catch (err) {
-      logError({ source: "race-detail/sync-active-session", severity: "error", message: `${slug} R${race.round} ${type}: ${err instanceof Error ? err.message : String(err)}` });
+      logError({ source: "race-detail/sync-active-session", severity: err instanceof OpenF1NoDataError ? "warning" : "error", message: `${slug} R${race.round} ${type}: ${err instanceof Error ? err.message : String(err)}` });
     }
   }
 
@@ -559,14 +588,28 @@ async function fetchF1RaceDetail(
   const fp2Key = sessionKeyMap.get("practice2") ?? null;
   const fp3Key = sessionKeyMap.get("practice3") ?? null;
 
+  let roster: Promise<Driver[]> | null = null;
+  const getRoster = () => (roster ??= getCachedDrivers("f1").then((r) => r.drivers));
+  const practice = (type: keyof typeof MSCOM_PRACTICE, done: boolean, key: number | null) =>
+    done
+      ? firstNonEmpty(practiceSources(type, key ?? undefined, season, race.name, getRoster))
+      : Promise.resolve({ results: [] as PracticeDriverResult[], source: null, succeeded: [] as ResultSource[] });
+
   const [stintsResult, raceControlResult, fp1Result, fp2Result, fp3Result] =
     await Promise.allSettled([
-      raceSessionKey ? fetchOpenF1Stints(raceSessionKey) : Promise.resolve([]),
+      isCompleted
+        ? firstNonEmpty<TireStint>([
+            ["mscom", () => scrapeF1RaceStints(season, race.name)],
+            ["openf1", raceSessionKey ? () => fetchOpenF1Stints(raceSessionKey) : null],
+          ])
+        : Promise.resolve({ results: [] as TireStint[], source: null, succeeded: [] as ResultSource[] }),
       raceSessionKey ? fetchOpenF1RaceControl(raceSessionKey) : Promise.resolve([]),
-      fp1Key ? fetchOpenF1PracticeResults(fp1Key) : Promise.resolve([]),
-      fp2Key ? fetchOpenF1PracticeResults(fp2Key) : Promise.resolve([]),
-      fp3Key ? fetchOpenF1PracticeResults(fp3Key) : Promise.resolve([]),
+      practice("practice1", fp1Done, fp1Key),
+      practice("practice2", fp2Done, fp2Key),
+      practice("practice3", fp3Done, fp3Key),
     ]);
+  const practiceResults = (r: typeof fp1Result) => (r.status === "fulfilled" ? r.value.results : []);
+  const practiceFetched = (r: typeof fp1Result) => r.status === "fulfilled" && r.value.succeeded.includes("openf1");
 
   const pitStops = pitStopsResult.status === "fulfilled" ? pitStopsResult.value : [];
   const driverStandingsAfter =
@@ -612,7 +655,7 @@ async function fetchF1RaceDetail(
 
   return {
     pitStops: enrichedPitStops,
-    tireStints: stintsResult.status === "fulfilled" ? stintsResult.value : [],
+    tireStints: stintsResult.status === "fulfilled" ? stintsResult.value.results : [],
     raceControl,
     raceControlTr: [],
     driverStandingsAfter,
@@ -625,15 +668,17 @@ async function fetchF1RaceDetail(
       sprintResult.status === "fulfilled" ? sprintResult.value : [],
     sprintComplete:
       sprintResult.status === "fulfilled" && sprintResult.value.length >= 18 ? true : undefined,
-    practice1Results: attachDriverIds(fp1Result.status === "fulfilled" ? fp1Result.value : [], numberToDriverId),
-    practice2Results: attachDriverIds(fp2Result.status === "fulfilled" ? fp2Result.value : [], numberToDriverId),
-    practice3Results: attachDriverIds(fp3Result.status === "fulfilled" ? fp3Result.value : [], numberToDriverId),
+    practice1Results: attachDriverIds(practiceResults(fp1Result), numberToDriverId),
+    practice2Results: attachDriverIds(practiceResults(fp2Result), numberToDriverId),
+    practice3Results: attachDriverIds(practiceResults(fp3Result), numberToDriverId),
     // *Fetched is true only when the OpenF1 call actually ran; an empty result
     // then means "no data", a rejection means "failed" (see race-detail-merge).
-    practice1Fetched: fp1Key !== null && fp1Result.status === "fulfilled",
-    practice2Fetched: fp2Key !== null && fp2Result.status === "fulfilled",
-    practice3Fetched: fp3Key !== null && fp3Result.status === "fulfilled",
+    practice1Fetched: practiceFetched(fp1Result),
+    practice2Fetched: practiceFetched(fp2Result),
+    practice3Fetched: practiceFetched(fp3Result),
     raceControlFetched: isCompleted && raceControlFetchSucceeded,
-    stintsFetched: raceSessionKey !== null && stintsResult.status === "fulfilled",
+    stintsFetched:
+      stintsResult.status === "fulfilled" &&
+      (stintsResult.value.source === "mscom" || stintsResult.value.succeeded.includes("openf1")),
   };
 }

@@ -75,6 +75,8 @@ const FETCH_TIMEOUT_MS = 15_000;
 const spaceOpenF1Request = makeRequestSpacer(400);
 
 export class OpenF1LiveLockError extends Error {}
+// Thrown, not returned as [], so the session stays "not fetched" and backfill retries it.
+export class OpenF1NoDataError extends Error {}
 
 async function openF1Fetch<T>(path: string, schema: z.ZodType<T>): Promise<T> {
   const wait = spaceOpenF1Request();
@@ -93,6 +95,7 @@ async function openF1Fetch<T>(path: string, schema: z.ZodType<T>): Promise<T> {
     });
     // OpenF1 canlı seans boyunca anahtarsız tüm erişimi 401 ile kapatır; arıza değil.
     if (res.status === 401) throw new OpenF1LiveLockError(`OpenF1 error 401: ${path}`);
+    if (res.status === 404) throw new OpenF1NoDataError(`OpenF1 no data: ${path}`);
     if (!res.ok) throw new Error(`OpenF1 error ${res.status}: ${path}`);
     return schema.parse(await res.json());
   } finally {
@@ -245,18 +248,25 @@ function lapTimeToMs(timeStr: string): number {
   return (parseInt(minStr) * 60 + parseFloat(secStr)) * 1000;
 }
 
-// Throws on fetch failure — see fetchOpenF1Stints.
-export async function fetchOpenF1PracticeResults(
-  sessionKey: number
-): Promise<PracticeDriverResult[]> {
-  // z.record ile raw fetch — API field type değişimlerine karşı dayanıklı
-  const [rawLaps, drivers] = await Promise.all([
-    openF1Fetch(`/laps?session_key=${sessionKey}`, z.array(z.record(z.string(), z.unknown()))),
-    fetchOpenF1Drivers(sessionKey),
-  ]);
+// z.record ile raw fetch — API field type değişimlerine karşı dayanıklı
+const RawRowsSchema = z.array(z.record(z.string(), z.unknown()));
 
-  const driverMap = new Map(drivers.map((d) => [d.driver_number, d]));
+async function fetchPracticeBestLaps(sessionKey: number): Promise<Map<number, number>> {
   const bestByDriver = new Map<number, number>();
+  let rawLaps: z.infer<typeof RawRowsSchema>;
+  try {
+    rawLaps = await openF1Fetch(`/laps?session_key=${sessionKey}`, RawRowsSchema);
+  } catch (err) {
+    if (!(err instanceof OpenF1NoDataError)) throw err;
+    // OpenF1 can file a session's laps under another session_key (2026 Mexico FP3); session_result still holds each best lap.
+    const rows = await openF1Fetch(`/session_result?session_key=${sessionKey}`, RawRowsSchema);
+    for (const row of rows) {
+      if (typeof row.driver_number === "number" && typeof row.duration === "number" && row.duration > 0) {
+        bestByDriver.set(row.driver_number, row.duration);
+      }
+    }
+    return bestByDriver;
+  }
 
   for (const lap of rawLaps) {
     const driverNum = typeof lap.driver_number === "number" ? lap.driver_number : null;
@@ -270,6 +280,19 @@ export async function fetchOpenF1PracticeResults(
       bestByDriver.set(driverNum, lapDuration);
     }
   }
+  return bestByDriver;
+}
+
+// Throws on fetch failure — see fetchOpenF1Stints.
+export async function fetchOpenF1PracticeResults(
+  sessionKey: number
+): Promise<PracticeDriverResult[]> {
+  const [bestByDriver, drivers] = await Promise.all([
+    fetchPracticeBestLaps(sessionKey),
+    fetchOpenF1Drivers(sessionKey),
+  ]);
+
+  const driverMap = new Map(drivers.map((d) => [d.driver_number, d]));
 
   const results: PracticeDriverResult[] = [];
   for (const [driverNum, bestSecs] of bestByDriver) {

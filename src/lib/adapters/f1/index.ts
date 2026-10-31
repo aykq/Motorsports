@@ -78,7 +78,7 @@ export const f1Adapter: SeriesAdapter = {
           raceTime > now - 48 * 60 * 60 * 1000;
 
         if (isRecentFinished) {
-          const msResults = await scrapeF1RaceResults(season, race.name).catch(() => []);
+          const msResults = await scrapeF1RaceResults(season, race.name, roster).catch(() => []);
           if (msResults.length > 0) {
             return { ...race, results: normalizeScrapedResults(msResults, roster) };
           }
