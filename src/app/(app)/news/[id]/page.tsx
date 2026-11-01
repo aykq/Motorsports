@@ -221,7 +221,8 @@ export default async function NewsDetailPage({ params }: Props) {
                   /^(Fotoğraf|Foto|Photo(graph)?( by)?|©|Resim|Görsel)\s*[:;©]/i.test(block.text);
                 // Very short p-block immediately after an image → image label (e.g. "Fernando Alonso, Aston Martin Racing")
                 const prevBlock = i > 0 ? blocks[i - 1] : null;
-                const isImageLabel = !isPhotoCredit && prevBlock?.type === "img" && block.text.length < 120;
+                const isImageLabel =
+                  !isPhotoCredit && prevBlock?.type === "img" && !prevBlock.caption && block.text.length < 120;
 
                 if (isPhotoCredit || isImageLabel) {
                   return (
