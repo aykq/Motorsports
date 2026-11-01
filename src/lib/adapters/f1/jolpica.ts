@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { Race, Standing, Driver, Circuit, PitStop, QualifyingDriverResult } from "@/types/series";
 import { getCancelledRaceOverrides } from "./cancelled-races";
+import { DRIVER_OVERRIDES } from "./driver-overrides";
 import { isLastResultsPage, RESULTS_PAGE_SIZE, MAX_RESULT_PAGES } from "./jolpica-paging";
 import { logError } from "@/lib/error-log";
 
@@ -50,14 +51,24 @@ const ScheduleResponseSchema = z.object({
   }),
 });
 
-const DriverInfoSchema = z.object({
-  driverId: z.string(),
-  permanentNumber: z.string().optional(),
-  code: z.string().optional(),
-  givenName: z.string(),
-  familyName: z.string(),
-  nationality: z.string(),
-});
+const DriverInfoSchema = z
+  .object({
+    driverId: z.string(),
+    permanentNumber: z.string().optional(),
+    code: z.string().optional(),
+    givenName: z.string(),
+    familyName: z.string(),
+    nationality: z.string().optional(),
+  })
+  .transform((d) => {
+    const o = DRIVER_OVERRIDES[d.driverId];
+    return {
+      ...d,
+      permanentNumber: d.permanentNumber ?? o?.permanentNumber,
+      code: d.code ?? o?.code,
+      nationality: d.nationality ?? o?.nationality ?? "",
+    };
+  });
 
 const ConstructorInfoSchema = z.object({
   constructorId: z.string(),
