@@ -7,8 +7,9 @@ const m = vi.hoisted(() => ({
   getCachedDrivers: vi.fn(async () => ({ drivers: [] })),
   getCachedSchedule: vi.fn(),
   jolpicaFetchQualifyingResults: vi.fn(),
-  scrapeF1QualifyingResults: vi.fn(async () => []),
+  scrapeF1QualifyingResults: vi.fn(async (): Promise<QualifyingDriverResult[]> => []),
   findOpenF1AllSessionKeys: vi.fn(async () => new Map()),
+  logError: vi.fn(),
 }));
 
 vi.mock("@/lib/cache", () => ({
@@ -42,7 +43,7 @@ vi.mock("@/lib/adapters/f1/openf1", () => ({
 }));
 vi.mock("@/lib/weather", () => ({ fetchRaceWeather: vi.fn() }));
 vi.mock("@/lib/gemini", () => ({ translateRaceControlMessages: vi.fn(async () => []) }));
-vi.mock("@/lib/error-log", () => ({ logError: vi.fn() }));
+vi.mock("@/lib/error-log", () => ({ logError: m.logError }));
 
 import { syncActiveSessionData, refetchActiveWeekendSessions } from "./race-detail";
 
@@ -65,14 +66,14 @@ const race: Race = {
 } as Race;
 
 const mscomRow: QualifyingDriverResult = {
-  position: 19,
+  position: 1,
   driverId: "ryo-hirakawa",
   driverName: "R. Hirakawa",
   team: "Haas F1 Team",
   q1: "1:18.958",
 };
 const jolpicaRow: QualifyingDriverResult = {
-  position: 19,
+  position: 1,
   driverId: "ryo_hirakawa",
   driverName: "Ryo Hirakawa",
   driverCode: "HIR",
@@ -129,6 +130,51 @@ describe("syncActiveSessionData ignoreWindow", () => {
 
     expect(changed).toBe(false);
     expect(m.jolpicaFetchQualifyingResults).not.toHaveBeenCalled();
+  });
+});
+
+describe("Jolpica qualifying with inconsistent positions", () => {
+  const ham: QualifyingDriverResult = { position: 1, driverId: "hamilton", driverName: "Lewis Hamilton", driverCode: "HAM", team: "Ferrari", q1: "1:17.341" };
+  const lin: QualifyingDriverResult = { position: 2, driverId: "lindblad", driverName: "Arvid Lindblad", driverCode: "LIN", team: "Racing Bulls", q1: "1:18.210" };
+  const law: QualifyingDriverResult = { position: 2, driverId: "lawson", driverName: "Liam Lawson", driverCode: "LAW", team: "Racing Bulls", q1: "1:18.100" };
+
+  it("takes the order from motorsport.com and logs a warning", async () => {
+    m.jolpicaFetchQualifyingResults.mockResolvedValue([ham, lin, law]);
+    m.scrapeF1QualifyingResults.mockResolvedValue([
+      { ...ham, position: 1 },
+      { ...law, position: 2 },
+      { ...lin, position: 3 },
+    ]);
+
+    await syncActiveSessionData("f1", 2026, race, { ignoreWindow: true });
+
+    const saved = m.setCachedRaceDetail.mock.calls[0]![3];
+    expect(saved.qualifyingResults.map((r: QualifyingDriverResult) => [r.position, r.driverId])).toEqual([
+      [1, "hamilton"],
+      [2, "lawson"],
+      [3, "lindblad"],
+    ]);
+    expect(m.logError).toHaveBeenCalledWith(expect.objectContaining({ source: "jolpica/qualifying-order" }));
+  });
+
+  it("falls back to lap times when motorsport.com has nothing", async () => {
+    m.jolpicaFetchQualifyingResults.mockResolvedValue([ham, lin, law]);
+    m.scrapeF1QualifyingResults.mockResolvedValue([]);
+
+    await syncActiveSessionData("f1", 2026, race, { ignoreWindow: true });
+
+    const saved = m.setCachedRaceDetail.mock.calls[0]![3];
+    expect(saved.qualifyingResults.map((r: QualifyingDriverResult) => r.driverId)).toEqual(["hamilton", "lawson", "lindblad"]);
+  });
+
+  it("refetches a completed session whose stored positions are inconsistent", async () => {
+    m.getRaceDetailRaw.mockResolvedValue({ ...existingDetail(), qualifyingResults: [ham, lin, law], qualifyingComplete: true });
+    m.jolpicaFetchQualifyingResults.mockResolvedValue([ham, { ...lin, position: 3 }, { ...law, position: 2 }].sort((a, b) => a.position - b.position));
+
+    const changed = await syncActiveSessionData("f1", 2026, race, { ignoreWindow: true });
+
+    expect(changed).toBe(true);
+    expect(m.jolpicaFetchQualifyingResults).toHaveBeenCalled();
   });
 });
 

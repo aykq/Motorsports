@@ -27,6 +27,7 @@ import {
 import { fetchRaceWeather } from "@/lib/weather";
 import { translateRaceControlMessages } from "@/lib/gemini";
 import { logError } from "@/lib/error-log";
+import { hasConsistentPositions, rankByTimes, reorderByReference } from "@/lib/adapters/f1/qualifying-order";
 import { firstNonEmpty, isSessionComplete, type ResultSource, type SourceStep } from "@/lib/source-chain";
 
 // Bir session'ın burada ne kadar süre "aktif" sayılıp yeniden denendiğini belirler.
@@ -105,13 +106,26 @@ function qualifyingSources(
     "openf1",
     sessionKey ? async () => fetchOpenF1QualifyingResults(sessionKey, driverIdByCode(await getRoster())) : null,
   ];
-  const mscom: SourceStep<QualifyingDriverResult> = [
-    "mscom",
-    async () => scrapeF1QualifyingResults(season, raceName, type === "sprintQuali", await getRoster()),
-  ];
-  return type === "qualifying"
-    ? [["jolpica", () => jolpicaFetchQualifyingResults(season, round)], mscom, openF1]
-    : [mscom, openF1];
+  const scrape = async () => scrapeF1QualifyingResults(season, raceName, type === "sprintQuali", await getRoster());
+  const mscom: SourceStep<QualifyingDriverResult> = ["mscom", scrape];
+  const jolpica: SourceStep<QualifyingDriverResult> = ["jolpica", () => jolpicaQualifyingInOrder(season, round, scrape)];
+  return type === "qualifying" ? [jolpica, mscom, openF1] : [mscom, openF1];
+}
+
+async function jolpicaQualifyingInOrder(
+  season: number,
+  round: number,
+  scrape: () => Promise<QualifyingDriverResult[]>
+): Promise<QualifyingDriverResult[]> {
+  const rows = await jolpicaFetchQualifyingResults(season, round);
+  if (hasConsistentPositions(rows)) return rows;
+  const reference = await scrape();
+  await logError({
+    source: "jolpica/qualifying-order",
+    severity: "warning",
+    message: `${season}/${round} qualifying positions are inconsistent; reordered by ${reference.length ? "motorsport.com" : "lap times"}`,
+  });
+  return reference.length ? reorderByReference(rows, reference) : rankByTimes(rows);
 }
 
 function sprintSources(
@@ -329,7 +343,7 @@ export async function syncActiveSessionData(
     if (s.type === "practice1" && existing.practice1Complete) return false;
     if (s.type === "practice2" && existing.practice2Complete) return false;
     if (s.type === "practice3" && existing.practice3Complete) return false;
-    if (s.type === "qualifying" && existing.qualifyingComplete) return false;
+    if (s.type === "qualifying" && existing.qualifyingComplete && hasConsistentPositions(existing.qualifyingResults ?? [])) return false;
     if (s.type === "sprintQuali" && existing.sprintQualiComplete) return false;
     if (s.type === "race" && existing.raceDataComplete) return false;
     if (s.type === "sprint" && existing.sprintComplete) return false;
@@ -567,6 +581,9 @@ async function fetchF1RaceDetail(
     ...(fp3Done && fp3Session ? [fp3Session] : []),
   ];
 
+  let roster: Promise<Driver[]> | null = null;
+  const getRoster = () => (roster ??= getCachedDrivers("f1").then((r) => r.drivers));
+
   const [
     pitStopsResult,
     weatherResult,
@@ -582,7 +599,9 @@ async function fetchF1RaceDetail(
       : Promise.resolve([]),
     isCompleted ? jolpicaFetchRoundDriverStandings(season, round) : Promise.resolve([]),
     isCompleted ? jolpicaFetchRoundTeamStandings(season, round) : Promise.resolve([]),
-    qualifyingDone ? jolpicaFetchQualifyingResults(season, round) : Promise.resolve([]),
+    qualifyingDone
+      ? jolpicaQualifyingInOrder(season, round, async () => scrapeF1QualifyingResults(season, race.name, false, await getRoster()))
+      : Promise.resolve([]),
     sprintDone ? jolpicaFetchSprintResults(season, round) : Promise.resolve([]),
     sessionsToFind.length > 0
       ? findOpenF1AllSessionKeys(season, sessionsToFind)
@@ -598,9 +617,6 @@ async function fetchF1RaceDetail(
   const fp1Key = sessionKeyMap.get("practice1") ?? null;
   const fp2Key = sessionKeyMap.get("practice2") ?? null;
   const fp3Key = sessionKeyMap.get("practice3") ?? null;
-
-  let roster: Promise<Driver[]> | null = null;
-  const getRoster = () => (roster ??= getCachedDrivers("f1").then((r) => r.drivers));
   const practice = (type: keyof typeof MSCOM_PRACTICE, done: boolean, key: number | null) =>
     done
       ? firstNonEmpty(practiceSources(type, key ?? undefined, season, race.name, getRoster))
