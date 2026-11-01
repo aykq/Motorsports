@@ -1,6 +1,17 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+const { logError } = vi.hoisted(() => ({ logError: vi.fn() }));
+vi.mock("@/lib/error-log", () => ({ logError }));
+
 import type { QualifyingDriverResult } from "@/types/series";
-import { hasConsistentPositions, rankByTimes, reorderByReference } from "./qualifying-order";
+import {
+  ensureOrder,
+  hasConsistentPositions,
+  rankByLapTime,
+  rankByTimes,
+  renumberByPosition,
+  reorderByReference,
+} from "./session-order";
 
 function row(
   position: number,
@@ -86,5 +97,64 @@ describe("reorderByReference", () => {
     const out = reorderByReference(rows, reference);
 
     expect(out.map((r) => r.driverId)).toEqual(["max_verstappen", "unknown"]);
+  });
+});
+
+describe("rankByLapTime", () => {
+  it("orders practice rows by best lap and renumbers", () => {
+    const rows = [
+      { position: 1, driverNumber: 1, driverName: "A", lapTime: "1:18.500" },
+      { position: 1, driverNumber: 2, driverName: "B", lapTime: "1:18.100" },
+      { position: 3, driverNumber: 3, driverName: "C", lapTime: "1:19.000" },
+    ];
+
+    expect(rankByLapTime(rows).map((r) => [r.position, r.driverNumber])).toEqual([
+      [1, 2],
+      [2, 1],
+      [3, 3],
+    ]);
+  });
+});
+
+describe("renumberByPosition", () => {
+  it("keeps the listed order for ties and closes gaps", () => {
+    const rows = [row(1, "a"), row(3, "b"), row(3, "c"), row(5, "d")];
+
+    expect(renumberByPosition(rows).map((r) => [r.position, r.driverId])).toEqual([
+      [1, "a"],
+      [2, "b"],
+      [3, "c"],
+      [4, "d"],
+    ]);
+  });
+});
+
+describe("ensureOrder", () => {
+  beforeEach(() => logError.mockClear());
+
+  it("returns consistent rows untouched without logging", async () => {
+    const rows = [row(1, "a"), row(2, "b")];
+    const reference = vi.fn();
+
+    expect(await ensureOrder(rows, "x", renumberByPosition, reference)).toBe(rows);
+    expect(reference).not.toHaveBeenCalled();
+    expect(logError).not.toHaveBeenCalled();
+  });
+
+  it("uses the reference order when available", async () => {
+    const out = await ensureOrder([row(1, "a"), row(1, "b")], "x", renumberByPosition, async () => [row(1, "b"), row(2, "a")]);
+
+    expect(out.map((r) => r.driverId)).toEqual(["b", "a"]);
+    expect(logError).toHaveBeenCalledWith(expect.objectContaining({ source: "f1/session-order", severity: "warning" }));
+  });
+
+  it("falls back when the reference is empty or fails", async () => {
+    const empty = await ensureOrder([row(2, "a"), row(1, "b")], "x", renumberByPosition, async () => []);
+    const failing = await ensureOrder([row(2, "a"), row(1, "b")], "x", renumberByPosition, async () => {
+      throw new Error("down");
+    });
+
+    expect(empty.map((r) => r.driverId)).toEqual(["b", "a"]);
+    expect(failing.map((r) => r.driverId)).toEqual(["b", "a"]);
   });
 });

@@ -1,5 +1,6 @@
 import { getCachedRaceByRound, getCachedSchedule, setCachedSchedule } from "@/lib/cache";
 import { jolpicaFetchRaceResults } from "@/lib/adapters/f1/jolpica";
+import { ensureOrder, renumberByPosition } from "@/lib/adapters/f1/session-order";
 import { fetchWECRaceResults } from "@/lib/adapters/wec/motorsport-results-scraper";
 import { getSeriesConfig } from "@/lib/series-config";
 import { getRaceDetail } from "@/lib/race-detail";
@@ -80,7 +81,11 @@ export default async function RaceDetailPage({ params, searchParams }: Props) {
   // zararsız — geçmiş sezonlarda canlı fetch yapılmıyor, backfill zaten tam.
   if (isCurrentYear && (race.status === "completed" || race.status === "live") && !race.results?.length) {
     if (slug === "f1") {
-      const freshResults = await jolpicaFetchRaceResults(year, round);
+      const freshResults = await ensureOrder(
+        await jolpicaFetchRaceResults(year, round),
+        `${year}/${round} race jolpica`,
+        renumberByPosition
+      );
       if (freshResults.length) {
         race = { ...race, results: freshResults };
         void setCachedSchedule(slug, year, [race]);

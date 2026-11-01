@@ -27,7 +27,7 @@ import {
 import { fetchRaceWeather } from "@/lib/weather";
 import { translateRaceControlMessages } from "@/lib/gemini";
 import { logError } from "@/lib/error-log";
-import { hasConsistentPositions, rankByTimes, reorderByReference } from "@/lib/adapters/f1/qualifying-order";
+import { ensureOrder, hasConsistentPositions, rankByLapTime, rankByTimes, renumberByPosition } from "@/lib/adapters/f1/session-order";
 import { firstNonEmpty, isSessionComplete, type ResultSource, type SourceStep } from "@/lib/source-chain";
 
 // Bir session'ın burada ne kadar süre "aktif" sayılıp yeniden denendiğini belirler.
@@ -88,9 +88,23 @@ function practiceSources(
   raceName: string,
   getRoster: () => Promise<Driver[]>
 ): SourceStep<PracticeDriverResult>[] {
+  const label = (source: string) => `${season} ${raceName} ${type} ${source}`;
   return [
-    ["mscom", async () => scrapeF1PracticeResults(season, raceName, MSCOM_PRACTICE[type], await getRoster())],
-    ["openf1", sessionKey ? () => fetchOpenF1PracticeResults(sessionKey) : null],
+    [
+      "mscom",
+      async () =>
+        ensureOrder(
+          await scrapeF1PracticeResults(season, raceName, MSCOM_PRACTICE[type], await getRoster()),
+          label("mscom"),
+          rankByLapTime
+        ),
+    ],
+    [
+      "openf1",
+      sessionKey
+        ? async () => ensureOrder(await fetchOpenF1PracticeResults(sessionKey), label("openf1"), rankByLapTime)
+        : null,
+    ],
   ];
 }
 
@@ -102,13 +116,27 @@ function qualifyingSources(
   raceName: string,
   getRoster: () => Promise<Driver[]>
 ): SourceStep<QualifyingDriverResult>[] {
+  const label = (source: string) => `${season}/${round} ${type} ${source}`;
+  const scrape = async () => scrapeF1QualifyingResults(season, raceName, type === "sprintQuali", await getRoster());
   const openF1: SourceStep<QualifyingDriverResult> = [
     "openf1",
-    sessionKey ? async () => fetchOpenF1QualifyingResults(sessionKey, driverIdByCode(await getRoster())) : null,
+    sessionKey
+      ? async () =>
+          ensureOrder(
+            await fetchOpenF1QualifyingResults(sessionKey, driverIdByCode(await getRoster())),
+            label("openf1"),
+            rankByTimes
+          )
+      : null,
   ];
-  const scrape = async () => scrapeF1QualifyingResults(season, raceName, type === "sprintQuali", await getRoster());
-  const mscom: SourceStep<QualifyingDriverResult> = ["mscom", scrape];
-  const jolpica: SourceStep<QualifyingDriverResult> = ["jolpica", () => jolpicaQualifyingInOrder(season, round, scrape)];
+  const mscom: SourceStep<QualifyingDriverResult> = [
+    "mscom",
+    async () => ensureOrder(await scrape(), label("mscom"), rankByTimes),
+  ];
+  const jolpica: SourceStep<QualifyingDriverResult> = [
+    "jolpica",
+    () => jolpicaQualifyingInOrder(season, round, scrape),
+  ];
   return type === "qualifying" ? [jolpica, mscom, openF1] : [mscom, openF1];
 }
 
@@ -117,15 +145,15 @@ async function jolpicaQualifyingInOrder(
   round: number,
   scrape: () => Promise<QualifyingDriverResult[]>
 ): Promise<QualifyingDriverResult[]> {
-  const rows = await jolpicaFetchQualifyingResults(season, round);
-  if (hasConsistentPositions(rows)) return rows;
-  const reference = await scrape();
-  await logError({
-    source: "jolpica/qualifying-order",
-    severity: "warning",
-    message: `${season}/${round} qualifying positions are inconsistent; reordered by ${reference.length ? "motorsport.com" : "lap times"}`,
-  });
-  return reference.length ? reorderByReference(rows, reference) : rankByTimes(rows);
+  return ensureOrder(await jolpicaFetchQualifyingResults(season, round), `${season}/${round} qualifying jolpica`, rankByTimes, scrape);
+}
+
+async function jolpicaSprintInOrder(
+  season: number,
+  round: number,
+  scrape: () => Promise<RaceResult[]>
+): Promise<RaceResult[]> {
+  return ensureOrder(await jolpicaFetchSprintResults(season, round), `${season}/${round} sprint jolpica`, renumberByPosition, scrape);
 }
 
 function sprintSources(
@@ -135,10 +163,22 @@ function sprintSources(
   raceName: string,
   getRoster: () => Promise<Driver[]>
 ): SourceStep<RaceResult>[] {
+  const label = (source: string) => `${season}/${round} sprint ${source}`;
+  const scrape = async () => scrapeF1SprintResults(season, raceName, await getRoster());
   return [
-    ["jolpica", () => jolpicaFetchSprintResults(season, round)],
-    ["mscom", async () => scrapeF1SprintResults(season, raceName, await getRoster())],
-    ["openf1", sessionKey ? async () => fetchOpenF1SprintResults(sessionKey, driverIdByCode(await getRoster())) : null],
+    ["jolpica", () => jolpicaSprintInOrder(season, round, scrape)],
+    ["mscom", async () => ensureOrder(await scrape(), label("mscom"), renumberByPosition)],
+    [
+      "openf1",
+      sessionKey
+        ? async () =>
+            ensureOrder(
+              await fetchOpenF1SprintResults(sessionKey, driverIdByCode(await getRoster())),
+              label("openf1"),
+              renumberByPosition
+            )
+        : null,
+    ],
   ];
 }
 
@@ -340,13 +380,15 @@ export async function syncActiveSessionData(
     if (t > now) return false;
     const windowMs = SESSION_WINDOW_MS[s.type] ?? 4 * 60 * 60 * 1000;
     if (!ignoreWindow && now > t + windowMs) return false;
-    if (s.type === "practice1" && existing.practice1Complete) return false;
-    if (s.type === "practice2" && existing.practice2Complete) return false;
-    if (s.type === "practice3" && existing.practice3Complete) return false;
-    if (s.type === "qualifying" && existing.qualifyingComplete && hasConsistentPositions(existing.qualifyingResults ?? [])) return false;
-    if (s.type === "sprintQuali" && existing.sprintQualiComplete) return false;
+    const done = (complete: boolean | undefined, rows: ReadonlyArray<{ position: number }> | undefined) =>
+      !!complete && hasConsistentPositions(rows ?? []);
+    if (s.type === "practice1" && done(existing.practice1Complete, existing.practice1Results)) return false;
+    if (s.type === "practice2" && done(existing.practice2Complete, existing.practice2Results)) return false;
+    if (s.type === "practice3" && done(existing.practice3Complete, existing.practice3Results)) return false;
+    if (s.type === "qualifying" && done(existing.qualifyingComplete, existing.qualifyingResults)) return false;
+    if (s.type === "sprintQuali" && done(existing.sprintQualiComplete, existing.sprintQualiResults)) return false;
     if (s.type === "race" && existing.raceDataComplete) return false;
-    if (s.type === "sprint" && existing.sprintComplete) return false;
+    if (s.type === "sprint" && done(existing.sprintComplete, existing.sprintResults)) return false;
     return true;
   });
 
@@ -602,7 +644,9 @@ async function fetchF1RaceDetail(
     qualifyingDone
       ? jolpicaQualifyingInOrder(season, round, async () => scrapeF1QualifyingResults(season, race.name, false, await getRoster()))
       : Promise.resolve([]),
-    sprintDone ? jolpicaFetchSprintResults(season, round) : Promise.resolve([]),
+    sprintDone
+      ? jolpicaSprintInOrder(season, round, async () => scrapeF1SprintResults(season, race.name, await getRoster()))
+      : Promise.resolve([]),
     sessionsToFind.length > 0
       ? findOpenF1AllSessionKeys(season, sessionsToFind)
       : Promise.resolve(new Map<string, number>()),

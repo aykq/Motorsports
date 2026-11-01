@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import type { Race, QualifyingDriverResult } from "@/types/series";
+import type { Race, QualifyingDriverResult, PracticeDriverResult, RaceResult } from "@/types/series";
 
 const m = vi.hoisted(() => ({
   getRaceDetailRaw: vi.fn(),
@@ -8,6 +8,9 @@ const m = vi.hoisted(() => ({
   getCachedSchedule: vi.fn(),
   jolpicaFetchQualifyingResults: vi.fn(),
   scrapeF1QualifyingResults: vi.fn(async (): Promise<QualifyingDriverResult[]> => []),
+  scrapeF1PracticeResults: vi.fn(async (): Promise<PracticeDriverResult[]> => []),
+  scrapeF1SprintResults: vi.fn(async (): Promise<RaceResult[]> => []),
+  jolpicaFetchSprintResults: vi.fn(async (): Promise<RaceResult[]> => []),
   findOpenF1AllSessionKeys: vi.fn(async () => new Map()),
   logError: vi.fn(),
 }));
@@ -21,15 +24,15 @@ vi.mock("@/lib/cache", () => ({
 }));
 vi.mock("@/lib/adapters/f1/jolpica", () => ({
   jolpicaFetchQualifyingResults: m.jolpicaFetchQualifyingResults,
-  jolpicaFetchSprintResults: vi.fn(async () => []),
+  jolpicaFetchSprintResults: m.jolpicaFetchSprintResults,
   jolpicaFetchPitStops: vi.fn(async () => []),
   jolpicaFetchRoundDriverStandings: vi.fn(async () => []),
   jolpicaFetchRoundTeamStandings: vi.fn(async () => []),
 }));
 vi.mock("@/lib/adapters/f1/motorsport-com-scraper", () => ({
   scrapeF1QualifyingResults: m.scrapeF1QualifyingResults,
-  scrapeF1PracticeResults: vi.fn(async () => []),
-  scrapeF1SprintResults: vi.fn(async () => []),
+  scrapeF1PracticeResults: m.scrapeF1PracticeResults,
+  scrapeF1SprintResults: m.scrapeF1SprintResults,
   scrapeF1RaceStints: vi.fn(async () => []),
 }));
 vi.mock("@/lib/adapters/f1/openf1", () => ({
@@ -154,7 +157,7 @@ describe("Jolpica qualifying with inconsistent positions", () => {
       [2, "lawson"],
       [3, "lindblad"],
     ]);
-    expect(m.logError).toHaveBeenCalledWith(expect.objectContaining({ source: "jolpica/qualifying-order" }));
+    expect(m.logError).toHaveBeenCalledWith(expect.objectContaining({ source: "f1/session-order" }));
   });
 
   it("falls back to lap times when motorsport.com has nothing", async () => {
@@ -194,5 +197,68 @@ describe("refetchActiveWeekendSessions", () => {
     expect(synced).toBe(1);
     expect(m.jolpicaFetchQualifyingResults).toHaveBeenCalledTimes(1);
     expect(m.jolpicaFetchQualifyingResults).toHaveBeenCalledWith(2026, 19);
+  });
+});
+
+describe("order checks on other sessions", () => {
+  const at = (hoursAgo: number) => new Date(NOW - hoursAgo * HOUR).toISOString();
+  const weekend = (type: string) => ({ ...race, sessions: [{ type, date: at(2) }] }) as Race;
+  const p = (position: number, driverNumber: number, lapTime: string): PracticeDriverResult => ({
+    position,
+    driverNumber,
+    driverName: `#${driverNumber}`,
+    lapTime,
+  });
+  const res = (position: number, driverId: string): RaceResult => ({
+    position,
+    driverId,
+    driverName: driverId,
+    team: "T",
+    points: 0,
+    status: "Finished",
+  });
+
+  it("re-ranks a practice table with broken positions by lap time", async () => {
+    m.getRaceDetailRaw.mockResolvedValue({ raceControl: [], tireStints: [] });
+    m.scrapeF1PracticeResults.mockResolvedValue([p(1, 1, "1:18.500"), p(1, 2, "1:18.100"), p(3, 3, "1:19.000")]);
+
+    await syncActiveSessionData("f1", 2026, weekend("practice1"));
+
+    const saved = m.setCachedRaceDetail.mock.calls[0]![3];
+    expect(saved.practice1Results.map((r: PracticeDriverResult) => [r.position, r.driverNumber])).toEqual([
+      [1, 2],
+      [2, 1],
+      [3, 3],
+    ]);
+  });
+
+  it("orders a broken Jolpica sprint by motorsport.com", async () => {
+    m.getRaceDetailRaw.mockResolvedValue({ raceControl: [], tireStints: [] });
+    m.jolpicaFetchSprintResults.mockResolvedValue([res(1, "a"), res(2, "b"), res(2, "c")]);
+    m.scrapeF1SprintResults.mockResolvedValue([res(1, "a"), res(2, "c"), res(3, "b")]);
+
+    await syncActiveSessionData("f1", 2026, weekend("sprint"));
+
+    const saved = m.setCachedRaceDetail.mock.calls[0]![3];
+    expect(saved.sprintResults.map((r: RaceResult) => [r.position, r.driverId])).toEqual([
+      [1, "a"],
+      [2, "c"],
+      [3, "b"],
+    ]);
+  });
+
+  it("refetches a completed practice whose stored positions are broken", async () => {
+    m.getRaceDetailRaw.mockResolvedValue({
+      raceControl: [],
+      tireStints: [],
+      practice1Complete: true,
+      practice1Results: [p(1, 1, "1:18.500"), p(1, 2, "1:18.100")],
+    });
+    m.scrapeF1PracticeResults.mockResolvedValue([p(1, 2, "1:18.100"), p(2, 1, "1:18.500")]);
+
+    const changed = await syncActiveSessionData("f1", 2026, weekend("practice1"), { ignoreWindow: true });
+
+    expect(changed).toBe(true);
+    expect(m.scrapeF1PracticeResults).toHaveBeenCalled();
   });
 });
