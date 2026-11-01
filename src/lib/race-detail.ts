@@ -1,6 +1,6 @@
 import { cache } from "react";
 import type { Driver, Race, RaceDetail, RaceResult, PracticeDriverResult, QualifyingDriverResult, TireStint } from "@/types/series";
-import { getCachedDrivers, getCachedRaceDetail, getRaceDetailRaw, setCachedRaceDetail } from "@/lib/cache";
+import { getCachedDrivers, getCachedRaceDetail, getCachedSchedule, getRaceDetailRaw, setCachedRaceDetail } from "@/lib/cache";
 import { mergeFetchedRaceDetail, reconcilePracticeDriverIds } from "@/lib/race-detail-merge";
 import {
   jolpicaFetchPitStops,
@@ -313,9 +313,10 @@ export async function syncRaceDetails(
 export async function syncActiveSessionData(
   slug: string,
   season: number,
-  race: Race
-): Promise<void> {
-  if (slug !== "f1") return;
+  race: Race,
+  { ignoreWindow = false }: { ignoreWindow?: boolean } = {}
+): Promise<boolean> {
+  if (slug !== "f1") return false;
 
   const now = Date.now();
   const existing = (await getRaceDetailRaw(slug, season, race.round)) ?? { ...EMPTY_DETAIL };
@@ -324,7 +325,7 @@ export async function syncActiveSessionData(
     const t = new Date(s.date).getTime();
     if (t > now) return false;
     const windowMs = SESSION_WINDOW_MS[s.type] ?? 4 * 60 * 60 * 1000;
-    if (now > t + windowMs) return false;
+    if (!ignoreWindow && now > t + windowMs) return false;
     if (s.type === "practice1" && existing.practice1Complete) return false;
     if (s.type === "practice2" && existing.practice2Complete) return false;
     if (s.type === "practice3" && existing.practice3Complete) return false;
@@ -335,7 +336,7 @@ export async function syncActiveSessionData(
     return true;
   });
 
-  if (!activeSessions.length) return;
+  if (!activeSessions.length) return false;
 
   const numberToDriverId = buildNumberToDriverIdMap([
     ...(race.results ?? []),
@@ -481,6 +482,16 @@ export async function syncActiveSessionData(
   if (changed) {
     await setCachedRaceDetail(slug, season, race.round, updated);
   }
+  return changed;
+}
+
+export async function refetchActiveWeekendSessions(season: number): Promise<number> {
+  const { races } = await getCachedSchedule("f1", season);
+  let synced = 0;
+  for (const race of races.filter(isActiveRaceWeekend)) {
+    if (await syncActiveSessionData("f1", season, race, { ignoreWindow: true })) synced++;
+  }
+  return synced;
 }
 
 const RACE_CONTROL_CATCHUP_WINDOW_MS = 6 * 60 * 60 * 1000;

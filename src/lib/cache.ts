@@ -172,7 +172,7 @@ export const getCachedStandings = unstable_cache(
     };
   },
   ["standings"],
-  { revalidate: 300 }
+  { revalidate: 300, tags: ["standings"] }
 );
 
 export async function setCachedStandings(

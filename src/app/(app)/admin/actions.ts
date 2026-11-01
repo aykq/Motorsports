@@ -11,6 +11,8 @@ import {
   syncDriversOnly,
   syncCircuitData,
 } from "@/lib/sync";
+import { refetchActiveWeekendSessions } from "@/lib/race-detail";
+import { updateTag } from "next/cache";
 import { sendPushToSubscribers } from "@/lib/push";
 import { requireAdmin } from "@/lib/admin-guard";
 import { fetchAndCacheNews, cleanAllNewsContent } from "@/lib/scrapers/motorsportNews";
@@ -45,11 +47,13 @@ export async function syncSeriesAction(slug: string): Promise<{ ok: boolean; mes
   const year = new Date().getFullYear();
   try {
     const result = await syncSeries(slug, year);
+    const weekendSynced = slug === "f1" ? await refetchActiveWeekendSessions(year) : 0;
+    updateTag("standings");
     const t = await getTranslations("admin");
     const msg = t("toastSyncResult", {
       races: result.racesCount,
       drivers: result.driversCount,
-      details: result.raceDetailsSynced,
+      details: result.raceDetailsSynced + weekendSynced,
     });
     return { ok: true, message: msg };
   } catch (err) {
@@ -77,6 +81,7 @@ export async function syncF1DriverStandingsAction(): Promise<{ ok: boolean; mess
   await checkAdmin();
   try {
     const count = await syncDriverStandingsOnly("f1", new Date().getFullYear());
+    updateTag("standings");
     const t = await getTranslations("admin");
     return { ok: true, message: t("toastSyncCount", { count }) };
   } catch (err) {
@@ -89,6 +94,7 @@ export async function syncF1TeamStandingsAction(): Promise<{ ok: boolean; messag
   await checkAdmin();
   try {
     const count = await syncTeamStandingsOnly("f1", new Date().getFullYear());
+    updateTag("standings");
     const t = await getTranslations("admin");
     return { ok: true, message: t("toastSyncCount", { count }) };
   } catch (err) {
