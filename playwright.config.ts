@@ -37,7 +37,16 @@ export default defineConfig({
     // indefinitely — block it, it has no bearing on what we're testing.
     serviceWorkers: "block",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    {
+      name: "chromium",
+      use: {
+        ...devices["Desktop Chrome"],
+        channel: process.env.CI ? undefined : "chrome",
+        launchOptions: { chromiumSandbox: !process.env.CI },
+      },
+    },
+  ],
   webServer: {
     command: `next dev -p ${PORT}`,
     url: BASE_URL,
